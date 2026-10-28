@@ -74,5 +74,10 @@ export const api = {
   getDueRevisions: () => request('/revisions/due'),
   completeRevision: (id, easeRating) => request(`/revisions/complete/${id}`, { method: 'POST', body: JSON.stringify({ easeRating }) }),
   getBookmarks: () => request('/revisions/bookmarks'),
-  toggleBookmark: (itemType, itemId, notes = '') => request('/revisions/bookmarks/toggle', { method: 'POST', body: JSON.stringify({ itemType, itemId, notes }) })
+  toggleBookmark: (itemType, itemId, notes = '') => request('/revisions/bookmarks/toggle', { method: 'POST', body: JSON.stringify({ itemType, itemId, notes }) }),
+
+  // Ollama Open-Source AI Trainer & Guide
+  getAiHealth: () => request('/ai/health'),
+  getAiModels: () => request('/ai/models'),
+  chatWithAi: (payload) => request('/ai/chat', { method: 'POST', body: JSON.stringify(payload) })
 };

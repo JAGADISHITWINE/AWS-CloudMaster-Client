@@ -14,7 +14,11 @@ import {
   HelpCircle,
   Briefcase,
   Zap,
-  Sparkles
+  Sparkles,
+  Bot,
+  Code,
+  FolderGit2,
+  BookMarked
 } from 'lucide-react';
 import CostRiskBadge from '../components/CostRiskBadge';
 
@@ -36,35 +40,45 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="px-3 py-1 rounded-full text-[11px] font-black tracking-wide bg-gradient-to-r from-indigo-500/25 via-purple-500/20 to-cyan-500/20 text-indigo-300 border border-indigo-400/40 shadow-sm flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                AWS Certified Solutions Architect &amp; Developer
+                AWS Solutions Architect &amp; DevOps Engineer
               </span>
               <span className="flex items-center gap-1.5 text-xs text-orange-300 font-extrabold bg-orange-500/15 px-3 py-1 rounded-full border border-orange-500/30">
                 <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-500/40 animate-pulse" />
                 {stats.streakDays} Day Streak!
               </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/35 flex items-center gap-1 shadow-sm">
+                <Bot className="w-3.5 h-3.5 text-amber-400" /> Ollama AI Live
+              </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-display bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent">
-              Your AWS Cloud Command Center
+              AWS &amp; DevOps Command Center
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
-              Master the cloud through 15 visual modules, interactive mock interview rounds, real-world scenario troubleshooting, and zero-risk Free Tier hands-on labs.
+              Master the modern cloud stack through 20 visual modules (AWS Cloud + GitHub, Jenkins, Docker &amp; Kubernetes), interactive mock interviews, and live Ollama open-source AI mentoring.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2.5 flex-wrap flex-shrink-0">
+            <button
+              onClick={() => onNavigate('ai-trainer')}
+              className="px-4 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 hover:opacity-95 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/25 transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5"
+            >
+              <Bot className="w-4 h-4 stroke-[2.5]" />
+              AI Live Trainer
+            </button>
             <button
               onClick={() => onNavigate('roadmap')}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:opacity-95 text-white font-extrabold text-xs shadow-glow-indigo transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5"
+              className="px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:opacity-95 text-white font-extrabold text-xs shadow-glow-indigo transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5"
             >
               <Compass className="w-4 h-4 stroke-[2.5]" />
-              Continue Roadmap
+              20 Modules
             </button>
             <button
               onClick={() => onNavigate('free-tier-safety')}
-              className="px-5 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-indigo-500/30 transition-all flex items-center gap-2"
+              className="px-4 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-indigo-500/30 transition-all flex items-center gap-2"
             >
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Safety Center
+              Safety Guard
             </button>
           </div>
         </div>
@@ -139,9 +153,9 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
           <div className="space-y-0.5">
             <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
               <Compass className="w-4 h-4 text-indigo-400" />
-              15-Module Certification Progress
+              20-Module AWS &amp; DevOps Certification Progress
             </h3>
-            <p className="text-xs text-slate-400">Total completion across notes, labs, and scenario assessments</p>
+            <p className="text-xs text-slate-400">Total completion across notes, labs, commands, and scenario assessments</p>
           </div>
           <span className="text-sm font-black text-indigo-400 font-mono">{stats.overallPercentage}%</span>
         </div>
@@ -154,7 +168,7 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 text-center text-xs">
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
             <p className="text-slate-400 text-[11px]">Modules</p>
-            <p className="font-extrabold text-white text-sm mt-0.5">15 Total</p>
+            <p className="font-extrabold text-white text-sm mt-0.5">20 Total</p>
           </div>
           <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.05]">
             <p className="text-slate-400 text-[11px]">Time Invested</p>
@@ -184,7 +198,7 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
               onClick={() => onNavigate('roadmap')}
               className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition"
             >
-              View Full 15 Modules <ArrowRight className="w-3.5 h-3.5" />
+              View Full 20 Modules <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
@@ -218,32 +232,59 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
           </div>
 
           {/* Feature Quick Launch Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
+            <button
+              onClick={() => onNavigate('hands-on-projects')}
+              className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-emerald-500/40 text-left transition space-y-1 group"
+            >
+              <FolderGit2 className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition duration-200" />
+              <p className="text-xs font-extrabold text-white">Hands-on Labs</p>
+              <p className="text-[11px] text-slate-400 leading-tight">7 Full Real Projects</p>
+            </button>
+
+            <button
+              onClick={() => onNavigate('definitions-glossary')}
+              className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-purple-500/40 text-left transition space-y-1 group"
+            >
+              <BookMarked className="w-5 h-5 text-purple-400 group-hover:scale-110 transition duration-200" />
+              <p className="text-xs font-extrabold text-white">Definitions</p>
+              <p className="text-[11px] text-slate-400 leading-tight">A-Z Concepts &amp; Terms</p>
+            </button>
+
+            <button
+              onClick={() => onNavigate('command-hub')}
+              className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-amber-500/40 text-left transition space-y-1 group"
+            >
+              <Code className="w-5 h-5 text-amber-400 group-hover:scale-110 transition duration-200" />
+              <p className="text-xs font-extrabold text-white">Commands Hub</p>
+              <p className="text-[11px] text-slate-400 leading-tight">Git, Jenkins, Docker, K8s</p>
+            </button>
+
             <button
               onClick={() => onNavigate('scenario-practice')}
-              className="p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-indigo-500/30 text-left transition space-y-1 group"
+              className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-indigo-500/30 text-left transition space-y-1 group"
             >
               <HelpCircle className="w-5 h-5 text-indigo-400 group-hover:scale-110 transition duration-200" />
-              <p className="text-xs font-extrabold text-white">Scenario Practice</p>
-              <p className="text-[11px] text-slate-400 leading-tight">Solve real-world troubleshooting production failures.</p>
+              <p className="text-xs font-extrabold text-white">Scenarios</p>
+              <p className="text-[11px] text-slate-400 leading-tight">21 Incident Troubleshoots</p>
             </button>
 
             <button
               onClick={() => onNavigate('interview-prep')}
-              className="p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-cyan-500/30 text-left transition space-y-1 group"
+              className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-cyan-500/30 text-left transition space-y-1 group"
             >
               <Briefcase className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition duration-200" />
-              <p className="text-xs font-extrabold text-white">Mock Interview Mode</p>
-              <p className="text-[11px] text-slate-400 leading-tight">Submit answers and get scored against technical rubrics.</p>
+              <p className="text-xs font-extrabold text-white">Interview Mode</p>
+              <p className="text-[11px] text-slate-400 leading-tight">21 Technical Rubrics</p>
             </button>
 
             <button
               onClick={() => onNavigate('free-tier-safety')}
-              className="p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-emerald-500/30 text-left transition space-y-1 group"
+              className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-emerald-500/30 text-left transition space-y-1 group"
             >
-              <ShieldCheck className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition duration-200" />
+              <ShieldCheck className="w-5 h-5 text-teal-400 group-hover:scale-110 transition duration-200" />
               <p className="text-xs font-extrabold text-white">Cost Guard</p>
-              <p className="text-[11px] text-slate-400 leading-tight">Verify cleanup checklists and monitor budgets.</p>
+              <p className="text-[11px] text-slate-400 leading-tight">Zero-Cost Safety Lock</p>
             </button>
           </div>
         </div>

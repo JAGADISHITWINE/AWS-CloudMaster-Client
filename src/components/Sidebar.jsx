@@ -11,13 +11,21 @@ import {
   RotateCcw,
   ShieldCheck,
   Settings,
-  Sparkles
+  Sparkles,
+  Bot,
+  Code,
+  FolderGit2,
+  BookMarked
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, onSelectTab, pendingCleanups = 0, dueRevisions = 0 }) {
   const mainNav = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: '15 Mod' },
+    { id: 'ai-trainer', label: 'AI DevOps Trainer', icon: Bot, badgeText: 'Ollama AI', highlight: true },
+    { id: 'hands-on-projects', label: 'Hands-on Projects', icon: FolderGit2, badgeText: '7 Real-World' },
+    { id: 'definitions-glossary', label: 'Definitions Glossary', icon: BookMarked, badgeText: 'A-Z Terms' },
+    { id: 'command-hub', label: 'Commands Hub', icon: Code, badgeText: 'Git/K8s/Doc' },
+    { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: '20 Mod' },
     { id: 'topic-detail', label: 'Topic Notes', icon: BookOpen },
     { id: 'practice-lab', label: 'Practice Lab', icon: Terminal },
   ];
@@ -53,7 +61,11 @@ export default function Sidebar({ activeTab, onSelectTab, pendingCleanups = 0, d
           <span>{item.label}</span>
         </div>
         {item.badgeText && (
-          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-md bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
+          <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded-md border ${
+            item.highlight
+              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse shadow-sm'
+              : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/20'
+          }`}>
             {item.badgeText}
           </span>
         )}

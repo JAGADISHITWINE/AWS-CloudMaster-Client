@@ -8,7 +8,7 @@ export default function CliSimulator({ simulationScript, sampleCommand, expected
 
   const handleRunSimulation = () => {
     setIsRunning(true);
-    setOutput('Initiating safe local AWS simulation...\n');
+    setOutput('Initiating safe local simulation (AWS, Git, Docker, K8s, Jenkins)...\n');
 
     setTimeout(() => {
       if (simulationScript) {
@@ -46,7 +46,7 @@ export default function CliSimulator({ simulationScript, sampleCommand, expected
           <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
           <span className="text-xs text-slate-300 font-sans ml-2 flex items-center gap-1.5 font-bold">
             <Terminal className="w-3.5 h-3.5 text-amber-400" />
-            AWS Cloud CLI Simulator (Zero-Cost Safe Environment)
+            Cloud &amp; DevOps CLI Simulator (Zero-Cost Safe Environment)
           </span>
         </div>
         <div className="flex items-center gap-2">

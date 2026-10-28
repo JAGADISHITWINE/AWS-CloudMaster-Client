@@ -13,6 +13,11 @@ import RevisionCenter from './pages/RevisionCenter';
 import FreeTierSafety from './pages/FreeTierSafety';
 import Settings from './pages/Settings';
 import LoginModal from './pages/LoginModal';
+import AiTrainer from './pages/AiTrainer';
+import CommandHub from './pages/CommandHub';
+import DefinitionsGlossary from './pages/DefinitionsGlossary';
+import HandsOnProjects from './pages/HandsOnProjects';
+import AiAssistantDrawer from './components/AiAssistantDrawer';
 import { api } from './services/api';
 
 export default function App() {
@@ -97,6 +102,7 @@ export default function App() {
         onLogout={handleLogout}
         onOpenLogin={() => setIsLoginOpen(true)}
         onOpenSafety={() => setActiveTab('free-tier-safety')}
+        onOpenAiTrainer={() => setActiveTab('ai-trainer')}
         currentTheme={theme}
         onSelectTheme={(t) => setTheme(t)}
       />
@@ -123,6 +129,40 @@ export default function App() {
               recentActivities={dashboardStats?.recentActivities}
               onNavigate={(tab) => setActiveTab(tab)}
               onSelectTopic={handleSelectTopic}
+            />
+          )}
+
+          {activeTab === 'ai-trainer' && (
+            <AiTrainer
+              initialTopic={selectedTopicSlug}
+            />
+          )}
+
+          {activeTab === 'command-hub' && (
+            <CommandHub
+              onNavigate={(tab) => setActiveTab(tab)}
+              onAskAi={(prompt) => {
+                setActiveTab('ai-trainer');
+              }}
+            />
+          )}
+
+          {activeTab === 'hands-on-projects' && (
+            <HandsOnProjects
+              onNavigate={(tab) => setActiveTab(tab)}
+              onSelectTopic={handleSelectTopic}
+              onAskAi={(prompt) => {
+                setActiveTab('ai-trainer');
+              }}
+            />
+          )}
+
+          {activeTab === 'definitions-glossary' && (
+            <DefinitionsGlossary
+              onNavigate={(tab) => setActiveTab(tab)}
+              onAskAi={(prompt) => {
+                setActiveTab('ai-trainer');
+              }}
             />
           )}
 
@@ -205,6 +245,9 @@ export default function App() {
           refreshDashboard();
         }}
       />
+
+      {/* Floating Live AI DevOps Trainer Drawer */}
+      <AiAssistantDrawer activeTab={activeTab} selectedTopicSlug={selectedTopicSlug} />
     </div>
   );
 }

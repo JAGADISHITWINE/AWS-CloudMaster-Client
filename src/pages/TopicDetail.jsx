@@ -14,10 +14,16 @@ import {
   Bookmark,
   Share2,
   Sparkles,
-  Zap
+  Zap,
+  Play,
+  Youtube,
+  ExternalLink,
+  Bot
 } from 'lucide-react';
 import DiagramViewer from '../components/DiagramViewer';
 import { api } from '../services/api';
+import { YOUTUBE_TOPIC_VIDEOS } from '../data/youtubeData';
+import { getArchitectureForTopic } from '../data/architectureData';
 
 export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   const [data, setData] = useState(null);
@@ -147,6 +153,97 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         </div>
       </div>
 
+      {/* 📺 Curated YouTube Masterclass & Video Tutorial */}
+      {(() => {
+        const video = YOUTUBE_TOPIC_VIDEOS[topic.slug] || YOUTUBE_TOPIC_VIDEOS[topicSlug];
+        if (!video) return null;
+        return (
+          <section className="p-6 rounded-3xl neo-card border-rose-500/30 bg-gradient-to-br from-rose-950/20 via-slate-950 to-slate-900/90 space-y-4 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30">
+                  <Youtube className="w-5 h-5 text-rose-500 fill-rose-500/20" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/25">
+                      Curated Masterclass
+                    </span>
+                    <span className="text-slate-600 text-xs">•</span>
+                    <span className="text-xs font-semibold text-slate-300">{video.channel}</span>
+                    <span className="text-slate-600 text-xs">•</span>
+                    <span className="text-xs text-amber-400 font-bold">{video.duration}</span>
+                  </div>
+                  <h2 className="text-base sm:text-lg font-black text-white mt-0.5">
+                    {video.title}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={video.youtubeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-rose-900/30"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Watch on YouTube</span>
+                  <ExternalLink className="w-3 h-3 ml-0.5 opacity-80" />
+                </a>
+                {onNavigate && (
+                  <button
+                    onClick={() => onNavigate('ai-trainer')}
+                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-indigo-300 border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Ask AI About Video</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Video Player Embed / Responsive Preview */}
+            <div className="rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl bg-black aspect-video max-w-3xl mx-auto">
+              <iframe
+                className="w-full h-full"
+                src={`https://www.youtube-nocookie.com/embed/${video.videoId}?rel=0`}
+                title={video.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+
+            {/* Chapters / Key Topics Covered */}
+            {video.chapters && video.chapters.length > 0 && (
+              <div className="pt-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block mb-2">
+                  Key Video Chapters:
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {video.chapters.map((chap, i) => (
+                    <a
+                      key={i}
+                      href={`${video.youtubeUrl}&t=${chap.time.replace(':', 'm')}s`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:border-rose-500/40 text-xs transition flex flex-col group"
+                    >
+                      <span className="text-rose-400 font-mono font-bold text-[11px] group-hover:underline">
+                        ⏱ {chap.time}
+                      </span>
+                      <span className="text-slate-300 text-[11px] font-medium truncate mt-0.5">
+                        {chap.label}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        );
+      })()}
+
       {/* 1. Beginner-Friendly Explanation */}
       <section className="p-6 rounded-3xl neo-card space-y-3">
         <h2 className="text-base font-extrabold text-white flex items-center gap-2">
@@ -175,15 +272,34 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       </section>
 
       {/* 3. Architecture Diagram & Visual Explanation */}
-      {notes.architectureSvg && (
-        <section className="p-6 rounded-3xl neo-card space-y-3">
-          <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            3. Conceptual Architecture Diagram
-          </h2>
-          <DiagramViewer svgString={notes.architectureSvg} title={`${topic.title} Architecture Flow`} />
-        </section>
-      )}
+      {(() => {
+        const arch = getArchitectureForTopic(topic.slug, topic.moduleId, topic.title);
+        const svgContent = notes.architectureSvg || arch.svg;
+        return (
+          <section className="p-6 rounded-3xl neo-card space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-400" />
+                3. Visual Architecture &amp; System Flow Map
+              </h2>
+              <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
+                {arch.category}
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">{arch.description}</p>
+            <DiagramViewer
+              svgString={svgContent}
+              title={arch.title}
+              category={arch.category}
+              flowSteps={arch.flowSteps}
+              stepByStep={arch.stepByStep}
+              interRelationships={arch.interRelationships}
+              endToEndFlow={arch.endToEndFlow}
+              moduleContext={arch.moduleContext}
+            />
+          </section>
+        );
+      })()}
 
       {/* 4. How it Works Internally */}
       <section className="p-6 rounded-3xl neo-card space-y-3">
@@ -194,23 +310,45 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.internalsExplanation}</p>
       </section>
 
-      {/* 5. Essential AWS CLI Commands */}
+      {/* 5. Essential CLI Commands */}
       {notes.cliExamples && notes.cliExamples.length > 0 && (
         <section className="p-6 rounded-3xl neo-card space-y-3">
-          <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-amber-400" />
-            5. Key AWS CLI Commands &amp; Code
-          </h2>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-amber-400" />
+              5. Essential CLI Commands &amp; Production Syntax
+            </h2>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('command-hub')}
+                className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 transition"
+              >
+                Open Commands Hub →
+              </button>
+            )}
+          </div>
           <div className="space-y-2.5">
-            {notes.cliExamples.map((cli, i) => (
-              <div key={i} className="p-3.5 rounded-2xl bg-slate-950/80 border border-amber-500/20 font-mono text-xs space-y-1.5 shadow-inner">
-                <div className="flex items-center justify-between text-slate-400 text-[11px] font-sans">
-                  <span className="font-semibold text-slate-300">{cli.explanation}</span>
-                  <span className="text-[10px] bg-amber-500/15 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">AWS CLI</span>
+            {notes.cliExamples.map((cli, i) => {
+              const cmdText = cli.command || '';
+              const badge = cmdText.startsWith('git')
+                ? 'Git CLI'
+                : cmdText.startsWith('kubectl')
+                ? 'kubectl'
+                : cmdText.startsWith('docker')
+                ? 'Docker CLI'
+                : cmdText.startsWith('curl') && cmdText.includes('jenkins')
+                ? 'Jenkins API'
+                : 'AWS CLI';
+              return (
+                <div key={i} className="p-3.5 rounded-2xl bg-slate-950/80 border border-amber-500/20 font-mono text-xs space-y-1.5 shadow-inner">
+                  <div className="flex items-center justify-between text-slate-400 text-[11px] font-sans">
+                    <span className="font-semibold text-slate-300">{cli.explanation}</span>
+                    <span className="text-[10px] bg-amber-500/15 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/30">{badge}</span>
+                  </div>
+                  <p className="text-amber-300 break-all select-all font-semibold">$ {cli.command}</p>
                 </div>
-                <p className="text-amber-300 break-all select-all font-semibold">$ {cli.command}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

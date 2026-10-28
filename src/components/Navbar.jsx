@@ -1,7 +1,7 @@
 import React from 'react';
-import { Cloud, Flame, ShieldAlert, Award, User, LogOut, Palette, Zap } from 'lucide-react';
+import { Cloud, Flame, ShieldAlert, Award, User, LogOut, Palette, Zap, Bot } from 'lucide-react';
 
-export default function Navbar({ user, onLogout, onOpenLogin, onOpenSafety, currentTheme, onSelectTheme }) {
+export default function Navbar({ user, onLogout, onOpenLogin, onOpenSafety, onOpenAiTrainer, currentTheme, onSelectTheme }) {
   const themes = [
     { id: 'indigo', name: 'Indigo Neon', color: 'bg-indigo-500' },
     { id: 'coral', name: 'AWS Coral', color: 'bg-orange-500' },
@@ -23,18 +23,18 @@ export default function Navbar({ user, onLogout, onOpenLogin, onOpenSafety, curr
           <div>
             <div className="flex items-center gap-2">
               <span className="font-extrabold text-base tracking-tight font-display bg-gradient-to-r from-indigo-400 via-cyan-300 to-white bg-clip-text text-transparent">
-                AWS CloudMaster
+                Cloud &amp; DevOps Master
               </span>
-              <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/40 flex items-center gap-1 shadow-sm">
-                <Zap className="w-2.5 h-2.5 fill-indigo-400 text-indigo-400" /> Pro Edition
+              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 flex items-center gap-1 shadow-sm">
+                <Zap className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> 20 Modules + Ollama AI
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Next-Gen Interactive Cloud Curriculum</p>
+            <p className="text-[11px] text-slate-400 font-medium">AWS Cloud, GitHub, Jenkins, Docker &amp; Kubernetes</p>
           </div>
         </div>
 
         {/* Right Action Widgets */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Quick Theme Switcher Pill */}
           <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-900/90 border border-indigo-500/30 shadow-inner">
             <Palette className="w-3.5 h-3.5 text-indigo-400 ml-1 mr-0.5" />
@@ -52,10 +52,22 @@ export default function Navbar({ user, onLogout, onOpenLogin, onOpenSafety, curr
             ))}
           </div>
 
+          {/* AI Trainer Button */}
+          {onOpenAiTrainer && (
+            <button
+              onClick={onOpenAiTrainer}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 transition text-xs font-bold shadow-sm"
+              title="Open AI DevOps Trainer"
+            >
+              <Bot className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">AI Trainer</span>
+            </button>
+          )}
+
           {/* Free Tier Shield Button */}
           <button
             onClick={onOpenSafety}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition text-xs font-bold shadow-sm"
+            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 transition text-xs font-bold shadow-sm"
             title="Free Tier Safety Center"
           >
             <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" />
