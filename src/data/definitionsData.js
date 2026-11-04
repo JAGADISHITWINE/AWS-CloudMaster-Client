@@ -189,6 +189,78 @@ export const DEFINITIONS_DATA = [
     whyItMatters: "The invisible glue that triggers automated CI/CD builds the split-second a developer pushes code.",
     example: "GitHub sends an HTTP POST payload to `http://jenkins:8080/github-webhook/` upon push."
   },
+  {
+    term: "Distributed Version Control System (DVCS)",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Beginner",
+    definition: "A version control architecture where every developer has a full, standalone clone of the entire repository history on their local machine, enabling offline commits, branching, and eliminating single points of failure.",
+    whyItMatters: "Provides maximum flexibility and data safety: if the central server is lost, any developer's local clone can fully restore the project.",
+    example: "Git is the leading DVCS, outclassing centralized tools like SVN."
+  },
+  {
+    term: "Centralized Version Control System (CVCS)",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Beginner",
+    definition: "A legacy version control model (such as SVN or CVS) where all commit history resides exclusively on a single central server, requiring continuous network access and introducing a single point of failure.",
+    whyItMatters: "Understanding CVCS drawbacks highlights why modern DevOps teams universally migrated to Git.",
+    example: "In SVN, developers cannot commit or review branch logs while offline."
+  },
+  {
+    term: "Check-in vs Checkout",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Beginner",
+    definition: "Core VCS terms: 'Check-in' refers to uploading/committing code to the version control system; 'Checkout' refers to downloading code from the VCS or switching to a specific branch or historical commit.",
+    whyItMatters: "Fundamental vocabulary used across all version control and CI/CD operations.",
+    example: "Running `git checkout feature/auth` switches your working tree to the specified branch."
+  },
+  {
+    term: "The Three Sections (Local Architecture)",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Beginner",
+    definition: "Git's mental model organizing local files into three stages: Working Directory (untracked/modified files on disk), Staging Area/Index (intermediate snapshot preparation), and Local Repository (committed DAG snapshots in `.git`).",
+    whyItMatters: "Mastering the three sections explains how every Git command operates and removes confusion about file states.",
+    example: "Files move: Working Directory -> `git add` -> Staging Area -> `git commit` -> Local Repo."
+  },
+  {
+    term: "Unstaging (git rm --cached / git reset)",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Beginner",
+    definition: "The safe operation of moving a file back from the Staging Area to the Working Directory without deleting the file or losing edits on disk.",
+    whyItMatters: "Prevents accidental commits of credentials, debug logs, or unrelated files without destroying local disk work.",
+    example: "`git rm --cached .env` unstages the file while keeping it intact on disk."
+  },
+  {
+    term: "The .git Hidden Directory",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Beginner",
+    definition: "A hidden directory created by `git init` at the root of the project that contains configuration, object databases (blobs, trees, commits), refs, and the reflog.",
+    whyItMatters: "Deleting this folder permanently destroys all local commit history, branches, and configuration for that repository.",
+    example: "Contains `HEAD`, `config`, `objects/`, and `refs/heads/`."
+  },
+  {
+    term: "Git Clean (Dry Run vs Force Clean)",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Intermediate",
+    definition: "A command that cleans untracked build artifacts and temporary files from the working directory. The `-n` flag previews what will be deleted (dry run); `-f` executes deletion.",
+    whyItMatters: "Critical for workspace hygiene after messy local builds, while avoiding accidental deletion of new source files.",
+    example: "`git clean -nd` previews untracked files and directories before running `git clean -fd`."
+  },
+  {
+    term: "Git Reflog",
+    category: "git",
+    categoryLabel: "Git & GitHub",
+    level: "Intermediate",
+    definition: "A local tamper-evident chronological ledger recording every movement of HEAD, enabling recovery of deleted branches, lost commits, and botched hard resets.",
+    whyItMatters: "The ultimate emergency safety net in Git: almost nothing committed is ever truly lost as long as it exists in the reflog.",
+    example: "`git reset --hard HEAD@{2}` rolls back to where HEAD was two operations ago."
+  },
 
   // =========================================================================
   // 3. BUILD TOOLS & CODE QUALITY (MAVEN & SONARQUBE)
@@ -277,6 +349,87 @@ export const DEFINITIONS_DATA = [
     definition: "The distributed architecture of Jenkins. The Controller schedules jobs, manages plugins, and provides the web GUI. Agents are worker machines (VMs or Docker containers) that actually execute the CPU-heavy build and test commands.",
     whyItMatters: "Never run build workloads on the Controller! Offloading to ephemeral agents guarantees security, scalability, and stability.",
     example: "The Jenkins Controller delegates a Maven build job to a temporary Docker container agent node."
+  },
+  {
+    term: "Job vs Build (Jenkins)",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Beginner",
+    definition: "Core Jenkins distinction: A 'Job' is the reusable task definition (what tools to run, how to build, and when to trigger); a 'Build' is one specific historical execution run of that job (e.g. Build #1, #2, #3).",
+    whyItMatters: "Avoids confusing configuration with execution history.",
+    example: "A single job 'build-my-app' has run 142 builds over the past 3 months."
+  },
+  {
+    term: "Jenkins Plugin",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Beginner",
+    definition: "An independently versioned software extension that integrates external developer tools (Git, Maven, Slack, Docker, AWS) into Jenkins' core automation engine.",
+    whyItMatters: "Allows Jenkins core to remain lightweight while connecting to infinite toolchains and cloud providers.",
+    example: "The Git plugin checks out repository commits; the Email-ext plugin dispatches failure notifications."
+  },
+  {
+    term: "Security Realm vs Authorization Strategy",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Intermediate",
+    definition: "The two pillars of Jenkins security configured in Global Security. The Security Realm controls Authentication (how users prove who they are, e.g. Jenkins database or LDAP). Authorization Strategy controls Permissions (what actions each authenticated user or group is allowed to perform).",
+    whyItMatters: "Separating authentication from authorization allows integrating corporate SSO while maintaining granular Jenkins permissions.",
+    example: "LDAP authenticates the corporate user; Role Strategy restricts them to QA read-only access."
+  },
+  {
+    term: "Role-based Authorization Strategy (Role Strategy Plugin)",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Intermediate",
+    definition: "The enterprise authorization plugin in Jenkins that replaces the dangerous 'logged-in users can do anything' setting with reusable, named roles (Developer, QA, Admin) scoped with strict least-privilege permissions.",
+    whyItMatters: "Prevents accidental or malicious modification of production job configurations and protects sensitive credentials.",
+    example: "Assigning QA engineers a role with Job/Read and Job/Build, but hiding Job/Configure and Credentials."
+  },
+  {
+    term: "Freestyle Project vs Pipeline Job",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Beginner",
+    definition: "The two primary job types in Jenkins. A Freestyle project is configured manually through web forms in the Jenkins UI. A Pipeline job defines the multi-stage delivery process as code in a version-controlled 'Jenkinsfile' in Git.",
+    whyItMatters: "Pipelines-as-Code scale across hundreds of repositories and undergo peer code review, unlike manual UI configurations.",
+    example: "A Freestyle job is used for quick UI prototyping; production enterprise systems standardize on Declarative Pipelines."
+  },
+  {
+    term: "Build Periodically vs Poll SCM",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Intermediate",
+    definition: "Two scheduled trigger types using 5-field cron syntax. 'Build periodically' always executes the build on schedule, even if zero code changed. 'Poll SCM' checks the Git repository on schedule and only executes a build if new commits exist.",
+    whyItMatters: "Understanding the difference prevents unnecessary compute costs and Git API rate-limiting.",
+    example: "`H 2 * * *` (Build periodically for nightly security scans) vs `H/15 * * * *` (Poll SCM for code updates)."
+  },
+  {
+    term: "Selenium WebDriver",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Beginner",
+    definition: "An open-source browser automation framework used to write and execute programmatic tests against real web applications, driving browsers to click elements, fill forms, and assert expected page behaviors.",
+    whyItMatters: "Automates end-to-end user acceptance testing, preventing broken user interfaces from reaching production.",
+    example: "`WebDriver driver = new ChromeDriver(); driver.get('https://example.com'); assertEquals('Example Domain', driver.getTitle());`"
+  },
+  {
+    term: "Headless Browser Testing",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Intermediate",
+    definition: "Running browser automation (Chrome, Firefox) without a graphical user interface or physical monitor. Mandatory for Linux CI/CD servers that operate in headless environments without X11 desktop display servers.",
+    whyItMatters: "Enables fast, lightweight browser testing on remote Linux CI build agents and inside Docker containers.",
+    example: "Passing `options.addArguments('--headless=new', '--no-sandbox')` to ChromeDriver in CI pipelines."
+  },
+  {
+    term: "Surefire JUnit Test Reports",
+    category: "cicd",
+    categoryLabel: "CI/CD & Jenkins",
+    level: "Intermediate",
+    definition: "Standardized XML test result files generated by Maven at `**/target/surefire-reports/*.xml` recording test duration, passed/failed assertions, and failure stack traces, indexed by Jenkins into visual trend charts.",
+    whyItMatters: "Provides granular visibility into which specific test cases failed and tracks test pass/fail trends across historical builds.",
+    example: "Jenkins parses Surefire XML files via `post { always { junit '**/target/surefire-reports/*.xml' } }`."
   },
 
   // =========================================================================
@@ -376,6 +529,69 @@ export const DEFINITIONS_DATA = [
     whyItMatters: "Shrinks production image sizes from 1.5GB down to 50MB and removes attack surfaces (compilers, git, shells).",
     example: "Compiling with `FROM golang:1.22 AS builder` and running with `FROM scratch` or `alpine`."
   },
+  {
+    term: "dockerd, containerd & runc",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Intermediate",
+    definition: "The three-tier modular engine executing containers: dockerd provides the high-level REST API, volume, and network logic; containerd is the CNCF supervisor managing image downloads and container lifecycle; runc is the low-level OCI runtime tool that interacts with the Linux kernel to create namespaces and cgroups.",
+    whyItMatters: "Decouples container execution so the Docker daemon can be upgraded without killing active running microservice containers.",
+    example: "The Docker CLI calls dockerd via Unix socket, which delegates execution via gRPC to containerd, which spawns runc."
+  },
+  {
+    term: "Union File System (OverlayFS)",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Intermediate",
+    definition: "A Linux storage driver that stacks multiple read-only image layers (lowerdir) and one ephemeral read-write container layer (upperdir) into a single unified merged filesystem view using Copy-on-Write (CoW).",
+    whyItMatters: "Enables multiple containers to share the exact same underlying image disk blocks safely without corrupting each other.",
+    example: "Modifying /etc/nginx.conf inside a container writes to the ephemeral upperdir, leaving the base nginx:alpine image unchanged."
+  },
+  {
+    term: "CMD vs ENTRYPOINT",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Intermediate",
+    definition: "Dockerfile instructions defining process execution: ENTRYPOINT defines the fixed executable process (PID 1), while CMD supplies default arguments that can be overridden at runtime via CLI arguments.",
+    whyItMatters: "Using the Exec Form (JSON array) ensures PID 1 receives SIGTERM signals directly from 'docker stop' for graceful shutdown.",
+    example: "ENTRYPOINT [\"python\", \"app.py\"] with CMD [\"--port=8080\"] allows 'docker run app --port=9090' to override the port."
+  },
+  {
+    term: "User-Defined Bridge Network",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Beginner",
+    definition: "A private virtual network created via 'docker network create' featuring an embedded Docker DNS resolver at 127.0.0.11 that automatically resolves container names and service aliases to dynamic IP addresses.",
+    whyItMatters: "Eliminates hardcoded container IP addresses and provides complete network isolation between microservice tiers.",
+    example: "Connecting frontend and api containers to 'app-net' allows the frontend to call http://api:3000 via automatic DNS."
+  },
+  {
+    term: "Docker Storage Volumes vs Bind Mounts",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Beginner",
+    definition: "Storage mechanisms that persist data outside the container lifecycle: Named Volumes are managed by Docker under /var/lib/docker/volumes/ and bypass the CoW driver for native disk I/O; Bind Mounts map arbitrary host paths directly into the container.",
+    whyItMatters: "Stateful databases (PostgreSQL, MySQL) require Named Volumes to prevent total data loss upon container termination.",
+    example: "Mounting '-v pgdata:/var/lib/postgresql/data' persists customer database tables across container destruction."
+  },
+  {
+    term: "Docker Compose",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Beginner",
+    definition: "A declarative orchestration tool and YAML specification (compose.yaml) used to define, configure, and run multi-container applications (frontend, API, database, cache) with shared networks, volumes, and healthchecks in a single command.",
+    whyItMatters: "Replaces fragile multi-line shell scripts with version-controlled infrastructure definitions that run identically across dev and staging.",
+    example: "Running 'docker compose up -d' launches a coordinated stack of Node.js API, PostgreSQL database, and Redis cache."
+  },
+  {
+    term: "OOMKilled (Exit Code 137)",
+    category: "docker",
+    categoryLabel: "Docker Containers",
+    level: "Advanced",
+    definition: "A Linux kernel condition where the Out-Of-Memory Killer abruptly terminates a container process with SIGKILL (128 + 9 = Exit Code 137) because its physical RAM consumption exceeded its allocated cgroup limit.",
+    whyItMatters: "The most common production container crash under high traffic; requires tuning container cgroup memory ceilings and runtime heap sizes.",
+    example: "A Java JVM container allocated 512MB RAM spikes to 520MB under load, triggering the kernel OOM killer."
+  },
 
   // =========================================================================
   // 7. KUBERNETES & CONTAINER ORCHESTRATION
@@ -460,6 +676,42 @@ export const DEFINITIONS_DATA = [
     definition: "The package manager for Kubernetes (equivalent to apt for Ubuntu or npm for Node.js). It packages complex multi-manifest applications into reusable 'Helm Charts' with dynamic parameter templates.",
     whyItMatters: "Allows deploying production-grade systems like Prometheus, Redis clusters, or Nginx Ingress with a single command.",
     example: "`helm install my-ingress ingress-nginx/ingress-nginx` deploys complete ingress infrastructure."
+  },
+  {
+    term: "Horizontal Pod Autoscaler (HPA)",
+    category: "kubernetes",
+    categoryLabel: "Kubernetes (K8s)",
+    level: "Intermediate",
+    definition: "A Kubernetes controller that automatically scales the number of Pod replicas in a Deployment or ReplicaSet up or down based on observed CPU utilization, memory consumption, or custom application metrics.",
+    whyItMatters: "Enables cloud workloads to handle unexpected traffic spikes automatically without manual intervention, while saving costs by scaling down during off-peak hours.",
+    example: "`kubectl autoscale deployment api --cpu-percent=70 --min=2 --max=10` maintains average 70% CPU usage."
+  },
+  {
+    term: "PersistentVolume (PV) & PVC",
+    category: "kubernetes",
+    categoryLabel: "Kubernetes (K8s)",
+    level: "Intermediate",
+    definition: "A PersistentVolume (PV) is an administrator- or storageclass-provisioned physical storage disk (e.g. AWS EBS, NFS). A PersistentVolumeClaim (PVC) is a developer's request for storage specifying size and access modes (RWO, RWX).",
+    whyItMatters: "Decouples application pods from underlying cloud storage infrastructure, ensuring data survives pod restarts and rescheduling.",
+    example: "A PostgreSQL StatefulSet mounting a 50Gi AWS EBS volume via a PersistentVolumeClaim."
+  },
+  {
+    term: "StatefulSet vs DaemonSet",
+    category: "kubernetes",
+    categoryLabel: "Kubernetes (K8s)",
+    level: "Advanced",
+    definition: "A StatefulSet manages stateful apps requiring ordered deployment, persistent disk bindings, and stable network identifiers (pod-0, pod-1). A DaemonSet ensures that all (or targeted) nodes run exactly one copy of a Pod.",
+    whyItMatters: "Stateless Deployments cannot run databases or node monitoring agents properly; StatefulSets and DaemonSets solve both specialized architectural patterns.",
+    example: "Running MongoDB with a StatefulSet and running Fluentd log collectors with a DaemonSet."
+  },
+  {
+    term: "kind (Kubernetes in Docker)",
+    category: "kubernetes",
+    categoryLabel: "Kubernetes (K8s)",
+    level: "Beginner",
+    definition: "A lightweight open-source tool for running local Kubernetes clusters where each cluster node runs as a Docker container. It supports multi-node cluster topologies and integrates directly with kubectl.",
+    whyItMatters: "Allows developers and CI/CD pipelines to bootstrap and destroy complete multi-node Kubernetes clusters in under 60 seconds with zero cloud costs.",
+    example: "`kind create cluster --config multi-node.yaml` spins up 1 control plane node and 2 worker nodes locally."
   },
 
   // =========================================================================

@@ -260,6 +260,39 @@ export const YOUTUBE_TOPIC_VIDEOS = {
   },
 
   // Module 16 Topic 1: Git Fundamentals
+  'git-fundamentals-branching-merge-strategies': {
+    videoId: 'RGOj5yH7evk',
+    title: 'Git and GitHub for Beginners – Crash Course (Branching, Merging & Rebasing)',
+    channel: 'freeCodeCamp.org',
+    duration: '1:08:35',
+    level: 'Beginner to Intermediate',
+    summary: 'The ultimate Git guide: working tree, staging area, DAG commit graph, branching strategies, fast-forward vs 3-way merges, interactive rebase, and stash.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=RGOj5yH7evk',
+    chapters: [
+      { time: '00:00', label: 'Git Architecture: Working Tree, Index & HEAD' },
+      { time: '17:20', label: 'Branching, Checkout, and Switch' },
+      { time: '34:40', label: 'Merge vs Rebase: When to use which' },
+      { time: '52:10', label: 'Resolving Merge Conflicts & Stashing' }
+    ]
+  },
+
+  // Module 16 Topic 2: Git Command Suite & Cheat Sheet Mastery
+  'git-command-suite-cheat-sheet-mastery': {
+    videoId: 'hwP7mqu9KHw',
+    title: 'Git Commands Cheat Sheet & Workflow Tutorial – Every Command Explained',
+    channel: 'freeCodeCamp.org',
+    duration: '42:10',
+    level: 'Beginner to Intermediate',
+    summary: 'Master the complete Atlassian Git Cheat Sheet: git init, git clone, config aliases, unstaging with rm --cached, diff HEAD vs cached, log formatting, reset, clean -n, and rebase -i.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=hwP7mqu9KHw',
+    chapters: [
+      { time: '00:00', label: 'Git Basics & Global Configuration' },
+      { time: '11:15', label: 'Three Sections & Safe Unstaging (rm --cached)' },
+      { time: '21:30', label: 'Diffing (HEAD vs Cached) & Log Formatting' },
+      { time: '32:45', label: 'Reset, Rebase Interactive & Remote Sync' }
+    ]
+  },
+
   'git-fundamentals-branching-merge-rebase': {
     videoId: 'RGOj5yH7evk',
     title: 'Git and GitHub for Beginners – Crash Course (Branching, Merging & Rebasing)',
@@ -327,6 +360,23 @@ export const YOUTUBE_TOPIC_VIDEOS = {
     ]
   },
 
+  // Module 17 Topic 3: Selenium & Headless Testing in Jenkins
+  'jenkins-selenium-maven-headless-testing': {
+    videoId: '3a1z2j4pQ58',
+    title: 'Automated Headless Selenium Testing with Maven & Jenkins CI/CD',
+    channel: 'Automation Step by Step',
+    duration: '38:15',
+    level: 'Intermediate',
+    summary: 'Set up Selenium WebDriver in Maven with JUnit, configure headless Chrome execution on Linux, integrate with Jenkins pipelines, and publish JUnit test report trends.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=3a1z2j4pQ58',
+    chapters: [
+      { time: '00:00', label: 'Introduction to Selenium in Continuous Integration' },
+      { time: '08:30', label: 'Maven pom.xml Dependencies & JUnit Setup' },
+      { time: '17:45', label: 'Headless ChromeOptions Configuration on Linux' },
+      { time: '28:10', label: 'Jenkins Pipeline Execution & JUnit XML Reports' }
+    ]
+  },
+
   // Module 18 Topic 1: Docker Internals
   'docker-internals-container-architecture': {
     videoId: 'fqMOX6JJhGo',
@@ -345,6 +395,24 @@ export const YOUTUBE_TOPIC_VIDEOS = {
   },
 
   // Module 18 Topic 2: Dockerfile & Compose
+  // Module 18 Topic 2: Docker Images, Dockerfile Engineering & Registries
+  'docker-images-dockerfile-registries': {
+    videoId: 'pg19Z8LL06w',
+    title: 'Dockerfile Engineering, Layer Caching & Multi-Stage Optimization',
+    channel: 'DevOps Toolkit / Viktor Farcic',
+    duration: '48:15',
+    level: 'Intermediate',
+    summary: 'Master Dockerfile directives: ARG vs ENV, COPY vs ADD, CMD vs ENTRYPOINT matrix, build context optimization, layer cache invalidation rules, and multi-stage builds.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=pg19Z8LL06w',
+    chapters: [
+      { time: '00:00', label: 'Dockerfile Directives & Layer Architecture' },
+      { time: '12:20', label: 'Layer Caching & Instruction Ordering' },
+      { time: '24:45', label: 'CMD vs ENTRYPOINT in Depth' },
+      { time: '36:10', label: 'Multi-Stage Build Size Reduction' }
+    ]
+  },
+
+  // Module 18 Topic 3: Docker Networking, Volumes & Docker Compose
   'dockerfile-multistage-compose-networking': {
     videoId: 'pg19Z8LL06w',
     title: 'Dockerfile & Docker Compose Masterclass – Multi-Stage Builds & Networking',
@@ -378,7 +446,24 @@ export const YOUTUBE_TOPIC_VIDEOS = {
     ]
   },
 
-  // Module 19 Topic 2: K8s Workloads & Services
+  // Module 19 Topic 2: K8s Objects, Networking & Storage
+  'kubernetes-objects-workloads-networking-storage': {
+    videoId: 'd6WC5n9G_sM',
+    title: 'Kubernetes Workloads, Services, ConfigMaps, Secrets & Persistent Volumes',
+    channel: 'TechWorld with Nana',
+    duration: '1:15:30',
+    level: 'Intermediate',
+    summary: 'Master Kubernetes objects: Pods vs Deployments, Services (ClusterIP, NodePort, LoadBalancer), CoreDNS discovery, ConfigMaps, Secrets, and Persistent Volumes with StorageClasses.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=d6WC5n9G_sM',
+    chapters: [
+      { time: '00:00', label: 'Kubernetes Workload Controllers (Deployments & ReplicaSets)' },
+      { time: '18:20', label: 'Service Types & Kube-Proxy Packet Routing' },
+      { time: '36:40', label: 'ConfigMaps & Secrets Decoupled Configuration' },
+      { time: '54:10', label: 'PersistentVolume, PVC & StorageClasses' }
+    ]
+  },
+
+  // Module 19 Topic 3: K8s Rollouts, Autoscaling & Helm
   'k8s-workloads-services-networking-helm': {
     videoId: 'KkWvKqT3s2A',
     title: 'Kubernetes Services, Ingress, ConfigMaps, Secrets & Helm Complete Guide',
