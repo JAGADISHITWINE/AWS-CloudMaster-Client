@@ -24,9 +24,12 @@ export default function DiagramViewer({
   stepByStep,
   interRelationships,
   endToEndFlow,
-  moduleContext
+  moduleContext,
+  realDiagramUrl,
+  realDiagramTitle,
+  realDiagramCaption
 }) {
-  const [activeTab, setActiveTab] = useState('canvas'); // 'canvas' | 'stepByStep' | 'relations' | 'flow' | 'context'
+  const [activeTab, setActiveTab] = useState(realDiagramUrl ? 'realDiagram' : 'canvas'); // 'realDiagram' | 'canvas' | 'stepByStep' | 'relations' | 'flow' | 'context'
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -79,6 +82,20 @@ export default function DiagramViewer({
 
         {/* Tab Navigation for Deep Architecture Breakdown */}
         <div className="flex items-center gap-1 px-4 py-2 bg-slate-950/80 border-b border-white/[0.06] overflow-x-auto scrollbar-none">
+          {realDiagramUrl && (
+            <button
+              onClick={() => setActiveTab('realDiagram')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                activeTab === 'realDiagram'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm'
+                  : 'text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/30'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Real Architecture Diagram</span>
+            </button>
+          )}
+
           <button
             onClick={() => setActiveTab('canvas')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
@@ -88,7 +105,7 @@ export default function DiagramViewer({
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Visual Diagram</span>
+            <span>Interactive Vector Map</span>
           </button>
 
           <button
@@ -146,6 +163,34 @@ export default function DiagramViewer({
             </button>
           )}
         </div>
+
+        {/* Tab 0: Real Architecture Diagram (Actual Extracted PDF Graphic) */}
+        {activeTab === 'realDiagram' && realDiagramUrl && (
+          <div className="space-y-4 p-4 sm:p-6 bg-[#070b14]">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/[0.08]">
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                  {realDiagramTitle || 'Official Course Guide Architecture Diagram'}
+                </h4>
+                {realDiagramCaption && (
+                  <p className="text-xs text-slate-400 mt-1">{realDiagramCaption}</p>
+                )}
+              </div>
+              <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 rounded-full">
+                Authentic Engineering Asset
+              </span>
+            </div>
+
+            <div className="flex justify-center items-center rounded-2xl overflow-hidden border border-white/[0.1] bg-slate-950/80 p-3 sm:p-5 shadow-2xl">
+              <img
+                src={realDiagramUrl}
+                alt={realDiagramTitle || 'Real Architecture Diagram'}
+                className="max-h-[520px] w-auto max-w-full object-contain rounded-xl shadow-2xl transition hover:scale-[1.01]"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Tab 1: Visual Canvas (SVG) */}
         {activeTab === 'canvas' && (
@@ -385,10 +430,18 @@ export default function DiagramViewer({
           </div>
 
           <div className="flex-1 max-w-7xl mx-auto w-full neo-card rounded-3xl border border-indigo-500/30 overflow-auto p-6 sm:p-10 flex items-center justify-center bg-[#070b14]">
-            <div
-              className="w-full max-w-5xl"
-              dangerouslySetInnerHTML={{ __html: svgString }}
-            />
+            {activeTab === 'realDiagram' && realDiagramUrl ? (
+              <img
+                src={realDiagramUrl}
+                alt={realDiagramTitle || 'Real Architecture Diagram'}
+                className="max-h-[85vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
+              />
+            ) : (
+              <div
+                className="w-full max-w-5xl"
+                dangerouslySetInnerHTML={{ __html: svgString }}
+              />
+            )}
           </div>
         </div>
       )}

@@ -3,12 +3,216 @@
 
 export const TOPIC_ARCHITECTURE = {
   // -------------------------------------------------------------------------
-  // MODULE 1: AWS Global Infrastructure
+  // MODULE 1: AWS Cloud Account Setup, Free Tier Governance & Global Infrastructure
   // -------------------------------------------------------------------------
+  'aws-account-creation-root-security-iam': {
+    moduleNumber: 1,
+    title: "AWS Root Account Security Armor & IAM Least-Privilege Hierarchy",
+    category: "Identity & Account Security",
+    realDiagramUrl: '/images/aws-account/16-root-mfa-security-checklist.png',
+    realDiagramTitle: 'AWS Root Security Posture & Virtual MFA Hardening Flow',
+    realDiagramCaption: 'Actual security guidelines for root account protection, multi-factor authentication, and IAM administrator isolation.',
+    description: "Multi-layered defense for AWS root credentials: email verification, hardware/virtual MFA activation, root access key elimination, and isolation through a dedicated IAM Administrator user.",
+    flowSteps: ["Root Registration & Email Verification", "Virtual/Hardware MFA Hardening", "Root Access Key Deprecation", "Dedicated IAM Admin User Provisioning"],
+    stepByStep: [
+      { step: 1, component: "AWS Root Account Credentials", role: "Master billing and administrative identity created during account signup.", why: "Has absolute unrevokable power over billing, organization, and all cloud resources." },
+      { step: 2, component: "Multi-Factor Authentication (MFA)", role: "Enforces time-based TOTP code challenge upon authentication.", why: "Protects against credential theft; stops 99.9% of automated account takeover attacks." },
+      { step: 3, component: "Root Locker & Key Deletion", role: "Deleting root access keys and locking away root credentials for emergency use only.", why: "Prevents accidental catastrophic API exposure in GitHub or environment variables." },
+      { step: 4, component: "IAM Administrator Identity", role: "Individual administrative user with AdministratorAccess managed policy and MFA.", why: "Enforces non-repudiation, granular auditing in CloudTrail, and daily least-privilege operations." }
+    ],
+    interRelationships: [
+      { from: "Root Account", to: "MFA Token", relation: "Enforces 6-digit TOTP challenge during root login.", protocol: "RFC 6238 TOTP / FIDO2" },
+      { from: "IAM Service", to: "Admin User", relation: "Issues STS session tokens and credentials tied to identity.", protocol: "AWS SigV4 / HTTPS" },
+      { from: "Admin User", to: "AWS Resources", relation: "Acts on EC2, VPC, S3 governed by IAM policy and CloudTrail audit logging.", protocol: "AWS REST APIs" }
+    ],
+    endToEndFlow: [
+      { stage: "1. Account Provisioning", action: "Sign-Up Verification", details: "Payment verification holds $1 USD temporary authorization; email verification confirms tenant ownership." },
+      { stage: "2. Root Hardening", action: "MFA Activation", details: "Root user scans QR code with Google Authenticator; dual consecutive TOTP tokens register virtual MFA." },
+      { stage: "3. Access Key Sweep", action: "Root Key Purge", details: "Ensure zero active root API access keys exist in IAM security credentials console." },
+      { stage: "4. Admin Delegation", action: "IAM User Creation", details: "Create admin-user with AdministratorAccess policy; enforce console password reset and MFA." }
+    ],
+    moduleContext: {
+      prevModule: "Linux & Shell Scripting Foundation",
+      thisModule: "Module 1: AWS Cloud Account Setup, Free Tier Governance & Global Infrastructure",
+      nextModule: "Module 2: IAM Identity & Access Management",
+      connectionReason: "Securing root and establishing a pristine administrative user is the foundational prerequisite before creating any policies, roles, or cloud workloads."
+    },
+    svg: `<svg viewBox="0 0 850 260" xmlns="http://www.w3.org/2000/svg" class="w-full">
+      <defs>
+        <linearGradient id="rootBgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b1120"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+      </defs>
+      <rect x="5" y="5" width="840" height="250" rx="16" fill="url(#rootBgGrad)" stroke="#1e293b" stroke-width="2"/>
+      
+      <!-- Tier 1: Root Locker -->
+      <g transform="translate(30, 45)">
+        <rect width="160" height="170" rx="12" fill="#1e293b" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="80" y="26" fill="#ef4444" font-size="11" font-weight="bold" text-anchor="middle">1. ROOT ACCOUNT</text>
+        <circle cx="80" cy="65" r="20" fill="#ef4444" opacity="0.2"/>
+        <text x="80" y="72" fill="#f87171" font-size="20" text-anchor="middle">👑</text>
+        <text x="80" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">Emergency Use Only</text>
+        <rect x="15" y="125" width="130" height="22" rx="4" fill="#450a0a"/>
+        <text x="80" y="140" fill="#fca5a5" font-size="9" font-weight="bold" text-anchor="middle">ZERO Access Keys</text>
+        <text x="80" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Lock in Safe / Bitwarden</text>
+      </g>
+      
+      <!-- Arrow 1 -->
+      <path d="M 200 130 L 235 130" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="240,130 230,124 230,136" fill="#f59e0b"/>
+      
+      <!-- Tier 2: MFA Enforcement -->
+      <g transform="translate(245, 45)">
+        <rect width="165" height="170" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="82" y="26" fill="#f59e0b" font-size="11" font-weight="bold" text-anchor="middle">2. HARDENED MFA</text>
+        <circle cx="82" cy="65" r="20" fill="#f59e0b" opacity="0.2"/>
+        <text x="82" y="72" fill="#fbbf24" font-size="20" text-anchor="middle">🛡️</text>
+        <text x="82" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">TOTP / FIDO2 Token</text>
+        <rect x="15" y="125" width="135" height="22" rx="4" fill="#78350f"/>
+        <text x="82" y="140" fill="#fde68a" font-size="9" font-weight="bold" text-anchor="middle">2-Factor Authentication</text>
+        <text x="82" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Blocks 99.9% Breaches</text>
+      </g>
+      
+      <!-- Arrow 2 -->
+      <path d="M 420 130 L 455 130" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="460,130 450,124 450,136" fill="#38bdf8"/>
+      
+      <!-- Tier 3: IAM Admin Identity -->
+      <g transform="translate(465, 45)">
+        <rect width="170" height="170" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+        <text x="85" y="26" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">3. IAM ADMIN USER</text>
+        <circle cx="85" cy="65" r="20" fill="#0284c7" opacity="0.2"/>
+        <text x="85" y="72" fill="#38bdf8" font-size="20" text-anchor="middle">👤</text>
+        <text x="85" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">Day-to-Day Operations</text>
+        <rect x="15" y="125" width="140" height="22" rx="4" fill="#0c4a6e"/>
+        <text x="85" y="140" fill="#bae6fd" font-size="9" font-weight="bold" text-anchor="middle">AdministratorAccess</text>
+        <text x="85" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Individual Password + MFA</text>
+      </g>
+      
+      <!-- Arrow 3 -->
+      <path d="M 645 130 L 675 130" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="680,130 670,124 670,136" fill="#10b981"/>
+      
+      <!-- Tier 4: CloudTrail & Least Privilege -->
+      <g transform="translate(685, 45)">
+        <rect width="135" height="170" rx="12" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+        <text x="67" y="26" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle">4. AUDIT & LOGS</text>
+        <circle cx="67" cy="65" r="20" fill="#059669" opacity="0.2"/>
+        <text x="67" y="72" fill="#34d399" font-size="20" text-anchor="middle">📋</text>
+        <text x="67" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">AWS CloudTrail</text>
+        <rect x="10" y="125" width="115" height="22" rx="4" fill="#064e3b"/>
+        <text x="67" y="140" fill="#a7f3d0" font-size="9" font-weight="bold" text-anchor="middle">100% Audit Trails</text>
+        <text x="67" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Non-Repudiation Logging</text>
+      </g>
+    </svg>`
+  },
+
+  'accidental-charges-cost-explorer-support-refunds': {
+    moduleNumber: 1,
+    title: "AWS Cost Guardrails, Budget Alarms & Accidental Charge Triage Flow",
+    category: "Cloud Financial Management (FinOps)",
+    realDiagramUrl: '/images/aws-account/18-aws-budgets-and-alarms-guide.png',
+    realDiagramTitle: 'AWS Budgets, Zero-Spend Guardrails & Billing Alarm Architecture',
+    realDiagramCaption: 'Real-time billing safeguards preventing unexpected charges through CloudWatch metric alarms and AWS Budgets email alerts.',
+    description: "Proactive cost protection loop combining zero-spend CloudWatch billing alarms, AWS Budgets forecasting, Cost Explorer granular attribution, and AWS Support case refund remediation.",
+    flowSteps: ["Zero-Spend CloudWatch Alarm ($0.01)", "AWS Budgets Monthly Forecast ($5.00)", "Cost Explorer Multi-Dimension Triage", "AWS Support Case Refund Submission"],
+    stepByStep: [
+      { step: 1, component: "AWS CloudWatch Billing Alarm", role: "Monitors estimated charges metric in us-east-1 and triggers when spend > $0.01.", why: "Instant notification the exact moment any billable resource begins accruing cost." },
+      { step: 2, component: "AWS Budgets & SNS Topics", role: "Tracks monthly spend against custom threshold and emails alerts at 80% forecast.", why: "Prevents surprise multi-hundred-dollar month-end invoices before they materialize." },
+      { step: 3, component: "AWS Cost Explorer Triage", role: "Visualizes spend grouped by Service, Region, and Usage Type.", why: "Pinpoints the exact rogue resource (e.g. unattached gp3 EBS volume or NAT Gateway) generating charges." },
+      { step: 4, component: "AWS Support Center Remediation", role: "Standard protocol to open Account & Billing case requesting one-time courtesy goodwill refund.", why: "Allows students and engineers to reverse inadvertent learning-tier charges." }
+    ],
+    interRelationships: [
+      { from: "Billing Metrics", to: "CloudWatch Alarm", relation: "Pushes estimated metric datapoints every 4-6 hours.", protocol: "CloudWatch Metric Stream" },
+      { from: "CloudWatch Alarm", to: "Amazon SNS", relation: "Triggers notification upon state change to ALARM.", protocol: "Amazon SNS Publish" },
+      { from: "Cost Explorer", to: "Admin Engineer", relation: "Filters unattached volumes and unassociated Elastic IPs.", protocol: "AWS Billing Console / CLI" },
+      { from: "Engineer", to: "AWS Support", relation: "Submits case with root cause explanation and remediation proof.", protocol: "AWS Support API / Portal" }
+    ],
+    endToEndFlow: [
+      { stage: "1. Spend Inception", action: "Resource Spin-Up", details: "Engineer leaves an idle NAT Gateway running; CloudWatch EstimatedCharges metric ticks above $0.01." },
+      { stage: "2. Alert Dispatch", action: "SNS Push Notification", details: "CloudWatch transitions to ALARM state and publishes email alert to devops-alerts@company.com." },
+      { stage: "3. Root Cause Analysis", action: "Cost Explorer Deep Dive", details: "Filtering by UsageType identifies NatGateway-Hours in ap-south-1 as the primary cost driver." },
+      { stage: "4. Containment & Refund", action: "Termination & Support Ticket", details: "Engineer deletes NAT Gateway, then opens Billing Support Case for Free Tier courtesy refund." }
+    ],
+    moduleContext: {
+      prevModule: "Module 1 - Topic 1: AWS Account Creation & Root Security",
+      thisModule: "Module 1 - Topic 2: Accidental Charges & Cost Explorer",
+      nextModule: "Module 1 - Topic 3: AWS Global Infrastructure",
+      connectionReason: "Establishing cost guardrails is essential before experimenting with regional resources, VPC networking, or compute instances."
+    },
+    svg: `<svg viewBox="0 0 850 260" xmlns="http://www.w3.org/2000/svg" class="w-full">
+      <defs>
+        <linearGradient id="costBgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b1120"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+      </defs>
+      <rect x="5" y="5" width="840" height="250" rx="16" fill="url(#costBgGrad)" stroke="#1e293b" stroke-width="2"/>
+      
+      <!-- Box 1: Spend Ingress -->
+      <g transform="translate(30, 45)">
+        <rect width="160" height="170" rx="12" fill="#1e293b" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="80" y="26" fill="#ef4444" font-size="11" font-weight="bold" text-anchor="middle">1. COST DETECTION</text>
+        <circle cx="80" cy="65" r="20" fill="#ef4444" opacity="0.2"/>
+        <text x="80" y="72" fill="#f87171" font-size="20" text-anchor="middle">🚨</text>
+        <text x="80" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">CloudWatch Alarm</text>
+        <rect x="15" y="125" width="130" height="22" rx="4" fill="#450a0a"/>
+        <text x="80" y="140" fill="#fca5a5" font-size="9" font-weight="bold" text-anchor="middle">Spend &gt; $0.01 Alert</text>
+        <text x="80" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Zero-Spend Guardrail</text>
+      </g>
+      
+      <!-- Arrow 1 -->
+      <path d="M 200 130 L 235 130" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="240,130 230,124 230,136" fill="#f59e0b"/>
+      
+      <!-- Box 2: Budgets & SNS -->
+      <g transform="translate(245, 45)">
+        <rect width="165" height="170" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="82" y="26" fill="#f59e0b" font-size="11" font-weight="bold" text-anchor="middle">2. AWS BUDGETS</text>
+        <circle cx="82" cy="65" r="20" fill="#f59e0b" opacity="0.2"/>
+        <text x="82" y="72" fill="#fbbf24" font-size="20" text-anchor="middle">📊</text>
+        <text x="82" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">Predictive Thresholds</text>
+        <rect x="15" y="125" width="135" height="22" rx="4" fill="#78350f"/>
+        <text x="82" y="140" fill="#fde68a" font-size="9" font-weight="bold" text-anchor="middle">Email &amp; SNS Alert</text>
+        <text x="82" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Forecast Spike Alarms</text>
+      </g>
+      
+      <!-- Arrow 2 -->
+      <path d="M 420 130 L 455 130" stroke="#06b6d4" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="460,130 450,124 450,136" fill="#06b6d4"/>
+      
+      <!-- Box 3: Cost Explorer -->
+      <g transform="translate(465, 45)">
+        <rect width="170" height="170" rx="12" fill="#1e293b" stroke="#06b6d4" stroke-width="1.5"/>
+        <text x="85" y="26" fill="#06b6d4" font-size="11" font-weight="bold" text-anchor="middle">3. COST EXPLORER</text>
+        <circle cx="85" cy="65" r="20" fill="#0891b2" opacity="0.2"/>
+        <text x="85" y="72" fill="#22d3ee" font-size="20" text-anchor="middle">🔍</text>
+        <text x="85" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">Usage Attribution</text>
+        <rect x="15" y="125" width="140" height="22" rx="4" fill="#164e63"/>
+        <text x="85" y="140" fill="#a5f3fc" font-size="9" font-weight="bold" text-anchor="middle">Group by Service/Region</text>
+        <text x="85" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">Kill Rogue Elastic IPs/NAT</text>
+      </g>
+      
+      <!-- Arrow 3 -->
+      <path d="M 645 130 L 675 130" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="680,130 670,124 670,136" fill="#10b981"/>
+      
+      <!-- Box 4: Support Refund -->
+      <g transform="translate(685, 45)">
+        <rect width="135" height="170" rx="12" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+        <text x="67" y="26" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle">4. SUPPORT REFUND</text>
+        <circle cx="67" cy="65" r="20" fill="#059669" opacity="0.2"/>
+        <text x="67" y="72" fill="#34d399" font-size="20" text-anchor="middle">💵</text>
+        <text x="67" y="110" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">Courtesy Credit</text>
+        <rect x="10" y="125" width="115" height="22" rx="4" fill="#064e3b"/>
+        <text x="67" y="140" fill="#a7f3d0" font-size="9" font-weight="bold" text-anchor="middle">Billing Case Ticket</text>
+        <text x="67" y="160" fill="#94a3b8" font-size="8" text-anchor="middle">One-Time Goodwill Waiver</text>
+      </g>
+    </svg>`
+  },
+
   'regions-azs-and-edge-infrastructure': {
     moduleNumber: 1,
     title: "AWS Global Infrastructure: Regions, AZs & Edge Locations Architecture",
     category: "Global Infrastructure",
+    realDiagramUrl: '/images/aws-vpc/01-default-vpc-architecture.png',
+    realDiagramTitle: 'AWS Multi-AZ Regional Infrastructure & High Availability Topology',
+    realDiagramCaption: 'Physical architecture of isolated Availability Zones connected via dedicated redundant fiber backbones within each Region.',
     description: "Global traffic ingress routes from end users through nearest Edge Locations, entering the 100GbE private AWS Global Network backbone before reaching isolated Availability Zones within the target Region.",
     flowSteps: ["User Browser -> Anycast Edge Location", "CloudFront CDN Edge Cache", "AWS Global 100GbE Fiber Backbone", "Regional Transit -> Multi-AZ Data Centers"],
     stepByStep: [
@@ -209,6 +413,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 3,
     title: "Production 3-Tier VPC Subnetting, Gateways & Packet Routing Flow",
     category: "VPC & Networking",
+    realDiagramUrl: '/images/aws-vpc/02-custom-vpc-architecture.png',
+    realDiagramTitle: 'Custom Production VPC Architecture vs Default VPC',
+    realDiagramCaption: 'Detailed network layout comparing automatic Default VPC routing against isolated Custom 3-Tier VPC subnetting.',
     description: "Multi-AZ VPC containing Public Subnets with Internet Gateway (IGW) and NAT Gateways, Private Subnets for application nodes, and Isolated Database Subnets.",
     flowSteps: ["Internet -> IGW (0.0.0.0/0)", "Public Subnet ALB (Layer 7 Routing)", "Private Subnet EC2 via Stateful Security Group", "Outbound Private Traffic -> NAT Gateway"],
     stepByStep: [
@@ -294,6 +501,211 @@ export const TOPIC_ARCHITECTURE = {
           <text x="80" y="134" fill="#94a3b8" font-size="8" text-anchor="middle">Auto-Failover Node</text>
         </g>
       </g>
+    </svg>`
+  },
+
+  'vpc-security-groups-nacls-firewall-flow-logs': {
+    moduleNumber: 3,
+    title: "Defense-in-Depth VPC Security: Stateful Security Groups, Stateless NACLs & Flow Logs",
+    category: "VPC Security & Telemetry",
+    realDiagramUrl: '/images/aws-vpc/08-security-groups-vs-nacls.png',
+    realDiagramTitle: 'Layered VPC Defense: Stateful Security Groups vs Stateless NACLs',
+    realDiagramCaption: 'Dual-tier firewall model comparing subnet-level stateless rule numbers with instance-level stateful connection tracking.',
+    description: "Multi-layered perimeter defense where traffic is first evaluated by stateless subnet Network ACLs (ordered numbered rules), then inspected by stateful Security Groups at the ENI, with every accepted and rejected packet recorded by VPC Flow Logs.",
+    flowSteps: ["Subnet Border Stateless NACL Check", "ENI-Level Stateful Security Group Gatekeeper", "Automatic Stateful Return Packet Evaluation", "VPC Flow Logs Packet Capture -> CloudWatch"],
+    stepByStep: [
+      { step: 1, component: "Network ACL (Stateless Perimeter)", role: "First line of defense operating at the subnet boundary with ordered numbered allow/deny rules.", why: "Capable of explicitly blocking malicious IP ranges (e.g. Rule 50 DENY 203.0.113.0/24) before packets reach instances." },
+      { step: 2, component: "Security Group (Stateful ENI Armor)", role: "Virtual firewall attached directly to Elastic Network Interfaces (ENIs).", why: "Stateful connection tracking means inbound allow automatically permits return traffic regardless of outbound rules." },
+      { step: 3, component: "Ephemeral Return Port Handling", role: "Handles outbound client response ports (1024-65535).", why: "Stateless NACLs require explicit outbound rules for ephemeral return ports; Security Groups handle it automatically." },
+      { step: 4, component: "VPC Flow Logs & CloudWatch Insights", role: "Captures IP traffic metadata (src, dst, port, protocol, action) at VPC, Subnet, or ENI level.", why: "Provides forensic visibility to diagnose blocked traffic (REJECT) or verify security policy compliance." }
+    ],
+    interRelationships: [
+      { from: "Public Internet", to: "Stateless NACL", relation: "Inbound packet evaluated against numbered rules in numerical order.", protocol: "Layer 3/4 IP/TCP" },
+      { from: "Stateless NACL", to: "Stateful Security Group", relation: "Packets passing NACL reach the ENI security group filter.", protocol: "TCP 80/443/22" },
+      { from: "Security Group", to: "Target EC2 Workload", relation: "Permitted traffic enters instance socket; connection state tracked.", protocol: "Internal ENI" },
+      { from: "ENI Interface", to: "CloudWatch Flow Logs", relation: "Every ACCEPT/REJECT event is published for log analysis.", protocol: "AWS Flow Log V5" }
+    ],
+    endToEndFlow: [
+      { stage: "1. Subnet Boundary Check", action: "NACL Rule Processing", details: "Packet arrives at Subnet 10.0.1.0/24; NACL evaluates Rule 100 ALLOW 0.0.0.0/0 on port 443." },
+      { stage: "2. ENI Firewall Check", action: "Security Group Rule Processing", details: "Packet reaches EC2 ENI; SG rule allows TCP 443 from anywhere; connection state recorded in tracking table." },
+      { stage: "3. Response Egress", action: "Stateful Auto-Return", details: "Response packet bypasses SG outbound rules because inbound state is active; NACL verifies outbound Rule 100." },
+      { stage: "4. Telemetry Telemetry", action: "VPC Flow Log Emitted", details: "Flow log record `2 123456789012 eni-0123 198.51.100.4 10.0.1.15 54321 443 6 15 8400 1620000000 1620000060 ACCEPT OK` written." }
+    ],
+    moduleContext: {
+      prevModule: "Module 3 - Topic 1: VPC Subnetting, Gateways & Packet Flow",
+      thisModule: "Module 3 - Topic 2: VPC Security Groups, NACLs & Flow Logs",
+      nextModule: "Module 3 - Topic 3: Hybrid Connectivity & Advanced Routing",
+      connectionReason: "Securing subnet perimeters and network interfaces with NACLs and Security Groups prevents lateral attacks and ensures full auditability before linking external networks."
+    },
+    svg: `<svg viewBox="0 0 850 260" xmlns="http://www.w3.org/2000/svg" class="w-full">
+      <defs>
+        <linearGradient id="secBgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b1120"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+      </defs>
+      <rect x="5" y="5" width="840" height="250" rx="16" fill="url(#secBgGrad)" stroke="#1e293b" stroke-width="2"/>
+      
+      <!-- Tier 1: Stateless NACL -->
+      <g transform="translate(30, 45)">
+        <rect width="170" height="170" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="85" y="24" fill="#f59e0b" font-size="11" font-weight="bold" text-anchor="middle">1. STATELESS NACL</text>
+        <text x="85" y="40" fill="#94a3b8" font-size="9" text-anchor="middle">Subnet Boundary Defense</text>
+        <rect x="15" y="55" width="140" height="24" rx="4" fill="#78350f"/>
+        <text x="85" y="71" fill="#fef08a" font-size="9" font-weight="bold" text-anchor="middle">Rule 50: DENY 203.0.113.0/24</text>
+        <rect x="15" y="85" width="140" height="24" rx="4" fill="#064e3b"/>
+        <text x="85" y="101" fill="#a7f3d0" font-size="9" font-weight="bold" text-anchor="middle">Rule 100: ALLOW 0.0.0.0/0</text>
+        <rect x="15" y="115" width="140" height="24" rx="4" fill="#450a0a"/>
+        <text x="85" y="131" fill="#fca5a5" font-size="9" font-weight="bold" text-anchor="middle">Rule *: DENY ALL</text>
+        <text x="85" y="155" fill="#cbd5e1" font-size="8" text-anchor="middle">Needs Ephemeral Outbound</text>
+      </g>
+      
+      <!-- Arrow 1 -->
+      <path d="M 210 130 L 245 130" stroke="#38bdf8" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="250,130 240,124 240,136" fill="#38bdf8"/>
+      
+      <!-- Tier 2: Stateful Security Group -->
+      <g transform="translate(255, 45)">
+        <rect width="180" height="170" rx="12" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+        <text x="90" y="24" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">2. STATEFUL SEC GROUP</text>
+        <text x="90" y="40" fill="#94a3b8" font-size="9" text-anchor="middle">Instance ENI Virtual Firewall</text>
+        <rect x="15" y="55" width="150" height="30" rx="4" fill="#0c4a6e"/>
+        <text x="90" y="74" fill="#bae6fd" font-size="9" font-weight="bold" text-anchor="middle">ALLOW TCP 443 (HTTPS)</text>
+        <circle cx="90" cy="115" r="18" fill="#0284c7" opacity="0.3"/>
+        <text x="90" y="121" fill="#38bdf8" font-size="16" text-anchor="middle">⚡</text>
+        <text x="90" y="148" fill="#f8fafc" font-size="9" font-weight="bold" text-anchor="middle">Auto-Return Allowed</text>
+        <text x="90" y="162" fill="#94a3b8" font-size="8" text-anchor="middle">Connection Tracking Table</text>
+      </g>
+      
+      <!-- Arrow 2 -->
+      <path d="M 445 130 L 480 130" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="485,130 475,124 475,136" fill="#10b981"/>
+      
+      <!-- Tier 3: Compute Workload -->
+      <g transform="translate(490, 45)">
+        <rect width="160" height="170" rx="12" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+        <text x="80" y="24" fill="#10b981" font-size="11" font-weight="bold" text-anchor="middle">3. EC2 / CONTAINER</text>
+        <text x="80" y="40" fill="#94a3b8" font-size="9" text-anchor="middle">Application Workload</text>
+        <circle cx="80" cy="75" r="22" fill="#059669" opacity="0.2"/>
+        <text x="80" y="82" fill="#34d399" font-size="20" text-anchor="middle">🖥️</text>
+        <text x="80" y="118" fill="#f8fafc" font-size="10" font-weight="bold" text-anchor="middle">Private IP: 10.0.1.15</text>
+        <text x="80" y="138" fill="#94a3b8" font-size="9" text-anchor="middle">Listens on Port 443</text>
+        <text x="80" y="158" fill="#a7f3d0" font-size="8" text-anchor="middle">Zero Internet Public IP</text>
+      </g>
+      
+      <!-- Arrow 3 -->
+      <path d="M 660 130 L 690 130" stroke="#a855f7" stroke-width="3" stroke-linecap="round"/>
+      <polygon points="695,130 685,124 685,136" fill="#a855f7"/>
+      
+      <!-- Tier 4: VPC Flow Logs -->
+      <g transform="translate(700, 45)">
+        <rect width="125" height="170" rx="12" fill="#1e293b" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="62" y="24" fill="#c084fc" font-size="10" font-weight="bold" text-anchor="middle">4. FLOW LOGS</text>
+        <text x="62" y="40" fill="#94a3b8" font-size="8" text-anchor="middle">Telemetry &amp; Audit</text>
+        <rect x="10" y="55" width="105" height="30" rx="4" fill="#064e3b"/>
+        <text x="62" y="74" fill="#a7f3d0" font-size="8" font-weight="bold" text-anchor="middle">ACCEPT OK</text>
+        <rect x="10" y="95" width="105" height="30" rx="4" fill="#450a0a"/>
+        <text x="62" y="114" fill="#fca5a5" font-size="8" font-weight="bold" text-anchor="middle">REJECT NODATA</text>
+        <text x="62" y="148" fill="#e9d5ff" font-size="8" text-anchor="middle">CloudWatch Log Group</text>
+      </g>
+    </svg>`
+  },
+
+  'vpc-peering-transit-gateway-endpoints-vpn': {
+    moduleNumber: 3,
+    title: "Enterprise VPC Interconnect: Peering, Transit Gateway, PrivateLink & Site-to-Site VPN",
+    category: "Hybrid & Multi-VPC Networking",
+    realDiagramUrl: '/images/aws-vpc/12-transit-gateway-hub-and-spoke.png',
+    realDiagramTitle: 'AWS Transit Gateway (TGW) Regional Hub-and-Spoke Topology',
+    realDiagramCaption: 'Centralized cloud router interconnecting multi-tier VPCs, partner accounts, and on-premises data centers.',
+    description: "Scalable hub-and-spoke interconnect topology connecting multiple VPCs, on-premises data centers via IPsec VPN / Direct Connect, and accessing AWS PaaS services privately via VPC Endpoints without traversing the public internet.",
+    flowSteps: ["VPC-A to Spoke VPC-B Peering", "Centralized AWS Transit Gateway (TGW) Hub", "Gateway & Interface VPC Endpoints (PrivateLink)", "Hybrid On-Premises IPsec VPN Tunneling"],
+    stepByStep: [
+      { step: 1, component: "AWS Transit Gateway (TGW)", role: "Regional cloud router acting as a centralized hub for hundreds of VPCs and on-prem networks.", why: "Eliminates complex N*(N-1)/2 VPC peering mesh topologies with a clean hub-and-spoke model." },
+      { step: 2, component: "VPC Peering Connection", role: "Direct, high-performance private optical interconnect between two specific VPCs.", why: "Zero bandwidth bottlenecks and lowest possible latency for high-throughput 1-to-1 links." },
+      { step: 3, component: "VPC Endpoints (PrivateLink & Gateway)", role: "Keeps AWS API traffic (S3, DynamoDB, SSM) entirely inside the private AWS network.", why: "Prevents traffic from traversing the internet, reducing NAT Gateway data processing fees." },
+      { step: 4, component: "Site-to-Site VPN & Direct Connect", role: "Encrypted IPsec tunnels connecting corporate on-prem data centers to the AWS Transit Gateway.", why: "Enables secure hybrid cloud compute, disaster recovery, and database migration." }
+    ],
+    interRelationships: [
+      { from: "Spoke VPC-A", to: "Transit Gateway", relation: "Attached via TGW Subnet ENI Attachment.", protocol: "AWS Private Fiber" },
+      { from: "Transit Gateway", to: "Spoke VPC-B", relation: "Routes packets based on TGW Route Table associations.", protocol: "BGP / AWS Backbone" },
+      { from: "Spoke VPC", to: "S3 Gateway Endpoint", relation: "Prefix list `pl-63a5400a` added to VPC route table.", protocol: "Private HTTPS (No NAT)" },
+      { from: "On-Prem Gateway", to: "Transit Gateway", relation: "Dual IPsec tunnels with BGP dynamic routing.", protocol: "IPsec / BGP ASN 64512" }
+    ],
+    endToEndFlow: [
+      { stage: "1. Cross-VPC Request", action: "TGW Route Lookup", details: "App in VPC-A (10.1.0.0/16) queries microservice in VPC-B (10.2.0.0/16); VPC route table sends packet to `tgw-xxxx`." },
+      { stage: "2. Hub Forwarding", action: "Transit Hub Routing", details: "Transit Gateway inspects destination IP, matches VPC-B attachment route, and injects packet into VPC-B ENI." },
+      { stage: "3. Private PaaS Query", action: "PrivateLink Resolution", details: "App queries DynamoDB; DNS resolves to VPC Endpoint private IP; packet bypasses NAT Gateway completely." },
+      { stage: "4. Hybrid Sync", action: "IPsec Tunnel Egress", details: "Nightly backup sync pushes replica to On-Prem Data Center through IPsec VPN tunnel over AWS backbone." }
+    ],
+    moduleContext: {
+      prevModule: "Module 3 - Topic 2: VPC Security Groups, NACLs & Flow Logs",
+      thisModule: "Module 3 - Topic 3: Hybrid Connectivity & Advanced Routing",
+      nextModule: "Module 4: EC2 & Compute Architecture",
+      connectionReason: "Completing multi-VPC hub routing and private endpoints provides the enterprise networking foundation before deploying distributed EC2 workloads in Module 4."
+    },
+    svg: `<svg viewBox="0 0 850 260" xmlns="http://www.w3.org/2000/svg" class="w-full">
+      <defs>
+        <linearGradient id="tgwBgGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b1120"/><stop offset="100%" stop-color="#0f172a"/></linearGradient>
+      </defs>
+      <rect x="5" y="5" width="840" height="250" rx="16" fill="url(#tgwBgGrad)" stroke="#1e293b" stroke-width="2"/>
+      
+      <!-- Spoke VPC-A -->
+      <g transform="translate(30, 35)">
+        <rect width="150" height="85" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+        <text x="75" y="22" fill="#38bdf8" font-size="10" font-weight="bold" text-anchor="middle">SPOKE VPC-A</text>
+        <text x="75" y="42" fill="#f8fafc" font-size="10" text-anchor="middle">10.1.0.0/16 (App Tier)</text>
+        <rect x="15" y="55" width="120" height="20" rx="4" fill="#0c4a6e"/>
+        <text x="75" y="68" fill="#bae6fd" font-size="8" font-weight="bold" text-anchor="middle">TGW Attachment A</text>
+      </g>
+      
+      <!-- Spoke VPC-B -->
+      <g transform="translate(30, 140)">
+        <rect width="150" height="85" rx="10" fill="#1e293b" stroke="#06b6d4" stroke-width="1.5"/>
+        <text x="75" y="22" fill="#06b6d4" font-size="10" font-weight="bold" text-anchor="middle">SPOKE VPC-B</text>
+        <text x="75" y="42" fill="#f8fafc" font-size="10" text-anchor="middle">10.2.0.0/16 (Data Tier)</text>
+        <rect x="15" y="55" width="120" height="20" rx="4" fill="#164e63"/>
+        <text x="75" y="68" fill="#a5f3fc" font-size="8" font-weight="bold" text-anchor="middle">TGW Attachment B</text>
+      </g>
+      
+      <!-- Center: Transit Gateway Hub -->
+      <g transform="translate(250, 40)">
+        <rect width="210" height="180" rx="14" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+        <circle cx="105" cy="45" r="22" fill="#7c3aed" opacity="0.3"/>
+        <text x="105" y="52" fill="#a78bfa" font-size="22" text-anchor="middle">🔀</text>
+        <text x="105" y="85" fill="#f8fafc" font-size="11" font-weight="bold" text-anchor="middle">AWS TRANSIT GATEWAY</text>
+        <text x="105" y="102" fill="#c084fc" font-size="9" text-anchor="middle">Central Regional Cloud Router</text>
+        <rect x="15" y="115" width="180" height="24" rx="4" fill="#4c1d95"/>
+        <text x="105" y="131" fill="#ede9fe" font-size="9" font-weight="bold" text-anchor="middle">Hub-and-Spoke Topology</text>
+        <text x="105" y="155" fill="#94a3b8" font-size="8" text-anchor="middle">BGP Dynamic Route Tables</text>
+      </g>
+      
+      <!-- Lines connecting Spokes to TGW -->
+      <path d="M 180 77 L 250 110" stroke="#8b5cf6" stroke-width="2.5"/>
+      <path d="M 180 182 L 250 150" stroke="#8b5cf6" stroke-width="2.5"/>
+      
+      <!-- Top Right: VPC Endpoints -->
+      <g transform="translate(530, 35)">
+        <rect width="180" height="85" rx="10" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+        <text x="90" y="22" fill="#34d399" font-size="10" font-weight="bold" text-anchor="middle">VPC ENDPOINTS (PrivateLink)</text>
+        <text x="90" y="42" fill="#f8fafc" font-size="9" text-anchor="middle">Amazon S3 &amp; DynamoDB</text>
+        <rect x="15" y="55" width="150" height="20" rx="4" fill="#064e3b"/>
+        <text x="90" y="68" fill="#a7f3d0" font-size="8" font-weight="bold" text-anchor="middle">Zero Internet / Zero NAT Fees</text>
+      </g>
+      
+      <!-- Bottom Right: On-Premises & VPN -->
+      <g transform="translate(530, 140)">
+        <rect width="180" height="85" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="90" y="22" fill="#fbbf24" font-size="10" font-weight="bold" text-anchor="middle">CORPORATE DATA CENTER</text>
+        <text x="90" y="42" fill="#f8fafc" font-size="9" text-anchor="middle">On-Premises Hybrid Network</text>
+        <rect x="15" y="55" width="150" height="20" rx="4" fill="#78350f"/>
+        <text x="90" y="68" fill="#fde68a" font-size="8" font-weight="bold" text-anchor="middle">Site-to-Site IPsec VPN / DX</text>
+      </g>
+      
+      <!-- Lines connecting TGW to Right side -->
+      <path d="M 460 110 L 530 77" stroke="#10b981" stroke-width="2.5"/>
+      <path d="M 460 150 L 530 182" stroke="#f59e0b" stroke-width="2.5"/>
+      
+      <!-- Badges on right side -->
+      <text x="785" y="85" fill="#10b981" font-size="20" text-anchor="middle">🔒</text>
+      <text x="785" y="188" fill="#f59e0b" font-size="20" text-anchor="middle">🏢</text>
     </svg>`
   },
 
@@ -493,6 +905,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 17,
     title: "Jenkins Controller-Agent Architecture, Linux Setup & Global Security (RBAC)",
     category: "CI/CD & Jenkins",
+    realDiagramUrl: '/images/jenkins/02-jenkins-core-architecture.png',
+    realDiagramTitle: 'Jenkins Controller-Agent Distributed Architecture',
+    realDiagramCaption: 'Official architecture diagram illustrating Master-Agent orchestration, build executors, and TCP/JNLP remoting.',
     description: "Distributed Jenkins deployment on Linux (RHEL/CentOS): systemd service lifecycle, initialAdminPassword unlocking, Global Security realms, Role Strategy RBAC matrix, and 0-executor Controller delegating to dedicated labeled agents.",
     flowSteps: ["RHEL Java 17 + YUM Install", "Systemd Daemon & initialAdminPassword Unlock", "Configure Global Security & Role Strategy RBAC", "Controller Executors = 0 Isolation", "Labeled Agent Workload Dispatch"],
     stepByStep: [
@@ -576,6 +991,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 17,
     title: "Build Triggers, SCM Integration & Declarative Pipelines (Jenkinsfile & Cron Scheduling)",
     category: "CI/CD & Jenkins",
+    realDiagramUrl: '/images/jenkins/07-declarative-pipeline-syntax.png',
+    realDiagramTitle: 'Declarative Pipeline Grammar & Execution Lifecycle',
+    realDiagramCaption: 'Syntactic structure of enterprise Jenkinsfiles featuring pipeline, agent, stages, steps, and post condition blocks.',
     description: "Event-driven continuous integration with Declarative Jenkinsfiles: GitHub webhooks (/github-webhook/ with GITScm polling trigger), 5-field cron scheduling, multi-stage pipeline stages, interactive human approval gates, and failure notifications.",
     flowSteps: ["GitHub Webhook Event Trigger", "Declarative Jenkinsfile SCM Checkout", "Compile & Test Stages", "Interactive Input Approval Gate", "post { failure / always } Action"],
     stepByStep: [
@@ -679,6 +1097,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 17,
     title: "Automated Testing & Continuous Integration: Selenium, Maven & Headless Test Automation",
     category: "CI/CD & Jenkins",
+    realDiagramUrl: '/images/jenkins/11-selenium-maven-headless-testing.png',
+    realDiagramTitle: 'Automated Headless Selenium Testing in CI/CD Pipeline',
+    realDiagramCaption: 'End-to-end testing architecture executing headless Chrome/Firefox test suites on Jenkins nodes with JUnit reporting.',
     description: "Automated browser validation pipeline: managing Selenium WebDriver and JUnit dependencies in Maven pom.xml, headless Chrome execution on Linux CI agents, driver.quit() resource reclamation, and publishing Surefire JUnit XML reports in Jenkins.",
     flowSteps: ["Maven pom.xml Dependency Resolution", "Headless Chrome Launch on Linux CI", "WebDriver Interaction & JUnit Assertions", "Mandatory driver.quit() Teardown", "Jenkins JUnit Test Report Publishing"],
     stepByStep: [
@@ -864,6 +1285,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 18,
     title: "Docker Client-Server Engine & Linux Kernel Primitives Architecture",
     category: "Containerization & Docker",
+    realDiagramUrl: '/images/docker/03-containerization-architecture.png',
+    realDiagramTitle: 'Docker Containerization & Linux Kernel Primitives Architecture',
+    realDiagramCaption: 'Official architecture showing container engine sharing host OS kernel via Namespaces and Control Groups (cgroups).',
     description: "Deconstructed container virtualization stack: Docker CLI REST calls over /var/run/docker.sock to dockerd, gRPC delegation to containerd, runc OCI runtime invocation, and Linux kernel namespace isolation (PID, NET, MNT, IPC, UTS, USER) with cgroup hardware resource quotas and OverlayFS Copy-on-Write storage.",
     flowSteps: [
       "1. Docker CLI (docker run)",
@@ -975,6 +1399,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 18,
     title: "Production Multi-Stage Dockerfile Engineering & Registry Layer Distribution",
     category: "Containerization & Docker",
+    realDiagramUrl: '/images/docker/09-image-layers-unionfs-storage.png',
+    realDiagramTitle: 'Docker Image Layer Architecture & Overlay2 Storage Driver',
+    realDiagramCaption: 'Union Filesystem (UnionFS) showing immutable read-only image layers and thin copy-on-write (CoW) container layer.',
     description: "Architectural pipeline for building hardened, minimal production container images: build context tar streaming, layer caching evaluation, multi-stage separation (Stage 1 SDK compiler vs Stage 2 Alpine/Distroless runtime), non-root USER execution, and content-addressable SHA256 layer deduplication to private registries.",
     flowSteps: [
       "1. Build Context Streaming (.dockerignore)",
@@ -1077,6 +1504,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 18,
     title: "Multi-Service Docker Compose Stacks, Custom Bridge Networking & Volume Persistence",
     category: "Containerization & Docker",
+    realDiagramUrl: '/images/docker/15-docker-compose-multi-service.png',
+    realDiagramTitle: 'Multi-Service Architecture & Networking with Docker Compose',
+    realDiagramCaption: 'Declarative multi-container orchestration connecting web applications, relational databases, and caches on private networks.',
     description: "End-to-end multi-container microservice topology: declarative compose.yaml orchestration, user-defined bridge network with embedded DNS (127.0.0.11), healthcheck startup gating ('condition: service_healthy'), and named volume storage persistence bypassing the Copy-on-Write layer.",
     flowSteps: [
       "1. compose.yaml Declaration",
@@ -1187,6 +1617,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 19,
     title: "Kubernetes Control Plane, Worker Nodes & Distributed State Architecture",
     category: "Kubernetes (K8s)",
+    realDiagramUrl: '/images/kubernetes/02-control-plane-architecture.png',
+    realDiagramTitle: 'Kubernetes Control Plane & Distributed Cluster Architecture',
+    realDiagramCaption: 'Master control plane components (API Server, etcd, Scheduler, Controller Manager) orchestrating worker node runtimes.',
     description: "Production Kubernetes cluster topology: kube-apiserver as the single REST hub, etcd Raft consensus store, kube-scheduler two-phase node filtering/scoring, kube-controller-manager reconciliation loops, and worker nodes executing pods via kubelet gRPC calls to CRI containerd with kube-proxy packet filtering.",
     flowSteps: [
       "1. Operator (kubectl apply -f)",
@@ -1362,6 +1795,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 19,
     title: "Kubernetes Workloads, Flat Pod Networking & Decoupled Storage Architecture",
     category: "Kubernetes (K8s)",
+    realDiagramUrl: '/images/kubernetes/08-pods-replicasets-deployments.png',
+    realDiagramTitle: 'Kubernetes Core Workloads & Declarative Controller Hierarchy',
+    realDiagramCaption: 'Controller reconciliation hierarchy: Deployments manage ReplicaSets, ReplicaSets manage Pods, and Pods encapsulate containers.',
     description: "Kubernetes abstraction tiers: Deployments managing ReplicaSets and Pods, ClusterIP/NodePort/LoadBalancer Services with CoreDNS discovery and kube-proxy DNAT translation, ConfigMaps and base64 Secrets mounted into containers, and CSI dynamic PersistentVolume provisioning bound to PVCs.",
     flowSteps: [
       "1. Deployment Controller",
@@ -1516,6 +1952,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 19,
     title: "Zero-Downtime Rollouts, Metrics-Driven Autoscaling (HPA) & Helm Lifecycle",
     category: "Kubernetes (K8s)",
+    realDiagramUrl: '/images/kubernetes/12-deployment-rolling-update-rollback.png',
+    realDiagramTitle: 'Zero-Downtime Deployment Rollouts & Instant Rollback Flow',
+    realDiagramCaption: 'Visualizing RollingUpdate strategy gradually replacing old Pods with new replicas while serving live traffic.',
     description: "Continuous delivery and enterprise operations: RollingUpdate twin ReplicaSet deployment strategy governed by maxSurge and maxUnavailable, Horizontal Pod Autoscaler scraping cAdvisor metrics via Metrics Server, and Helm chart package management with atomic versioned rollbacks.",
     flowSteps: [
       "1. Helm Deploy Trigger",

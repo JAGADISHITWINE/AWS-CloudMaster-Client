@@ -2,7 +2,41 @@
 // Creators: TechWorld with Nana, freeCodeCamp, Kunal Kushwaha, NetworkChuck, Abhishek Veeramalla, DevOps Toolkit, AWS Official
 
 export const YOUTUBE_TOPIC_VIDEOS = {
-  // Module 1: AWS Global Infrastructure
+  // Module 1: AWS Cloud Account Setup, Free Tier Governance & Global Infrastructure
+  'aws-account-creation-root-security-iam': {
+    videoId: 'SOTamWNgDKc',
+    title: 'AWS Account Creation, Root Security & IAM Best Practices Full Guide',
+    channel: 'TechWorld with Nana',
+    channelAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=60',
+    duration: '28:40',
+    level: 'Beginner',
+    summary: 'Step-by-step walkthrough of AWS Free Tier signup, hardware/virtual MFA activation, root access key elimination, and setting up an IAM Administrator user.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=SOTamWNgDKc',
+    chapters: [
+      { time: '00:00', label: 'AWS Free Tier Account Signup Process' },
+      { time: '07:15', label: 'Virtual MFA Activation on Root Account' },
+      { time: '14:30', label: 'Eliminating Root Access Keys & Root Lockdown' },
+      { time: '21:00', label: 'Creating Dedicated IAM Admin User with MFA' }
+    ]
+  },
+
+  'accidental-charges-cost-explorer-support-refunds': {
+    videoId: 'k1RI5locZE4',
+    title: 'Stop AWS Surprise Bills: Zero-Spend Billing Alarms, AWS Budgets & Refund Protocol',
+    channel: 'Be A Better Dev',
+    channelAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60',
+    duration: '24:50',
+    level: 'Beginner to Intermediate',
+    summary: 'Master AWS Cost Explorer, setup $0.01 CloudWatch billing alarms, deploy automated budget alerts with Amazon SNS, and file AWS Support cases for accidental charges.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=k1RI5locZE4',
+    chapters: [
+      { time: '00:00', label: 'Why Accidental AWS Bills Occur (Orphaned EBS/NAT)' },
+      { time: '05:40', label: 'Setting Up Zero-Spend CloudWatch Alarm ($0.01)' },
+      { time: '12:20', label: 'AWS Budgets Configuration & Email Notifications' },
+      { time: '18:50', label: 'Cost Explorer Deep Dive & Support Center Refunds' }
+    ]
+  },
+
   'regions-azs-and-edge-infrastructure': {
     videoId: '3hLmDS179YE',
     title: 'AWS Global Infrastructure Explained: Regions, AZs & Edge Locations',
@@ -52,6 +86,40 @@ export const YOUTUBE_TOPIC_VIDEOS = {
       { time: '07:30', label: 'IP Addressing & CIDR Notation' },
       { time: '16:45', label: 'Public Subnet, IGW & Route Tables' },
       { time: '28:10', label: 'Private Subnet, NAT Gateway & Security Groups' }
+    ]
+  },
+
+  'vpc-security-groups-nacls-firewall-flow-logs': {
+    videoId: 'e8BCE30_Wp4',
+    title: 'AWS Security Groups vs Network ACLs Deep Dive & VPC Flow Logs',
+    channel: 'TechWorld with Nana',
+    channelAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=60',
+    duration: '31:25',
+    level: 'Intermediate',
+    summary: 'Detailed architectural comparison of stateful Security Groups vs stateless Network ACLs, ephemeral port requirements, and capturing traffic with VPC Flow Logs.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=e8BCE30_Wp4',
+    chapters: [
+      { time: '00:00', label: 'Layered VPC Defense-in-Depth Model' },
+      { time: '07:15', label: 'Stateful Security Groups vs Stateless NACLs' },
+      { time: '16:30', label: 'Ephemeral Port Traversal & Rule Ordering' },
+      { time: '25:10', label: 'VPC Flow Logs Setup & CloudWatch Insights' }
+    ]
+  },
+
+  'vpc-peering-transit-gateway-endpoints-vpn': {
+    videoId: 'Kz98f_Y3f5I',
+    title: 'AWS VPC Peering, Transit Gateway, Endpoints & Hybrid VPN Masterclass',
+    channel: 'Abhishek Veeramalla',
+    channelAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60',
+    duration: '38:15',
+    level: 'Advanced',
+    summary: 'Master inter-VPC connectivity patterns: point-to-point VPC Peering, hub-and-spoke AWS Transit Gateway, Gateway/Interface VPC Endpoints (PrivateLink), and Site-to-Site VPN.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=Kz98f_Y3f5I',
+    chapters: [
+      { time: '00:00', label: 'Inter-VPC Connectivity Patterns & Peering Limits' },
+      { time: '09:20', label: 'Configuring AWS Transit Gateway (TGW) Hub' },
+      { time: '20:15', label: 'VPC Endpoints (S3 Gateway & PrivateLink)' },
+      { time: '30:40', label: 'Site-to-Site IPsec VPN & Hybrid Routing' }
     ]
   },
 

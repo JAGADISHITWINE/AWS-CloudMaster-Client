@@ -780,6 +780,114 @@ export const DEFINITIONS_DATA = [
     whyItMatters: "Use EBS for root boot disks and databases; use S3 for PDFs, videos, backups, and static websites.",
     example: "EBS volume `/dev/xvda` runs your Linux OS; S3 bucket `my-backups` stores database dumps."
   },
+  {
+    term: "AWS Root Account vs IAM User",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Beginner",
+    definition: "The Root Account is the supreme identity created with account email that has unrevocable full administrative control over all resources and billing. An IAM User is an individual identity with scoped, least-privilege permissions used for day-to-day engineering.",
+    whyItMatters: "Never use the root account for daily operations; lock it down with MFA immediately and create dedicated IAM admin users.",
+    example: "Signing in as `cloud-admin` with MFA for development while locking the root credentials in an enterprise vault."
+  },
+  {
+    term: "AWS Free Tier (Trials, 12-Month, Always-Free)",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Beginner",
+    definition: "AWS's tiered free offering: (1) Free Trials (e.g. $200 credits for 6 months), (2) 12-Months Free from registration (750 hrs/month of t2.micro/t3.micro EC2, 5GB S3 standard storage, 30GB EBS), and (3) Always-Free (1M Lambda requests/mo, 25GB DynamoDB).",
+    whyItMatters: "Understanding the three tiers prevents accidental billing surprises and allows students to learn cloud services safely.",
+    example: "Running a single t2.micro instance 24/7 consumes 744 hours in a 31-day month, remaining 100% free under the 750-hour ceiling."
+  },
+  {
+    term: "AWS Budgets & Cost Explorer",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Beginner",
+    definition: "AWS Budgets proactively tracks spending and triggers automated email warnings at custom thresholds (e.g. $1.00 USD). Cost Explorer provides forensic post-usage telemetry filterable by Service, Region, and Usage Type.",
+    whyItMatters: "Essential FinOps guardrails: Budgets alerts you before charges get large; Cost Explorer isolates exactly which resource caused the bill.",
+    example: "A $1.00 budget sends an emergency email notification when an accidental GPU instance begins accruing charges."
+  },
+  {
+    term: "AWS Support Center (Account & Billing)",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Beginner",
+    definition: "The official AWS customer service center where all accounts (even with $0 Basic Support) have 100% free access to open cases for billing inquiries, charge disputes, and one-time courtesy refund requests.",
+    whyItMatters: "If accidental charges occur during learning, terminating the resources and filing a polite support ticket yields over 90% refund approval.",
+    example: "Opening an 'Account and billing support' case requesting a one-time refund for an accidental instance launch."
+  },
+  {
+    term: "Default VPC vs Custom VPC",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Intermediate",
+    definition: "A Default VPC is preconfigured by AWS with public subnets in every AZ, auto-assigned public IPs, and an attached Internet Gateway. A Custom VPC gives complete architectural control: no default IGW, custom CIDR blocks, and private subnet isolation.",
+    whyItMatters: "Never run production databases in a Default VPC where all subnets are public; custom VPCs enforce strict multi-tier perimeter defense.",
+    example: "Custom VPC `10.0.0.0/16` with public presentation subnets and isolated private database subnets."
+  },
+  {
+    term: "AWS Reserved Subnet IP Addresses",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Intermediate",
+    definition: "In every VPC subnet, AWS strictly reserves 5 IP addresses: .0 (Network), .1 (VPC Router), .2 (Amazon Route 53 DNS Resolver), .3 (Future internal capabilities), and .255 (Broadcast address).",
+    whyItMatters: "In a /24 subnet (256 theoretical IPs), exactly 251 usable host IPs are available (256 - 5 = 251).",
+    example: "A /28 subnet has 16 total IPs minus 5 reserved, leaving only 11 usable host addresses."
+  },
+  {
+    term: "NAT Gateway vs NAT Instance",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Intermediate",
+    definition: "A NAT Gateway is an AWS-managed service deployed in a public subnet with an Elastic IP that scales up to 100 Gbps, providing private instances with outbound internet access. A NAT Instance is a self-managed EC2 instance running Linux iptables that acts as a single point of failure.",
+    whyItMatters: "NAT Gateways provide automated AZ redundancy and zero maintenance; NAT Instances require manual patching and failover scripts.",
+    example: "Backend private EC2 instances downloading security updates via `0.0.0.0/0 -> nat-0123456789abcdef0`."
+  },
+  {
+    term: "VPC Endpoints (Gateway vs Interface PrivateLink)",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Advanced",
+    definition: "Gateway Endpoints are free route-table targets supporting Amazon S3 and DynamoDB only. Interface Endpoints (AWS PrivateLink) place an ENI with a private IP in your subnet to connect privately to 100+ AWS services without internet traversal.",
+    whyItMatters: "Using Gateway Endpoints for S3 backups saves thousands of dollars in NAT Gateway data processing fees ($0.045/GB).",
+    example: "S3 database backups routed over a free Gateway Endpoint at $0.00 data transfer cost."
+  },
+  {
+    term: "VPC Peering (Non-Transitive)",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Intermediate",
+    definition: "A 1:1 direct Layer-3 private network connection between two VPCs (same or inter-region). Non-transitive: If VPC A is peered to B, and B is peered to C, VPC A cannot communicate with VPC C through B.",
+    whyItMatters: "Works well for 2-3 VPCs, but scales quadratically: 60 VPCs would require 1,770 peering links, exceeding AWS's 50-connection quota.",
+    example: "Direct peering between VPC A (10.1.0.0/16) and VPC B (10.2.0.0/16) with non-overlapping CIDRs."
+  },
+  {
+    term: "AWS Transit Gateway (TGW)",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Advanced",
+    definition: "A regional network transit hub that connects thousands of VPCs and on-premises networks in a centralized hub-and-spoke star topology, completely replacing complex full-mesh peering.",
+    whyItMatters: "Eliminates N*(N-1)/2 peering mesh complexity and natively supports transitive routing between all attached VPCs and VPN connections.",
+    example: "A single Transit Gateway connecting 50 corporate VPCs, Direct Connect circuits, and branch office VPNs."
+  },
+  {
+    term: "VPC Flow Logs",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Intermediate",
+    definition: "An out-of-band network telemetry feature that captures 5-tuple IP traffic metadata (source, destination, port, protocol, ACCEPT/REJECT) from network interfaces directly to CloudWatch Logs or S3.",
+    whyItMatters: "Zero impact on network throughput or latency; essential for security audits, forensic threat hunting, and compliance.",
+    example: "Filtering CloudWatch Flow Logs for `REJECT` on port 22 to detect external brute-force port scans."
+  },
+  {
+    term: "Route 53 DNS Firewall",
+    category: "aws",
+    categoryLabel: "AWS Cloud",
+    level: "Advanced",
+    definition: "A managed firewall that inspects outbound recursive DNS queries made by VPC resources to Route 53 Resolver against domain allowlists and denylists. Configurable for Fail-Open or Fail-Closed posture.",
+    whyItMatters: "Prevents data exfiltration via DNS tunneling and blocks communication with malicious command-and-control (C2) domains.",
+    example: "Blocking internal compromised servers from resolving known botnet dynamic DNS domains."
+  },
 
   // =========================================================================
   // 9. OBSERVABILITY & MONITORING (PROMETHEUS & GRAFANA)

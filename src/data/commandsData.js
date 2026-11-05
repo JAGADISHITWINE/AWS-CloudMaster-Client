@@ -1014,5 +1014,97 @@ export const DEVOPS_COMMANDS = [
     ],
     example: 'aws ec2 stop-instances --instance-ids i-0a1b2c3d4e5f6g7h8',
     bestPractice: 'Use --query to filter output on the client rather than piping massive JSON dumps into grep or awk.'
+  },
+  {
+    id: 'aws-budgets-guardrail',
+    category: 'aws',
+    categoryLabel: 'AWS Cloud CLI',
+    subcategory: 'Cost Governance & Budgets',
+    title: 'Deploy $1.00 USD Budget Alert Guardrail',
+    command: 'aws budgets create-budget \\\n  --account-id $(aws sts get-caller-identity --query Account --output text) \\\n  --budget file://budget.json \\\n  --notifications-with-subscribers file://notifications.json',
+    explanation: 'Creates a proactive cost guardrail that monitors actual and forecasted spending, triggering instantaneous email alerts when spend exceeds $1.00 USD.',
+    flags: [
+      { flag: '--account-id', desc: '12-digit AWS account number' },
+      { flag: '--budget', desc: 'Path to JSON file specifying limit amount, unit, and monthly interval' },
+      { flag: '--notifications-with-subscribers', desc: 'Path to notification rules defining email subscriber endpoints' }
+    ],
+    example: 'aws budgets describe-budgets --account-id $(aws sts get-caller-identity --query Account --output text)',
+    bestPractice: 'Always configure a $1.00 budget alert immediately after creating a new AWS account before provisioning any cloud infrastructure.'
+  },
+  {
+    id: 'aws-cost-explorer-triage',
+    category: 'aws',
+    categoryLabel: 'AWS Cloud CLI',
+    subcategory: 'Billing & Cost Explorer',
+    title: 'Forensic Billing Breakdown by Service & Region',
+    command: 'aws ce get-cost-and-usage \\\n  --time-period Start=$(date -d "7 days ago" +%Y-%m-%d),End=$(date +%Y-%m-%d) \\\n  --granularity DAILY \\\n  --metrics "UnblendedCost" \\\n  --group-by Type=DIMENSION,Key=SERVICE Type=DIMENSION,Key=REGION',
+    explanation: 'Queries the Cost Explorer API to extract daily unblended cost metrics grouped by service and region, isolating unexpected charges.',
+    flags: [
+      { flag: '--time-period', desc: 'Start and end date range (YYYY-MM-DD)' },
+      { flag: '--granularity', desc: 'DAILY or MONTHLY aggregation window' },
+      { flag: '--group-by', desc: 'Multi-dimensional grouping by SERVICE, REGION, or USAGE_TYPE' }
+    ],
+    example: 'aws ce get-dimension-values --time-period Start=2026-11-01,End=2026-11-05 --dimension SERVICE',
+    bestPractice: 'Use Cost Explorer daily grouping to catch unexpected charges before they compound into large end-of-month bills.'
+  },
+  {
+    id: 'aws-idle-resources-cleanup',
+    category: 'aws',
+    categoryLabel: 'AWS Cloud CLI',
+    subcategory: 'Cost Optimization & Cleanup',
+    title: 'Audit & Release Idle Elastic IPs and Orphan EBS Volumes',
+    command: '# 1. List unattached Elastic IPs incurring hourly penalties:\naws ec2 describe-addresses --query "Addresses[?InstanceId==null].{IP:PublicIp,AllocId:AllocationId}" --output table\n\n# 2. List unattached EBS volumes:\naws ec2 describe-volumes --filters Name=status,Values=available --query "Volumes[*].{ID:VolumeId,Size:Size,Created:CreateTime}" --output table\n\n# 3. Release idle Elastic IP:\naws ec2 release-address --allocation-id <AllocationId>',
+    explanation: 'Discovers and purges idle Elastic IPs (billed at $0.005/hr when unattached) and orphan EBS storage volumes ($0.08-$0.10/GB/month) left behind by stopped or terminated EC2 instances.',
+    flags: [
+      { flag: '--filters', desc: 'Filter criteria (e.g. status=available for unattached volumes)' },
+      { flag: '--query', desc: 'JMESPath filter isolating unattached network interfaces and disks' }
+    ],
+    example: 'aws ec2 delete-volume --volume-id vol-0123456789abcdef0',
+    bestPractice: 'Stopping an EC2 instance does NOT stop storage fees; always delete orphan EBS volumes and release unattached Elastic IPs.'
+  },
+  {
+    id: 'aws-vpc-custom-setup',
+    category: 'aws',
+    categoryLabel: 'AWS Cloud CLI',
+    subcategory: 'Amazon VPC Networking',
+    title: 'Create Custom VPC, Subnets & Internet Gateway',
+    command: '# 1. Create VPC:\nVPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query "Vpc.VpcId" --output text)\n\n# 2. Create Public Subnet:\nSUB_ID=$(aws ec2 create-subnet --vpc-id $VPC_ID --cidr-block 10.0.1.0/24 --availability-zone us-east-1a --query "Subnet.SubnetId" --output text)\n\n# 3. Attach Internet Gateway:\nIGW_ID=$(aws ec2 create-internet-gateway --query "InternetGateway.InternetGatewayId" --output text)\naws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID',
+    explanation: 'Builds a production-ready custom VPC with a /16 CIDR block, creates a /24 subnet (251 usable IPs), and attaches an Internet Gateway for public connectivity.',
+    flags: [
+      { flag: '--cidr-block', desc: 'IPv4 network address range in CIDR notation' },
+      { flag: '--availability-zone', desc: 'Physical AZ where the subnet is pinned' }
+    ],
+    example: 'aws ec2 create-route --route-table-id rtb-12345 --destination-cidr-block 0.0.0.0/0 --gateway-id igw-12345',
+    bestPractice: 'Always use non-overlapping RFC 1918 CIDR blocks (10.0.0.0/16, 172.16.0.0/16) to ensure future VPC Peering compatibility.'
+  },
+  {
+    id: 'aws-vpc-gateway-endpoint',
+    category: 'aws',
+    categoryLabel: 'AWS Cloud CLI',
+    subcategory: 'Amazon VPC Endpoints',
+    title: 'Provision Free VPC Gateway Endpoint for Amazon S3',
+    command: 'aws ec2 create-vpc-endpoint \\\n  --vpc-id <VpcId> \\\n  --vpc-endpoint-type Gateway \\\n  --service-name com.amazonaws.us-east-1.s3 \\\n  --route-table-ids <PrivateRouteTableId>',
+    explanation: 'Creates a 100% free VPC Gateway Endpoint for Amazon S3, injecting prefix list routes directly into private subnet route tables to bypass expensive NAT Gateway data processing fees.',
+    flags: [
+      { flag: '--vpc-endpoint-type Gateway', desc: 'Specifies free Gateway Endpoint (supported for S3 and DynamoDB only)' },
+      { flag: '--route-table-ids', desc: 'Route tables where S3 prefix list routes are automatically injected' }
+    ],
+    example: 'aws ec2 describe-vpc-endpoints --filters Name=vpc-id,Values=vpc-0123456789abcdef0',
+    bestPractice: 'Never route high-volume S3 database backups through a NAT Gateway ($0.045/GB); always use a free S3 Gateway Endpoint.'
+  },
+  {
+    id: 'aws-transit-gateway-hub',
+    category: 'aws',
+    categoryLabel: 'AWS Cloud CLI',
+    subcategory: 'Hybrid & Multi-VPC Routing',
+    title: 'Deploy AWS Transit Gateway Central Regional Router',
+    command: 'aws ec2 create-transit-gateway \\\n  --description "Corporate Central Hub" \\\n  --options AmazonSideAsn=64512,AutoAcceptSharedAttachments=enable\n\naws ec2 create-transit-gateway-vpc-attachment \\\n  --transit-gateway-id tgw-0123456789abcdef0 \\\n  --vpc-id vpc-0123456789abcdef0 \\\n  --subnet-ids subnet-11111111 subnet-22222222',
+    explanation: 'Instantiates a regional Transit Gateway hub that simplifies multi-VPC connectivity from a complex N*(N-1)/2 mesh into a scalable hub-and-spoke star topology.',
+    flags: [
+      { flag: '--options', desc: 'BGP ASN and attachment auto-accept configuration' },
+      { flag: '--subnet-ids', desc: 'Subnets where Transit Gateway ENIs are placed for cross-VPC routing' }
+    ],
+    example: 'aws ec2 describe-transit-gateways --transit-gateway-ids tgw-0123456789abcdef0',
+    bestPractice: 'Use Transit Gateway route tables to create separate routing domains (e.g. isolating Dev from Prod) across accounts.'
   }
 ];

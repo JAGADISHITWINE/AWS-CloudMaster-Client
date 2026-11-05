@@ -18,12 +18,18 @@ import {
   Play,
   Youtube,
   ExternalLink,
-  Bot
+  Bot,
+  Image as ImageIcon,
+  Maximize2,
+  X,
+  Briefcase
 } from 'lucide-react';
 import DiagramViewer from '../components/DiagramViewer';
 import { api } from '../services/api';
 import { YOUTUBE_TOPIC_VIDEOS } from '../data/youtubeData';
 import { getArchitectureForTopic } from '../data/architectureData';
+import { getRealVisualsForTopic } from '../data/topicRealImagesData';
+import { getInterviewQuestionsForTopic } from '../data/interviewQuestionsData';
 
 export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   const [data, setData] = useState(null);
@@ -31,6 +37,8 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   const [markingRead, setMarkingRead] = useState(false);
   const [isRead, setIsRead] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [selectedModalImage, setSelectedModalImage] = useState(null);
+  const [expandedInterviewQuestion, setExpandedInterviewQuestion] = useState(null);
 
   useEffect(() => {
     if (!topicSlug) return;
@@ -275,29 +283,113 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       {(() => {
         const arch = getArchitectureForTopic(topic.slug, topic.moduleId, topic.title);
         const svgContent = notes.architectureSvg || arch.svg;
+        const realVisuals = getRealVisualsForTopic(topic.slug);
         return (
-          <section className="p-6 rounded-3xl neo-card space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                3. Visual Architecture &amp; System Flow Map
-              </h2>
-              <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
-                {arch.category}
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 leading-relaxed">{arch.description}</p>
-            <DiagramViewer
-              svgString={svgContent}
-              title={arch.title}
-              category={arch.category}
-              flowSteps={arch.flowSteps}
-              stepByStep={arch.stepByStep}
-              interRelationships={arch.interRelationships}
-              endToEndFlow={arch.endToEndFlow}
-              moduleContext={arch.moduleContext}
-            />
-          </section>
+          <>
+            <section className="p-6 rounded-3xl neo-card space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-indigo-400" />
+                  3. Visual Architecture &amp; System Flow Map
+                </h2>
+                <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
+                  {arch.category}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">{arch.description}</p>
+              <DiagramViewer
+                svgString={svgContent}
+                title={arch.title}
+                category={arch.category}
+                flowSteps={arch.flowSteps}
+                stepByStep={arch.stepByStep}
+                interRelationships={arch.interRelationships}
+                endToEndFlow={arch.endToEndFlow}
+                moduleContext={arch.moduleContext}
+                realDiagramUrl={realVisuals?.primaryArchitectureImage}
+                realDiagramTitle={realVisuals?.primaryArchitectureTitle}
+                realDiagramCaption={realVisuals?.primaryArchitectureCaption}
+              />
+            </section>
+
+            {/* Real AWS Management Console & Actual Course Architecture Walkthrough */}
+            {realVisuals && realVisuals.gallery && realVisuals.gallery.length > 0 && (
+              <section className="p-6 sm:p-8 rounded-3xl neo-card space-y-5 border-amber-500/30">
+                <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/[0.08]">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-amber-400" />
+                      Real AWS Console Screenshots &amp; Step-by-Step Architecture Walkthrough
+                    </h2>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Authentic screenshots and diagrams extracted directly from the official course guide and AWS Management Console.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    {realVisuals.gallery.length} Verified Real Visuals
+                  </span>
+                </div>
+
+                <div className="space-y-6">
+                  {realVisuals.gallery.map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="rounded-2xl border border-white/[0.08] bg-slate-950/70 overflow-hidden space-y-4 p-4 sm:p-6 hover:border-amber-500/40 transition shadow-lg"
+                    >
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 text-white font-black text-xs flex items-center justify-center shadow-sm">
+                            {item.stepNumber || idx + 1}
+                          </span>
+                          <h3 className="text-sm sm:text-base font-extrabold text-white">{item.title}</h3>
+                        </div>
+                        <span className="text-[10px] font-bold tracking-wider uppercase text-cyan-300 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-0.5 rounded-full">
+                          {item.badge}
+                        </span>
+                      </div>
+
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{item.description}</p>
+
+                      {/* Clickable Image Container */}
+                      <div
+                        onClick={() => setSelectedModalImage({ url: item.imageUrl, title: item.title, description: item.description, keyPoints: item.keyPoints })}
+                        className="group relative cursor-pointer rounded-2xl overflow-hidden border border-white/[0.1] bg-[#070b14] flex justify-center items-center max-h-[480px] p-2 hover:border-amber-400/60 transition shadow-inner"
+                      >
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="max-h-[460px] w-auto max-w-full object-contain rounded-xl transition duration-200 group-hover:scale-[1.01]"
+                          loading="lazy"
+                        />
+                        <div className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md text-xs font-bold text-amber-300 border border-amber-500/30 opacity-80 group-hover:opacity-100 flex items-center gap-1.5 shadow-lg transition">
+                          <Maximize2 className="w-3.5 h-3.5" />
+                          <span>Click to View Full Size</span>
+                        </div>
+                      </div>
+
+                      {/* Key Technical Configuration Points */}
+                      {item.keyPoints && item.keyPoints.length > 0 && (
+                        <div className="pt-3 border-t border-white/[0.06] space-y-1.5">
+                          <span className="text-[11px] font-black text-amber-400 uppercase tracking-wider block">
+                            Key Configuration &amp; Architectural Insights:
+                          </span>
+                          <ul className="space-y-1.5">
+                            {item.keyPoints.map((pt, pIdx) => (
+                              <li key={pIdx} className="text-xs text-slate-300 flex items-start gap-2">
+                                <span className="text-amber-400 font-bold mt-0.5">•</span>
+                                <span className="leading-relaxed">{pt}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         );
       })()}
 
@@ -408,6 +500,88 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         </div>
       </section>
 
+      {/* 9. Real-Time Technical Interview Questions & Model Solutions */}
+      {(() => {
+        const topicInterviews = getInterviewQuestionsForTopic(topic.slug);
+        if (!topicInterviews || topicInterviews.length === 0) return null;
+        return (
+          <section className="p-6 sm:p-8 rounded-3xl neo-card space-y-5 border-amber-500/30">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/[0.08]">
+              <div>
+                <h2 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-amber-400" />
+                  Real-Time Technical Interview Questions &amp; Architectural Model Answers
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  Authentic interview questions asked in AWS &amp; DevOps hiring rounds for this specific topic, complete with scoring rubrics and model solutions.
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigate && onNavigate('interview-prep')}
+                className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/30"
+              >
+                Open Full Interview Bank →
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {topicInterviews.map((iq, idx) => {
+                const isExpanded = expandedInterviewQuestion === iq.id;
+                return (
+                  <div
+                    key={iq.id || idx}
+                    className="p-5 rounded-2xl bg-slate-950/80 border border-white/[0.08] hover:border-amber-500/40 transition space-y-3 shadow-md"
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 font-black text-xs flex items-center justify-center border border-amber-500/30">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-black uppercase text-amber-400 tracking-wider">
+                          {iq.difficulty}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-cyan-300 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-0.5 rounded-full font-semibold">
+                        {iq.categoryLabel}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-white">{iq.title}</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed font-sans bg-white/[0.02] p-3 rounded-xl border border-white/[0.04]">
+                      {iq.prompt}
+                    </p>
+
+                    {/* Expand/Collapse Model Answer */}
+                    <div className="pt-2 flex items-center justify-between">
+                      <button
+                        onClick={() => setExpandedInterviewQuestion(isExpanded ? null : iq.id)}
+                        className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition"
+                      >
+                        {isExpanded ? 'Hide Model Answer ↑' : 'View Senior Architect Model Answer ↓'}
+                      </button>
+                      <button
+                        onClick={() => onNavigate && onNavigate('interview-prep')}
+                        className="text-xs text-slate-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Practice in Mock Mode
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-white/[0.06] space-y-3">
+                        <div className="p-4 rounded-xl bg-slate-900 border border-white/[0.06] text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans shadow-inner">
+                          {iq.recommendedSolution}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Bottom Action Footer */}
       <div className="p-5 rounded-3xl neo-card flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -435,6 +609,38 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           </button>
         </div>
       </div>
+
+      {/* High-Resolution Screenshot / Architecture Lightbox Modal */}
+      {selectedModalImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-4 max-w-7xl mx-auto w-full">
+            <div className="flex items-center gap-2.5">
+              <ImageIcon className="w-5 h-5 text-amber-400" />
+              <h3 className="text-sm sm:text-base font-extrabold text-white">{selectedModalImage.title}</h3>
+            </div>
+            <button
+              onClick={() => setSelectedModalImage(null)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition flex items-center gap-1.5 text-xs font-bold"
+            >
+              <X className="w-4 h-4" />
+              <span>Close</span>
+            </button>
+          </div>
+
+          <div className="flex-1 max-w-7xl mx-auto w-full neo-card rounded-3xl border border-amber-500/30 overflow-auto p-4 sm:p-8 flex flex-col items-center justify-center bg-[#070b14] gap-4">
+            <img
+              src={selectedModalImage.url}
+              alt={selectedModalImage.title}
+              className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
+            />
+            {selectedModalImage.description && (
+              <p className="text-xs sm:text-sm text-slate-300 max-w-3xl text-center leading-relaxed">
+                {selectedModalImage.description}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

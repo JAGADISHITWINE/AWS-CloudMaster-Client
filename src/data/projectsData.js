@@ -106,24 +106,45 @@ exit 0`
   {
     id: 'module-1-project',
     moduleNumber: 1,
-    moduleTitle: "AWS Global Infrastructure & Architecture",
-    title: "Global Multi-Region Latency Probing & Edge Infrastructure Mapping",
+    moduleTitle: "AWS Cloud Account Setup, Free Tier Governance & Global Infrastructure",
+    title: "AWS Free Tier Account Hardening, FinOps Zero-Spend Guardrails & Global Latency Benchmarking",
     track: "AWS Cloud Infrastructure",
     trackId: "aws",
     level: "Beginner",
-    estimatedHours: 2,
-    summary: "Map out the worldwide AWS global network backbone. Programmatically inspect geographic Regions, query Availability Zone IDs (ZoneId vs ZoneName), probe latency across 4 continents, and architect low-latency multi-region data paths.",
-    skillsLearned: ["AWS CLI Global Inspection", "Regions vs Availability Zones", "ZoneId physical mappings", "Latency benchmarking", "AWS Global Network backbone"],
+    estimatedHours: 3,
+    summary: "Comprehensive cloud baseline project: Provision an AWS account, enforce root MFA and least-privilege IAM Admin delegation, implement automated zero-spend CloudWatch billing alarms with AWS Budgets, diagnose unexpected charges via Cost Explorer, and benchmark regional latencies across the global AWS fiber backbone.",
+    skillsLearned: ["Root Account MFA Hardening", "IAM Least Privilege Provisioning", "CloudWatch Zero-Spend Billing Alarms", "AWS Budgets & SNS Escalation", "Cost Explorer Incident Triage", "AWS Global Infrastructure & ZoneId Inspection"],
     prerequisites: "AWS CLI installed or AWS CloudShell access (Free Tier).",
     topicsCovered: [
       {
         topicNumber: 1,
+        topicTitle: "AWS Free Tier Account Creation, Root Security & IAM Best Practices",
+        slug: "aws-account-creation-root-security-iam",
+        handsOnObjective: "Enforce virtual MFA on the root account, delete root access keys, and create a dedicated administrative IAM user with enforced MFA.",
+        commands: `aws iam get-account-summary
+aws iam create-user --user-name cloud-admin
+aws iam attach-user-policy --user-name cloud-admin --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+aws iam create-login-profile --user-name cloud-admin --password 'InitialSecurePass123!' --password-reset-required`,
+        practicalExercise: "Log into AWS Console as Root. Navigate to IAM -> Security Credentials and activate Virtual Authenticator MFA. Verify zero root access keys exist. Create IAM user cloud-admin, assign AdministratorAccess, and sign out of root."
+      },
+      {
+        topicNumber: 2,
+        topicTitle: "Accidental Charges Incident Triage, Cost Explorer & AWS Support Refund Resolution",
+        slug: "accidental-charges-cost-explorer-support-refunds",
+        handsOnObjective: "Configure a $0.01 CloudWatch Billing Alarm, setup an AWS Budget with SNS alert, and query Cost Explorer for unattached billable resources.",
+        commands: `aws cloudwatch put-metric-alarm --region us-east-1 --alarm-name "Zero-Spend-Guardrail" --metric-name EstimatedCharges --namespace AWS/Billing --statistic Maximum --period 21600 --threshold 0.01 --comparison-operator GreaterThanThreshold --evaluation-periods 1
+aws ce get-cost-and-usage --time-period Start=2026-11-01,End=2026-11-30 --granularity MONTHLY --metrics "UnblendedCost" --group-by Type=DIMENSION,Key=SERVICE
+aws ec2 describe-volumes --filters Name=status,Values=available`,
+        practicalExercise: "Deploy the billing alarm in us-east-1. Create an AWS Budget alerting at 80% of $5 monthly threshold. Run Cost Explorer CLI commands to detect orphaned EBS volumes or idle Elastic IPs."
+      },
+      {
+        topicNumber: 3,
         topicTitle: "Regions, Availability Zones & Edge Infrastructure",
         slug: "regions-azs-and-edge-infrastructure",
         handsOnObjective: "Query all active AWS regions and query physical Availability Zone IDs to discover data center mappings.",
         commands: `aws ec2 describe-regions --all-regions --query 'Regions[].{Name:RegionName,OptIn:OptInStatus}' --output table
 aws ec2 describe-availability-zones --region us-east-1 --query 'AvailabilityZones[].{Zone:ZoneName,Id:ZoneId,State:State}' --output table`,
-        practicalExercise: "Run the CLI commands in AWS CloudShell. Compare the `ZoneId` (e.g. `use1-az1`) against another account to prove that ZoneNames are randomized per account, but ZoneIds are globally fixed."
+        practicalExercise: "Run the CLI commands in AWS CloudShell. Compare the ZoneId (e.g. use1-az1) against another account to prove that ZoneNames are randomized per account, but ZoneIds are globally fixed."
       }
     ],
     architectureSteps: [
@@ -253,26 +274,46 @@ aws sts assume-role --role-arn arn:aws:iam::$(aws sts get-caller-identity --quer
   {
     id: 'module-3-project',
     moduleNumber: 3,
-    moduleTitle: "Amazon VPC – Advanced Networking",
-    title: "Production High-Availability 3-Tier VPC Network Architecture",
+    moduleTitle: "Amazon VPC – Advanced Cloud Networking & Traffic Engineering",
+    title: "Production High-Availability 3-Tier VPC Architecture, Network Defense & Transit Routing",
     track: "AWS Cloud Infrastructure",
     trackId: "aws",
     level: "Intermediate",
-    estimatedHours: 3,
-    summary: "Architect a production-grade, secure Virtual Private Cloud (VPC) across 2 Availability Zones. Construct isolated Public, Private Application, and Database subnets, attach an Internet Gateway, configure Route Tables, and enforce stateful Security Group boundaries.",
-    skillsLearned: ["Custom VPC Design (/16 CIDR)", "Multi-AZ Subnet Partitioning", "Internet Gateway & Routing", "Stateful Security Groups vs Stateless NACLs", "CIDR Math (/24 and /20)"],
+    estimatedHours: 4,
+    summary: "Architect an enterprise-grade Virtual Private Cloud (VPC) spanning 2 Availability Zones. Construct isolated Public, Private Application, and Database subnets with Internet Gateways and Route Tables; enforce layered security with stateless NACLs and stateful Security Groups; enable VPC Flow Logs for CloudWatch packet inspection; and connect private endpoints via VPC Peering and AWS Transit Gateway.",
+    skillsLearned: ["Custom VPC Architecture (/16 CIDR)", "Multi-AZ Subnet Partitioning & Reserved IPs", "Internet Gateway & Route Tables", "Stateless Network ACLs (NACLs) vs Stateful Security Groups", "VPC Flow Logs & CloudWatch Insights", "VPC Endpoints (PrivateLink) & AWS Transit Gateway"],
     prerequisites: "AWS Free Tier account.",
     topicsCovered: [
       {
         topicNumber: 1,
-        topicTitle: "VPC Subnetting, Gateways & Packet Flow",
+        topicTitle: "VPC Architecture, Subnetting (CIDR), Gateways & Route Tables",
         slug: "vpc-subnetting-gateways-packet-flow",
-        handsOnObjective: "Create a 10.0.0.0/16 VPC with 2 public subnets and 2 private subnets across us-east-1a and us-east-1b.",
+        handsOnObjective: "Provision a 10.0.0.0/16 VPC with 2 public subnets and 2 private subnets across 2 AZs, attach an IGW, and configure route tables.",
         commands: `VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
 aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=Production-VPC
 IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
 aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID`,
-        practicalExercise: "Provision the VPC, attach the Internet Gateway, create Route Tables, and add default route `0.0.0.0/0` pointing to the IGW for public subnets."
+        practicalExercise: "Provision the VPC, attach the Internet Gateway, create Route Tables, and add default route 0.0.0.0/0 pointing to the IGW for public subnets."
+      },
+      {
+        topicNumber: 2,
+        topicTitle: "VPC Security Architecture: Stateful Security Groups, Stateless NACLs, DNS Firewall & Flow Logs",
+        slug: "vpc-security-groups-nacls-firewall-flow-logs",
+        handsOnObjective: "Configure defense-in-depth with stateless Subnet NACLs, stateful Security Groups, and capture network metadata using VPC Flow Logs.",
+        commands: `SG_ID=$(aws ec2 create-security-group --group-name "app-tier-sg" --description "App SG" --vpc-id $VPC_ID --query 'GroupId' --output text)
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
+aws ec2 create-flow-logs --resource-type VPC --resource-ids $VPC_ID --traffic-type ALL --log-destination-type cloud-watch-logs --log-group-name "/aws/vpc/flowlogs" --deliver-logs-permission-arn arn:aws:iam::123456789012:role/flowlogsRole`,
+        practicalExercise: "Create stateful Security Group allowing inbound HTTPS. Create a custom NACL with Rule 100 allow inbound HTTPS and Rule 100 allow outbound ephemeral ports (1024-65535). Enable VPC Flow Logs to CloudWatch Logs."
+      },
+      {
+        topicNumber: 3,
+        topicTitle: "Hybrid Connectivity & Advanced Routing: NAT Gateways, Endpoints, Peering, VPN & Transit Gateway",
+        slug: "vpc-peering-transit-gateway-endpoints-vpn",
+        handsOnObjective: "Establish private connectivity using S3 Gateway VPC Endpoints and architect inter-VPC routing with AWS Transit Gateway.",
+        commands: `aws ec2 create-vpc-endpoint --vpc-id $VPC_ID --service-name com.amazonaws.us-east-1.s3 --route-table-ids $PRIV_RT
+TGW_ID=$(aws ec2 create-transit-gateway --description "Enterprise Regional Hub" --query 'TransitGateway.TransitGatewayId' --output text)
+aws ec2 create-transit-gateway-vpc-attachment --transit-gateway-id $TGW_ID --vpc-id $VPC_ID --subnet-ids $PRIV_SUB1 $PRIV_SUB2`,
+        practicalExercise: "Create a Gateway VPC Endpoint for Amazon S3 attached to the private route table. Verify that S3 API calls route privately without internet or NAT Gateway traversal."
       }
     ],
     architectureSteps: [
