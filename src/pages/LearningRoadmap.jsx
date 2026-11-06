@@ -5,16 +5,15 @@ import {
   Clock,
   BookOpen,
   Terminal,
-  HelpCircle,
-  Briefcase,
   Layers,
   ChevronRight,
-  ShieldAlert,
+  ChevronDown,
   Search,
-  Filter,
   Sparkles,
   Youtube,
-  Play
+  LayoutGrid,
+  List,
+  ExternalLink
 } from 'lucide-react';
 import CostRiskBadge from '../components/CostRiskBadge';
 import DiagramViewer from '../components/DiagramViewer';
@@ -23,12 +22,23 @@ import { getArchitectureForTopic } from '../data/architectureData';
 export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule }) {
   const [filterLevel, setFilterLevel] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('ALL'); // 'ALL' | 'AWS' | 'DEVOPS' | 'GIT' | 'JENKINS' | 'DOCKER' | 'K8S'
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [activeDiagram, setActiveDiagram] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+  const [expandedModules, setExpandedModules] = useState({});
 
   if (!modules || modules.length === 0) {
-    return <div className="p-8 text-center text-slate-400">Loading learning modules...</div>;
+    return (
+      <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm font-medium">Loading learning roadmap...</p>
+      </div>
+    );
   }
+
+  const toggleModuleExpanded = (modNum) => {
+    setExpandedModules(prev => ({ ...prev, [modNum]: !prev[modNum] }));
+  };
 
   const filteredModules = modules.filter(m => {
     const matchesLevel = filterLevel === 'ALL' || m.level.toUpperCase() === filterLevel;
@@ -59,26 +69,51 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full pb-16">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-300 border border-amber-500/35 flex items-center gap-1.5 shadow-sm">
               <Sparkles className="w-3 h-3 text-amber-400" /> {modules.length} Structured Modules
             </span>
-            <span className="text-xs text-slate-400 font-medium">AWS Cloud + DevOps Pipelines + Full-Stack (Angular &amp; Node.js)</span>
+            <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+              AWS Cloud + DevOps Pipelines + Full-Stack (Angular &amp; Node.js)
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white mt-1.5 tracking-tight font-display bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mt-1.5 tracking-tight font-display bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
             Enterprise Cloud, DevOps &amp; Full-Stack Roadmap
           </h1>
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            From foundational AWS infrastructure, IAM, and DevOps CI/CD pipelines to Angular standalone frontend architecture, Node.js asynchronous backends, RESTful APIs, and full-stack system design.
+          <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed mt-1">
+            Visual curriculum spanning AWS Cloud infrastructure, IAM, and GitOps CI/CD pipelines to Angular standalone frontend architecture, Node.js asynchronous backends, RESTful APIs, and system design.
           </p>
         </div>
 
-        {/* Search & Level Filters */}
+        {/* Search, Level Filters & View Toggle */}
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* View Toggle */}
+          <div className="flex items-center rounded-xl bg-slate-900/90 border border-white/[0.08] p-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+              title="Grid View (Full-Screen Multi-Column)"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-lg text-xs font-bold transition ${
+                viewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
+              }`}
+              title="List View (Stacked Rows)"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Search Box */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -86,10 +121,11 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
               placeholder="Search topics, services..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-2 rounded-xl bg-slate-900/90 border border-amber-500/20 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-amber-400 w-48 sm:w-64 transition"
+              className="pl-8 pr-3 py-2 rounded-xl bg-slate-900/90 border border-amber-500/20 text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-amber-400 w-48 sm:w-60 transition"
             />
           </div>
 
+          {/* Difficulty Level Switcher */}
           <div className="flex items-center rounded-xl bg-slate-900/90 border border-amber-500/25 p-1 text-xs">
             {['ALL', 'BEGINNER', 'INTERMEDIATE', 'ADVANCED'].map(lvl => (
               <button
@@ -108,8 +144,8 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
         </div>
       </div>
 
-      {/* Category Tabs: Separated so learners can study one topic at a time without confusion */}
-      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto scrollbar-none">
+      {/* Horizontal Category Chips Bar */}
+      <div className="flex items-center gap-2 border-b border-slate-800/80 pb-3 overflow-x-auto scrollbar-none w-full">
         <button
           onClick={() => setCategoryFilter('ALL')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
@@ -195,223 +231,163 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
         </button>
 
         <button
-          onClick={() => setCategoryFilter('GIT')}
+          onClick={() => setCategoryFilter('DEVOPS')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-            categoryFilter === 'GIT'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+            categoryFilter === 'DEVOPS'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
               : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
           }`}
         >
-          <span>🌿 Git &amp; GitHub</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold">Mod 16</span>
-        </button>
-
-        <button
-          onClick={() => setCategoryFilter('JENKINS')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-            categoryFilter === 'JENKINS'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          <span>⚙️ Jenkins CI/CD</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold">Mod 17</span>
-        </button>
-
-        <button
-          onClick={() => setCategoryFilter('DOCKER')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-            categoryFilter === 'DOCKER'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          <span>🐳 Docker</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold">Mod 18</span>
-        </button>
-
-        <button
-          onClick={() => setCategoryFilter('K8S')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-            categoryFilter === 'K8S'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          <span>☸️ Kubernetes</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold">Mod 19</span>
-        </button>
-
-        <button
-          onClick={() => setCategoryFilter('CICD')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
-            categoryFilter === 'CICD'
-              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
-          }`}
-        >
-          <span>🚀 End-to-End Pipeline</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-300 font-bold">Mod 20</span>
+          <span>🚀 DevOps CI/CD</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-cyan-500/30 text-cyan-300 font-bold">5 Mods</span>
         </button>
       </div>
 
-      {/* Modules List */}
-      <div className="space-y-4">
+      {/* Modules Rendering: Responsive Multi-Column Grid or List */}
+      <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6" : "space-y-4"}>
         {filteredModules.map(m => {
-          const isComplete = m.completionPercentage === 100;
+          const isDevOps = m.moduleNumber >= 16 && m.moduleNumber <= 20;
+          const isFullStack = m.moduleNumber >= 21;
+          const isExpanded = expandedModules[m.moduleNumber] !== undefined ? expandedModules[m.moduleNumber] : true;
+
+          const badgeColor = isFullStack
+            ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+            : isDevOps
+            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+            : 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+
           return (
             <div
-              key={m.id}
-              className="rounded-3xl neo-card overflow-hidden transition-all duration-300 hover:border-amber-500/40"
+              key={m.id || m.moduleNumber}
+              className="neo-card rounded-3xl overflow-hidden border border-white/[0.08] hover:border-indigo-500/40 transition-all duration-300 flex flex-col justify-between"
             >
-              {/* Module Header Bar */}
-              <div className="p-5 border-b border-white/[0.06] flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-slate-900 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-base flex-shrink-0 shadow-glow-gold/20 font-display">
-                    #{m.moduleNumber}
+              {/* Module Card Header */}
+              <div className="p-5 sm:p-6 border-b border-white/[0.06] bg-slate-950/40 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 text-xs font-black rounded-xl border ${badgeColor}`}>
+                      Module {m.moduleNumber}
+                    </span>
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-800/80 text-slate-300 border border-slate-700/60">
+                      {m.level}
+                    </span>
+                    <span className="text-xs text-slate-400 font-semibold">
+                      {m.topics.length} {m.topics.length === 1 ? 'Topic' : 'Topics'}
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-black text-amber-400 uppercase tracking-wider">{m.level}</span>
-                      <span className="text-slate-600">•</span>
-                      <span className="text-xs text-slate-400 font-medium">{m.totalTopics} {m.totalTopics === 1 ? 'Topic' : 'Topics'}</span>
-                      {isComplete && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> Completed
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="text-base font-extrabold text-white">{m.title}</h2>
-                    <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">{m.description}</p>
-                  </div>
-                </div>
 
-                {/* Module Actions & Completion Progress Indicator */}
-                <div className="flex items-center gap-3 flex-shrink-0">
                   <button
-                    onClick={() => setActiveDiagram(getArchitectureForTopic(m.topics[0]?.slug, m.moduleNumber, m.title))}
-                    className="px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-                    title="View Visual Module Architecture"
+                    onClick={() => toggleModuleExpanded(m.moduleNumber)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition"
+                    title={isExpanded ? "Collapse Topics" : "Expand Topics"}
                   >
-                    <Layers className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Architecture</span>
+                    {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
-
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-slate-300">{m.completedTopics}/{m.totalTopics} done</span>
-                    <div className="w-24 h-2 bg-slate-900 rounded-full overflow-hidden mt-1 border border-amber-500/20">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 rounded-full transition-all"
-                        style={{ width: `${m.completionPercentage}%` }}
-                      />
-                    </div>
-                  </div>
                 </div>
+
+                <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-snug">
+                  {m.title}
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">
+                  {m.description}
+                </p>
               </div>
 
-              {/* Topics inside Module */}
-              <div className="p-4 bg-slate-950/40 divide-y divide-white/[0.04]">
-                {m.topics.map(t => {
-                  return (
+              {/* Topics Drawer */}
+              {isExpanded && (
+                <div className="p-3 sm:p-4 bg-slate-950/60 divide-y divide-white/[0.04] flex-1">
+                  {m.topics.map(t => (
                     <div
-                      key={t.id}
-                      className="py-3 px-2 flex flex-col md:flex-row md:items-center justify-between gap-3 hover:bg-white/[0.03] rounded-2xl transition"
+                      key={t.slug || t.id}
+                      className="py-2.5 px-2.5 rounded-xl hover:bg-white/[0.03] transition space-y-1.5"
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-bold text-slate-200">{t.title}</span>
-                          <CostRiskBadge level={t.costRisk} />
-                          {t.status === 'COMPLETED' ? (
-                            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded-full">
-                              Completed
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-bold text-slate-200 hover:text-cyan-300 transition cursor-pointer" onClick={() => onSelectTopic(t.slug, 'topic-detail')}>
+                              {t.title}
                             </span>
-                          ) : t.status === 'IN_PROGRESS' ? (
-                            <span className="text-[10px] font-bold text-amber-400 bg-amber-950/40 border border-amber-800/40 px-2 py-0.5 rounded-full">
-                              In Progress
-                            </span>
-                          ) : null}
+                            <CostRiskBadge level={t.costRisk} />
+                          </div>
+                          <p className="text-[11px] text-slate-400 line-clamp-1">{t.summary}</p>
                         </div>
-                        <p className="text-xs text-slate-400 line-clamp-1">{t.summary}</p>
-                        <p className="text-[11px] text-amber-300/90 font-medium italic">
-                          💡 Key Takeaway: {t.keyTakeaway}
-                        </p>
                       </div>
 
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* Topic Action Bar */}
+                      <div className="flex items-center gap-1.5 pt-1 flex-wrap">
                         <button
                           onClick={() => setActiveDiagram(getArchitectureForTopic(t.slug, m.moduleNumber, t.title))}
-                          className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                          className="px-2 py-1 rounded-lg bg-indigo-500/15 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-[10px] font-bold transition flex items-center gap-1"
                           title="View Topic Architecture Diagram"
                         >
-                          <Layers className="w-3.5 h-3.5 text-indigo-400" />
+                          <Layers className="w-3 h-3 text-indigo-400" />
                           <span>Diagram</span>
                         </button>
                         <button
                           onClick={() => onSelectTopic(t.slug, 'topic-detail')}
-                          className="px-2.5 py-1.5 rounded-xl bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-bold transition flex items-center gap-1.5"
-                          title="Watch YouTube Masterclass"
+                          className="px-2 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-[10px] font-bold transition flex items-center gap-1"
+                          title="Watch YouTube Video"
                         >
-                          <Youtube className="w-3.5 h-3.5 text-rose-400" />
+                          <Youtube className="w-3 h-3 text-rose-400" />
                           <span>Video</span>
                         </button>
                         <button
                           onClick={() => onSelectTopic(t.slug, 'topic-detail')}
-                          className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                          className="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/30 text-[10px] font-bold transition flex items-center gap-1"
                           title="Read Notes"
                         >
-                          <BookOpen className="w-3.5 h-3.5" />
+                          <BookOpen className="w-3 h-3" />
                           <span>Notes</span>
                         </button>
                         <button
                           onClick={() => onSelectTopic(t.slug, 'practice-lab')}
-                          className="px-2.5 py-1.5 rounded-xl bg-orange-500/15 hover:bg-orange-500 text-orange-300 hover:text-white border border-orange-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                          className="px-2 py-1 rounded-lg bg-orange-500/15 hover:bg-orange-500 text-orange-300 hover:text-white border border-orange-500/30 text-[10px] font-bold transition flex items-center gap-1"
                           title="Practice Lab"
                         >
-                          <Terminal className="w-3.5 h-3.5" />
+                          <Terminal className="w-3 h-3" />
                           <span>Lab</span>
                         </button>
                         <button
                           onClick={() => onSelectTopic(t.slug, 'quiz-center')}
-                          className="px-2.5 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500 text-cyan-300 hover:text-white border border-cyan-500/30 text-xs font-bold transition flex items-center gap-1.5"
-                          title="Quiz"
+                          className="px-2 py-1 rounded-lg bg-cyan-500/15 hover:bg-cyan-500 text-cyan-300 hover:text-white border border-cyan-500/30 text-[10px] font-bold transition flex items-center gap-1"
+                          title="Take Quiz"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <CheckCircle2 className="w-3 h-3" />
                           <span>Quiz</span>
                         </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
-      {/* Visual Architecture Lightbox Modal */}
+      {/* Visual Architecture Lightbox Modal (Full-Screen Responsive) */}
       {activeDiagram && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-          <div className="max-w-5xl w-full neo-card rounded-3xl border border-indigo-500/40 p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 animate-in fade-in duration-200">
+          <div className="w-full max-w-7xl neo-card rounded-3xl border border-indigo-500/40 p-6 sm:p-8 space-y-4 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400">
                   <Layers className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-extrabold text-white">{activeDiagram.title}</h3>
+                  <h3 className="text-base sm:text-lg font-extrabold text-white">{activeDiagram.title}</h3>
                   <span className="text-xs text-indigo-300 font-bold">{activeDiagram.category}</span>
                 </div>
               </div>
               <button
                 onClick={() => setActiveDiagram(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-extrabold transition"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-extrabold transition"
               >
                 Close ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">{activeDiagram.description}</p>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{activeDiagram.description}</p>
 
             <DiagramViewer
               svgString={activeDiagram.svg}

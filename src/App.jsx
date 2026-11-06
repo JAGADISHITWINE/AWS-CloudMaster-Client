@@ -29,6 +29,8 @@ export default function App() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [modules, setModules] = useState(FALLBACK_MODULES);
   const [loading, setLoading] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Load user from storage or fetch /auth/me
   useEffect(() => {
@@ -46,6 +48,31 @@ export default function App() {
     } else {
       setLoading(false);
     }
+  }, []);
+
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Keyboard shortcut for Cmd/Ctrl+K search and Cmd/Ctrl+B sidebar toggle
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setActiveTab('roadmap');
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSidebarCollapsed(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Fetch Dashboard Stats & Modules whenever activeTab changes or user changes
@@ -93,20 +120,35 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--bg-primary,#0b101b)] text-[var(--text-primary,#f8fafc)] flex flex-col font-sans transition-colors duration-300">
-      {/* Top Navigation Bar */}
+    <div className="min-h-screen bg-[var(--bg-primary,#0b101b)] text-[var(--text-primary,#f8fafc)] flex flex-col font-sans transition-colors duration-300 w-full">
+      {/* Full-Screen Edge-to-Edge Navigation Bar */}
       <Navbar
         user={user}
         onLogout={handleLogout}
         onOpenLogin={() => setIsLoginOpen(true)}
         onOpenSafety={() => setActiveTab('free-tier-safety')}
         onOpenAiTrainer={() => setActiveTab('ai-trainer')}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        onOpenSearch={() => setActiveTab('roadmap')}
       />
 
-      {/* Main Body */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto">
-        {/* Sidebar */}
+      {/* Main Full-Screen Layout */}
+      <div className="flex-1 flex flex-col md:flex-row w-full min-w-0">
+        {/* Collapsible / Expanding Sidebar */}
         <Sidebar
           activeTab={activeTab}
           onSelectTab={(tab) => {
@@ -115,10 +157,12 @@ export default function App() {
           }}
           pendingCleanups={dashboardStats?.stats?.pendingCleanups || 0}
           dueRevisions={dashboardStats?.stats?.dueRevisions || 0}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
         />
 
-        {/* Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+        {/* Expansive Full-Screen Main Content Area */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full min-w-0 overflow-x-hidden transition-all duration-300">
           {activeTab === 'dashboard' && (
             <Dashboard
               stats={dashboardStats?.stats}

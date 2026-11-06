@@ -235,7 +235,7 @@ How can I train you today?
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6.5rem)] max-w-6xl mx-auto space-y-3">
+    <div className="flex flex-col h-[calc(100vh-6.5rem)] w-full space-y-3">
       {/* Top Header Card */}
       <div className="bg-slate-900/90 border border-amber-500/25 rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-3">

@@ -414,8 +414,8 @@ export default function DiagramViewer({
 
       {/* Fullscreen Lightbox Modal */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between pb-4 max-w-7xl mx-auto w-full">
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-6 lg:p-8 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-4 w-full">
             <div className="flex items-center gap-2">
               <Layers className="w-5 h-5 text-indigo-400" />
               <h3 className="text-base font-extrabold text-white">{title}</h3>
@@ -429,7 +429,7 @@ export default function DiagramViewer({
             </button>
           </div>
 
-          <div className="flex-1 max-w-7xl mx-auto w-full neo-card rounded-3xl border border-indigo-500/30 overflow-auto p-6 sm:p-10 flex items-center justify-center bg-[#070b14]">
+          <div className="flex-1 w-full neo-card rounded-3xl border border-indigo-500/30 overflow-auto p-4 sm:p-8 lg:p-10 flex items-center justify-center bg-[#070b14]">
             {activeTab === 'realDiagram' && realDiagramUrl ? (
               <img
                 src={realDiagramUrl}
@@ -438,7 +438,7 @@ export default function DiagramViewer({
               />
             ) : (
               <div
-                className="w-full max-w-5xl"
+                className="w-full"
                 dangerouslySetInnerHTML={{ __html: svgString }}
               />
             )}

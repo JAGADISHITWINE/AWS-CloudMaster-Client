@@ -73,7 +73,7 @@ export default function FreeTierSafety() {
   const { settings, cleanupRecords, commonCostPitfalls, officialLinks } = data || {};
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-16">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">

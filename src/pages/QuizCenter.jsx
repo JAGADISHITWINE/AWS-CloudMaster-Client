@@ -198,7 +198,7 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
   const formatTime = (sec) => `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 w-full max-w-6xl mx-auto pb-16">
       {/* Top Navigation */}
       <div className="flex items-center justify-between gap-4">
         <button
