@@ -76,7 +76,37 @@ export const INTERVIEW_CATEGORIES = [
     "icon": "Workflow",
     "color": "from-emerald-400 to-cyan-500"
   }
-];
+,
+  {
+    "id": "FULLSTACK_DEVELOPMENT",
+    "label": "Full-Stack (Angular & Node.js)",
+    "icon": "Layers",
+    "color": "from-red-500 to-amber-600"
+  },
+  {
+    "id": "ANGULAR_FRONTEND",
+    "label": "Angular Enterprise Frontend",
+    "icon": "Code",
+    "color": "from-red-600 to-rose-600"
+  },
+  {
+    "id": "NODEJS_BACKEND",
+    "label": "Node.js Scalable Backend",
+    "icon": "Server",
+    "color": "from-emerald-600 to-green-600"
+  },
+  {
+    "id": "APIS_INTEGRATION",
+    "label": "REST APIs & Security",
+    "icon": "Shield",
+    "color": "from-blue-600 to-cyan-600"
+  },
+  {
+    "id": "DATABASE_SYSTEM_DESIGN",
+    "label": "Databases & System Design",
+    "icon": "Database",
+    "color": "from-purple-600 to-indigo-600"
+  }];
 
 export const ALL_INTERVIEW_QUESTIONS = [
   {
@@ -2023,7 +2053,579 @@ export const ALL_INTERVIEW_QUESTIONS = [
       "Interview"
     ]
   }
-];
+,
+{
+  "id": "iq-fs-angular-core-components-lifecycle-databinding",
+  "topicSlug": "angular-core-components-lifecycle-databinding",
+  "moduleNumber": 21,
+  "topicTitle": "Angular Architecture, Standalone Components, View Encapsulation & Lifecycle Hooks",
+  "category": "ANGULAR_FRONTEND",
+  "categoryLabel": "Angular Enterprise Frontend",
+  "difficulty": "Advanced",
+  "title": "Angular Ivy Compilation, Standalone Components & ViewEncapsulation Deep Dive",
+  "prompt": "An interviewer asks: 'Can you explain how the Angular Ivy compiler processes templates into executable bytecode? Compare ViewEncapsulation modes (Emulated vs ShadowDom vs None), detail how modern standalone components eliminate NgModule baggage, and outline the exact lifecycle execution order from class instantiation to destroy.'",
+  "explanation": "Tests thorough comprehension of Angular's rendering engine, template compilation, DOM encapsulation strategies, and lifecycle management.",
+  "hints": [
+    "Explain the Ivy compiler: generates template functions (instructions like ɵɵelementStart, ɵɵtext, ɵɵproperty).",
+    "Detail ViewEncapsulation.Emulated: generated host/content attributes (_nghost, _ngcontent).",
+    "Contrast with ShadowDom (native browser encapsulation) and None (global CSS leak).",
+    "Explain the exact hook order: constructor -> ngOnChanges -> ngOnInit -> ngDoCheck -> ngAfterContentInit -> ngAfterContentChecked -> ngAfterViewInit -> ngAfterViewChecked -> ngOnDestroy."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Angular Ivy Compiler & Template Bytecode:\n- **How Ivy Works:** The Ivy compiler does not generate abstract metadata JSON files. Instead, it compiles each component template directly into **static JavaScript instructions** (e.g. `ɵɵelementStart`, `ɵɵtextInterpolate`, `ɵɵproperty`, `ɵɵadvance`).\n- **Two Execution Phases:** When change detection runs, these compiled instructions execute in two modes:\n  1. **Creation Phase (`rf & 1`):** Executes only once to construct DOM elements, register event listeners, and wire up bindings.\n  2. **Update Phase (`rf & 2`):** Compares current expression values against previous values and mutates only changed DOM properties.\n- **Tree-Shaking:** Because template instructions are standard exported functions, any unused instruction (like an unused pipe or directive) is cleanly dropped by bundlers (Vite/Webpack).\n\n#### 2. ViewEncapsulation Modes:\n- **Emulated (Default):** Angular simulates style scoping without native browser Shadow DOM. The Ivy compiler appends unique host attributes (`_nghost-ng-c12`) to component wrappers and content attributes (`_ngcontent-ng-c12`) to child elements. CSS rules are transformed to target `.card[_ngcontent-ng-c12]`. Styles cannot leak outward.\n- **ShadowDom:** Angular attaches a real browser `shadowRoot` (`element.attachShadow({ mode: 'open' })`). Provides absolute encapsulation using browser standards, but global styles (Bootstrap, Tailwind) cannot penetrate the shadow root without CSS custom variables or `::part`.\n- **None:** No encapsulation. Component styles are added to the global document `<head>` and leak across the entire application.\n\n#### 3. Standalone Components vs NgModules:\n- Standalone components specify `standalone: true` and declare their exact dependencies in their `imports: [CommonModule, ReactiveFormsModule, UserCardComponent]` array.\n- This eliminates the boilerplate of shared modules, simplifies lazy loading (`loadComponent: () => import(...)`), and allows fine-grained dependency isolation.\n\n#### 4. Lifecycle Execution Sequence:\n1. **`constructor()`:** Class instantiation; dependency injection is wired. Inputs are NOT yet available.\n2. **`ngOnChanges()`:** Fires before `ngOnInit` whenever `@Input` properties resolve or change.\n3. **`ngOnInit()`:** Component initialized; inputs are guaranteed available. Ideal for HTTP calls and subscriptions.\n4. **`ngDoCheck()`:** Custom change detection hook running on every CD cycle.\n5. **`ngAfterContentInit()` & `ngAfterContentChecked()`:** Projected content (`<ng-content>`) is initialized and checked.\n6. **`ngAfterViewInit()` & `ngAfterViewChecked()`:** Component's view and child views are fully mounted. Mutating bindings here in dev mode triggers `NG0100`!\n7. **`ngOnDestroy()`:** Teardown phase. Unsubscribe from RxJS streams, detach listeners, and clean up timers.",
+  "rubric": [
+    {
+      "name": "Ivy Template Instructions & Two Phases",
+      "weight": 25,
+      "description": "Explains Ivy bytecode, creation vs update phases, and tree-shaking benefits."
+    },
+    {
+      "name": "ViewEncapsulation Scoping Mechanisms",
+      "weight": 25,
+      "description": "Accurately contrasts Emulated attributes, native ShadowDom, and None."
+    },
+    {
+      "name": "Standalone Components Architecture",
+      "weight": 25,
+      "description": "Explains direct imports, elimination of NgModules, and granular lazy loading."
+    },
+    {
+      "name": "Lifecycle Hook Order & Gotchas",
+      "weight": 25,
+      "description": "Details constructor through ngOnDestroy sequence and the NG0100 hazard in ngAfterViewInit."
+    }
+  ],
+  "tags": [
+    "Angular",
+    "Ivy Compiler",
+    "ViewEncapsulation",
+    "Lifecycle Hooks",
+    "Standalone",
+    "Frontend"
+  ]
+},
+{
+  "id": "iq-fs-angular-rxjs-services-dependency-injection",
+  "topicSlug": "angular-rxjs-services-dependency-injection",
+  "moduleNumber": 21,
+  "topicTitle": "Dependency Injection, Hierarchical Injectors & RxJS Reactive Streams",
+  "category": "ANGULAR_FRONTEND",
+  "categoryLabel": "Angular Enterprise Frontend",
+  "difficulty": "Advanced",
+  "title": "RxJS Higher-Order Mapping Operators, Memory Leaks & Hierarchical Dependency Injection",
+  "prompt": "An interviewer asks: 'In an enterprise Angular application, when would you specifically choose switchMap, mergeMap, concatMap, or exhaustMap? How does Angular's hierarchical injector resolve dependencies between root, environment, and element injectors, and how do you systematically prevent RxJS subscription memory leaks?'",
+  "explanation": "Evaluates production RxJS decision-making, deep understanding of Angular's multi-tiered DI system, and memory leak mitigation strategies.",
+  "hints": [
+    "Explain switchMap: cancellation on new emissions (search queries).",
+    "Explain mergeMap: concurrent processing (independent file uploads).",
+    "Explain concatMap: ordered sequential processing (chat messages, balance updates).",
+    "Explain exhaustMap: ignores new emissions while active (submit buttons, payments).",
+    "Explain DI hierarchy: Element Injector -> Environment Injector -> Root -> Platform -> NullInjector.",
+    "Explain memory leaks: takeUntilDestroyed() or async pipe."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. The 4 Higher-Order RxJS Mapping Operators:\n- **`switchMap` (Switch & Cancel):**\n  - **Behavior:** Unsubscribes from and aborts any active inner Observable as soon as a new emission arrives from the source.\n  - **Use Case:** Auto-complete search inputs, table filter dropdowns, and route parameter changes where outdated in-flight responses must be discarded.\n- **`concatMap` (Queue & Maintain Order):**\n  - **Behavior:** Buffers incoming emissions and processes each inner Observable strictly sequentially one after another.\n  - **Use Case:** Sequential file writes, credit balance ledger transactions, or ordering steps in a wizard where sequence must be preserved.\n- **`mergeMap` (Concurrent Parallel Execution):**\n  - **Behavior:** Immediately subscribes to all inner Observables concurrently with no cancellation or buffering.\n  - **Use Case:** Multi-file simultaneous uploads, independent metric pings, or batch operations where order does not matter and cancellation is unwanted.\n- **`exhaustMap` (Ignore While Busy):**\n  - **Behavior:** Ignores and drops all incoming source emissions until the currently active inner Observable completes.\n  - **Use Case:** Non-reentrant button submissions (e.g. 'Pay Now', 'Submit Form', 'Download Report') to prevent accidental duplicate actions.\n\n#### 2. Angular Hierarchical Injector Resolution:\nWhen a component requests a dependency via `inject(Service)` or `constructor(private s: Service)`, Angular walks up a two-branch tree:\n1. **Element Injector Hierarchy:**\n   - Checks the component's own `providers` array.\n   - If not found, walks up parent component element injectors to the root component.\n2. **Environment Injector Hierarchy:**\n   - If not found in the Element branch, jumps to the **Environment Injector** of the current route/feature.\n   - If not found, checks the **Root Injector** (`providedIn: 'root'`), which provides singleton instances application-wide.\n   - If not found, checks the **Platform Injector** (shared across multiple Angular apps on same page, e.g. DomSanitizer).\n   - If not found, terminates at the **NullInjector**, throwing `NullInjectorError: No provider for Service!`.\n\n#### 3. Preventing RxJS Memory Leaks:\n- **Root Cause:** Subscribing to an infinite stream (e.g. `service.state$`) retains a closure reference to `this`, preventing the garbage collector from reclaiming the unmounted component and its DOM nodes.\n- **Best Practice 1 (`takeUntilDestroyed`):**\n  Angular 16+ provides `takeUntilDestroyed(destroyRef)`, which automatically completes the stream when the component is destroyed:\n  ```typescript\n  this.userService.user$.pipe(takeUntilDestroyed()).subscribe(...);\n  ```\n- **Best Practice 2 (`async` Pipe):**\n  Use the `async` pipe in templates (`<div *ngIf=\"data$ | async as data\">`). It subscribes upon component initialization and unsubscribes automatically on view teardown.",
+  "rubric": [
+    {
+      "name": "Mapping Operators Decision Matrix",
+      "weight": 35,
+      "description": "Accurately contrasts switchMap, mergeMap, concatMap, exhaustMap with enterprise use cases."
+    },
+    {
+      "name": "Hierarchical Injector Resolution",
+      "weight": 30,
+      "description": "Explains Element vs Environment vs Root vs NullInjector resolution sequence."
+    },
+    {
+      "name": "Memory Leak Prevention Patterns",
+      "weight": 35,
+      "description": "Details takeUntilDestroyed, async pipe, and the closure retention mechanics of unmanaged subscriptions."
+    }
+  ],
+  "tags": [
+    "Angular",
+    "RxJS",
+    "Dependency Injection",
+    "switchMap",
+    "exhaustMap",
+    "Memory Leaks"
+  ]
+},
+{
+  "id": "iq-fs-angular-routing-forms-change-detection-signals",
+  "topicSlug": "angular-routing-forms-change-detection-signals",
+  "moduleNumber": 21,
+  "topicTitle": "Routing Guards, Reactive Forms, OnPush Change Detection & Angular Signals",
+  "category": "ANGULAR_FRONTEND",
+  "categoryLabel": "Angular Enterprise Frontend",
+  "difficulty": "Advanced",
+  "title": "Zone.js vs OnPush vs Angular Signals: Architectural Evolution & Performance Tuning",
+  "prompt": "An interviewer asks: 'How does Zone.js detect changes in an Angular app, and why can it cause performance bottlenecks at scale? Explain how ChangeDetectionStrategy.OnPush prunes the change detection tree, and contrast OnPush with modern Angular 16+ Signals. How do functional routing guards and interceptors fit into modern Angular architecture?'",
+  "explanation": "Tests deep understanding of Angular performance optimization, the architectural evolution from monkey-patched Zone.js dirty-checking to fine-grained Signals, and modern functional routing.",
+  "hints": [
+    "Explain Zone.js: monkey-patches async browser APIs (setTimeout, addEventListener, Promise.then, fetch) to trigger ApplicationRef.tick().",
+    "Explain Default CD: top-down tree walk checking every expression in every component.",
+    "Explain OnPush: skips checking unless @Input reference changes, DOM event fires inside, or async pipe emits.",
+    "Explain Signals: fine-grained, dependency-tracking reactivity without Zone.js overhead.",
+    "Explain functional guards: CanActivateFn using inject() instead of class-based CanActivate."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. How Zone.js Works & Why It Bottlenecks:\n- **Zone.js Monkey-Patching:**\n  Zone.js intercepts all asynchronous browser APIs: DOM event listeners (`click`, `mousemove`, `input`), timers (`setTimeout`, `setInterval`), and network requests (`fetch`, `XMLHttpRequest`).\n- **Top-Down Tree Check:**\n  Whenever ANY monkey-patched callback completes, Zone.js triggers `onMicrotaskEmpty` which calls `ApplicationRef.tick()`. Under `ChangeDetectionStrategy.Default`, Angular walks the **entire component tree from root to leaf**, evaluating every template binding in every component.\n- **The Bottleneck:**\n  In large dashboards with 1,000+ components, a single mouse movement or keystroke causes thousands of binding checks, causing dropped frames and high CPU usage.\n\n#### 2. Optimization with ChangeDetectionStrategy.OnPush:\n- **Pruning the Tree:**\n  Marking a component `OnPush` tells Angular: *'Do not check this component or any of its children unless one of 4 specific triggers occurs:'*\n  1. An `@Input()` property receives a **new object reference** (compared using `===` strict equality).\n  2. A DOM event originated from **inside this component's template** (e.g. button click).\n  3. An Observable bound via the `async` pipe emits a new value.\n  4. Manual triggering via `ChangeDetectorRef.markForCheck()`.\n- **Reference Immutability:**\n  Because checks rely on `===`, developers must practice immutable updates (`this.user = { ...this.user, name: 'Alice' }`). Mutating an existing object property in place will NOT trigger change detection under OnPush!\n\n#### 3. Modern Angular Signals (The Zoneless Future):\n- **Fine-Grained Reactivity:**\n  Unlike Zone.js which checks entire component trees, Angular Signals (`signal()`, `computed()`, `effect()`) track exact data dependencies.\n- **Push-Pull Model:**\n  When a signal changes (`count.update(n => n + 1)`), it marks only the specific DOM text nodes or elements bound to that signal as dirty. No top-down tree scanning is required.\n- **Glitch-Free & Synchronous:**\n  Derived signals (`computed()`) execute synchronously and are memoized, eliminating the double-check pass and `NG0100` hazards.\n\n#### 4. Modern Functional Routing Guards & Interceptors:\n- Angular has moved away from verbose class-based guards (`implements CanActivate`) to lightweight **functional guards** (`CanActivateFn`):\n  ```typescript\n  export const authGuard: CanActivateFn = (route, state) => {\n    const auth = inject(AuthService);\n    const router = inject(Router);\n    return auth.isAuthenticated() ? true : router.createUrlTree(['/login']);\n  };\n  ```\n- Functional HTTP Interceptors (`HttpInterceptorFn`) chain cleanly in `provideHttpClient(withInterceptors([authInterceptor, loggingInterceptor]))` without NgModule registration.",
+  "rubric": [
+    {
+      "name": "Zone.js Monkey Patching & Bottlenecks",
+      "weight": 25,
+      "description": "Explains browser API interception and top-down dirty checking overhead."
+    },
+    {
+      "name": "OnPush Pruning Triggers & Immutability",
+      "weight": 30,
+      "description": "Accurately details the 4 OnPush triggers and reference identity comparison."
+    },
+    {
+      "name": "Angular Signals Reactive Model",
+      "weight": 25,
+      "description": "Contrasts coarse tree-checks with fine-grained dependency tracking and glitch-free computed state."
+    },
+    {
+      "name": "Modern Functional Guards & Interceptors",
+      "weight": 20,
+      "description": "Demonstrates modern CanActivateFn and HttpInterceptorFn using inject()."
+    }
+  ],
+  "tags": [
+    "Angular",
+    "Zone.js",
+    "OnPush",
+    "Signals",
+    "Routing Guards",
+    "Performance"
+  ]
+},
+{
+  "id": "iq-fs-nodejs-event-loop-libuv-async-programming",
+  "topicSlug": "nodejs-event-loop-libuv-async-programming",
+  "moduleNumber": 22,
+  "topicTitle": "Node.js Architecture, libuv Event Loop Phases, Microtasks & Async Programming",
+  "category": "NODEJS_BACKEND",
+  "categoryLabel": "Node.js Scalable Backend",
+  "difficulty": "Advanced",
+  "title": "Node.js Event Loop Execution Phases, Microtasks & Scalable Non-Blocking I/O",
+  "prompt": "An interviewer asks: 'Describe the exact internal architecture of Node.js: V8, libuv, and the OS kernel. Walk through the 6 phases of the libuv event loop in order. Where do process.nextTick and Promise microtasks fit into this lifecycle, and how do you prevent CPU-bound tasks from stalling the event loop?'",
+  "explanation": "Tests foundational mastery of the Node.js runtime, the libuv event loop lifecycle phases, microtask queuing rules, and thread offloading techniques.",
+  "hints": [
+    "Explain the 6 phases: Timers -> Pending Callbacks -> Idle/Prepare -> Poll -> Check -> Close Callbacks.",
+    "Explain Poll phase: calculates poll timeout and processes incoming I/O events.",
+    "Explain Check phase: setImmediate callbacks execute here.",
+    "Explain Microtask drain: process.nextTick and Promise queues run between each phase.",
+    "Explain CPU-bound offloading: worker_threads or cluster module."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Node.js Internal Architecture:\nNode.js combines three core layers:\n1. **Google V8 Engine:** Compiles and executes JavaScript into native machine code, manages call stack, heap memory, and garbage collection.\n2. **libuv (C Library):** Provides the cross-platform asynchronous I/O engine, the event loop, and a background thread pool (default 4 threads) for blocking system tasks (file I/O, DNS resolution, crypto).\n3. **OS Kernel:** Modern OS asynchronous primitives (epoll on Linux, kqueue on macOS, IOCP on Windows) handle thousands of non-blocking TCP network sockets directly without thread overhead.\n\n#### 2. The 6 Phases of the libuv Event Loop:\n1. **Timers Phase:** Executes callbacks scheduled by expired `setTimeout()` and `setInterval()` timers (ordered via a min-heap).\n2. **Pending Callbacks (I/O Callbacks):** Executes deferred I/O callbacks from previous loop iterations (e.g. system-level TCP errors like `ECONNREFUSED`).\n3. **Idle, Prepare:** Internal libuv housekeeping operations.\n4. **Poll Phase (Heart of the Loop):**\n   - Retrieves new I/O events from the OS kernel (incoming HTTP connections, data packets).\n   - Executes callbacks for I/O operations.\n   - If no timers are pending and the check queue is empty, the loop will block and wait here for new I/O events up to a calculated timeout.\n5. **Check Phase:** Executes callbacks scheduled by `setImmediate()`. Crucially, inside an I/O callback (poll phase), `setImmediate()` is guaranteed to run BEFORE any `setTimeout(0)`.\n6. **Close Callbacks:** Executes close events, such as `socket.on('close', ...)` and stream teardown.\n\n#### 3. Microtasks & Tick Boundaries:\n- Microtasks do NOT run in a dedicated event loop phase; they run **between every individual callback** and on every phase transition.\n- **Precedence Order:**\n  1. `process.nextTick()` queue (drained completely first).\n  2. `Promise.then()` / `queueMicrotask()` queue (drained next).\n  *Warning:* An infinite recursion of `process.nextTick()` completely starves the event loop, freezing all I/O!\n\n#### 4. Handling CPU-Bound Tasks:\nSince JavaScript runs on a single thread, heavy CPU computation (image resizing, ML inference, PDF generation, bcrypt hashing) blocks the call stack:\n- **Worker Threads (`worker_threads`):** Spawns real OS threads sharing memory via `SharedArrayBuffer` for parallel CPU processing.\n- **Native Thread Pool (`UV_THREADPOOL_SIZE`):** Scaling libuv threads up to 16 or 32 for parallel crypto/fs operations.\n- **Cluster Module / Child Processes:** Forks separate OS processes across CPU cores listening on the same server port.",
+  "rubric": [
+    {
+      "name": "Node.js Core Architecture Components",
+      "weight": 25,
+      "description": "Explains V8, libuv thread pool, and OS non-blocking primitives (epoll/kqueue)."
+    },
+    {
+      "name": "The 6 Event Loop Phases",
+      "weight": 35,
+      "description": "Correctly outlines Timers, Pending, Idle, Poll, Check, and Close in order."
+    },
+    {
+      "name": "Microtask Queues & Precedence",
+      "weight": 20,
+      "description": "Explains nextTick vs Promise priority and tick boundary drainage."
+    },
+    {
+      "name": "CPU-Bound Offloading Patterns",
+      "weight": 20,
+      "description": "Details worker_threads, clustering, and thread pool scaling."
+    }
+  ],
+  "tags": [
+    "Node.js",
+    "Event Loop",
+    "libuv",
+    "V8",
+    "Microtasks",
+    "Worker Threads",
+    "Backend"
+  ]
+},
+{
+  "id": "iq-fs-nodejs-streams-buffer-file-handling",
+  "topicSlug": "nodejs-streams-buffer-file-handling",
+  "moduleNumber": 22,
+  "topicTitle": "Node.js Streams, Buffer Internals, File Handling & Backpressure Management",
+  "category": "NODEJS_BACKEND",
+  "categoryLabel": "Node.js Scalable Backend",
+  "difficulty": "Advanced",
+  "title": "V8 Buffers, Stream Backpressure Management & Pipeline Error Handling",
+  "prompt": "An interviewer asks: 'How do Node.js Buffers manage raw binary memory outside the V8 heap? Explain how backpressure works between readable and writable streams, what highWaterMark signifies, and why stream.promises.pipeline is critical for production reliability.'",
+  "explanation": "Tests mastery of low-level memory representation in Node.js, stream backpressure flow control, and resilient stream chaining.",
+  "hints": [
+    "Explain Buffers: allocated outside V8 heap by C++ bindings, avoiding V8 GC pauses.",
+    "Explain highWaterMark: internal threshold buffer limit (default 16KB for byte streams, 16 for objectMode).",
+    "Explain Backpressure: writable.write() returning false -> readable.pause() -> 'drain' event -> readable.resume().",
+    "Explain pipeline: properly cleans up resources and forwards errors, unlike .pipe()."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Node.js Buffer Architecture:\n- **Off-Heap Memory Allocation:**\n  A `Buffer` represents fixed-size chunks of raw memory allocated **outside the V8 JavaScript garbage-collected heap** via C++ `node::Buffer` bindings.\n- **Why Off-Heap Matters:**\n  Storing multi-gigabyte binary files or images in the V8 heap causes severe garbage collector pauses (mark-sweep compaction) that can stall the server for seconds. Buffers allow Node.js to stream huge payloads without bloating the JavaScript heap.\n- **Buffer Pool:** Node.js pre-allocates an 8 KB internal memory pool (`Buffer.poolSize`) to optimize small slice allocations.\n\n#### 2. Stream Backpressure Flow Control:\n- **The Problem:** A fast readable stream (e.g. reading from NVMe SSD at 2 GB/s) piped to a slow writable stream (e.g. sending over a 10 Mbps cellular socket) will overwhelm the recipient's internal buffer, consuming gigabytes of system RAM until the process crashes.\n- **The Backpressure Mechanism:**\n  1. Every writable stream has a **`highWaterMark`** (default 16 KB for byte streams, 16 for object streams).\n  2. When `writable.write(chunk)` is called, the writable pushes the chunk to its internal buffer.\n  3. If the internal buffer size exceeds `highWaterMark`, `writable.write()` returns **`false`**.\n  4. This boolean `false` signals backpressure: the readable stream must immediately **pause reading** (`readable.pause()`).\n  5. Once the slow consumer flushes the buffer down to the kernel socket, the writable emits the **`'drain'` event**.\n  6. The readable stream listens for `'drain'` and **resumes reading** (`readable.resume()`).\n\n#### 3. Why stream.promises.pipeline is Critical:\n- **The Flaw of `readable.pipe(writable)`:**\n  `readable.pipe(writable)` was the legacy API. If an error occurs halfway through (e.g. client disconnects or disk full), `pipe()` does NOT close the file descriptors or destroy the streams. Memory and file descriptors leak permanently.\n- **The Pipeline Solution:**\n  ```javascript\n  const { pipeline } = require('stream/promises');\n  await pipeline(readableStream, transformStream, writableStream);\n  ```\n  `pipeline` automatically registers error handlers on all streams in the chain, ensures all streams are destroyed (`.destroy()`), closes underlying file handles, and returns a clean Promise.",
+  "rubric": [
+    {
+      "name": "Buffer Off-Heap Architecture",
+      "weight": 30,
+      "description": "Explains raw C++ allocation outside V8 heap and avoidance of GC pauses."
+    },
+    {
+      "name": "Backpressure & highWaterMark Mechanism",
+      "weight": 40,
+      "description": "Accurately details write() returning false, pausing, highWaterMark, and the drain event."
+    },
+    {
+      "name": "pipeline vs pipe Resource Teardown",
+      "weight": 30,
+      "description": "Explains automatic file descriptor cleanup and error propagation in stream/promises.pipeline."
+    }
+  ],
+  "tags": [
+    "Node.js",
+    "Streams",
+    "Buffers",
+    "Backpressure",
+    "highWaterMark",
+    "Pipeline"
+  ]
+},
+{
+  "id": "iq-fs-express-middleware-security-performance-caching",
+  "topicSlug": "express-middleware-security-performance-caching",
+  "moduleNumber": 22,
+  "topicTitle": "Express.js Middleware Pipeline, Redis Caching, Clustering & PM2 Scalability",
+  "category": "NODEJS_BACKEND",
+  "categoryLabel": "Node.js Scalable Backend",
+  "difficulty": "Advanced",
+  "title": "Production Express Pipeline: Security, Redis Caching, Clustering & Error Handling",
+  "prompt": "An interviewer asks: 'How do you design a battle-tested Express.js middleware pipeline for an enterprise microservice? Walk through the exact middleware ordering (security, parsing, logging, rate limiting, routing, error handling), explain Redis response caching, and detail how to scale across CPU cores using Node clustering or PM2.'",
+  "explanation": "Tests enterprise backend system architecture, middleware execution lifecycle, caching strategies, and process clustering.",
+  "hints": [
+    "Explain pipeline ordering: Correlation ID -> Security (Helmet/CORS) -> Body Parser -> Rate Limiter -> Logging -> Cache -> Routes -> 404 -> Error Handler.",
+    "Explain Redis caching: key generation, TTL, X-Cache HIT/MISS headers, and cache invalidation on mutations.",
+    "Explain Error handling: 4 parameters (err, req, res, next) with RFC 7807 problem details.",
+    "Explain Clustering: cluster.fork() per CPU core, IPC, master process distributing TCP handles."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Strict Middleware Ordering Architecture:\nIn Express, middleware executes in strict registration order. The production sequence:\n1. **Correlation ID Middleware:** Attaches `X-Correlation-ID` UUID to `req.id` and `res` header for distributed tracing.\n2. **Security Headers (Helmet):** Configures CSP, HSTS, X-Frame-Options, X-Content-Type-Options.\n3. **CORS Configuration:** Enforces trusted origin whitelist and handles preflight OPTIONS caching.\n4. **Body Parsers with Size Guards:** `express.json({ limit: '100kb' })` to prevent memory exhaustion attacks.\n5. **Rate Limiting:** Distributed Redis-backed sliding window limiter protecting against brute-force attacks.\n6. **Structured Logging (Pino / Morgan):** Logs inbound requests with correlation IDs and timestamps.\n7. **Idempotent Caching Layer:** Redis cache middleware for GET endpoints.\n8. **Application Route Handlers:** Business logic routes.\n9. **404 Not Found Catch-All:** Handles unmatched URLs.\n10. **Centralized Error Handler (MUST BE LAST):** 4-parameter `(err, req, res, next)` normalizing error responses.\n\n#### 2. Redis Response Caching Pattern:\n- **Cache Key Design:** `cache:<tenantId>:<route>:<sha256(queryString)>`.\n- **Cache-Aside Middleware:**\n  - On `GET`: Query Redis. If found, set header `X-Cache: HIT` and return cached JSON.\n  - If miss: set `X-Cache: MISS`, hook into `res.json()` to write the payload to Redis with an explicit TTL (e.g. 60 seconds), and return.\n- **Invalidation on Mutation:**\n  When `POST`, `PUT`, `PATCH`, or `DELETE` mutations succeed, immediately evict matching cache keys.\n\n#### 3. Scaling Across CPU Cores (Clustering & PM2):\n- **Why Clustering is Necessary:** A single Node.js instance only utilizes 1 CPU core. On an 8-core server, 7 cores sit idle without clustering.\n- **How Node.js Cluster Works:**\n  - The Primary (Master) process creates a master TCP listening socket on port 3000.\n  - The master calls `cluster.fork()` for each CPU core (`os.cpus().length`).\n  - Incoming connections are distributed across worker processes using an internal **Round-Robin** algorithm on Linux/macOS.\n  - If a worker crashes, the master catches the `'exit'` event and immediately forks a replacement worker.\n- **In Production Containers:** In Kubernetes or PM2 (`pm2 start server.js -i max`), clustering ensures zero-downtime rolling reloads and maximum server saturation.",
+  "rubric": [
+    {
+      "name": "Middleware Pipeline Ordering Logic",
+      "weight": 30,
+      "description": "Outlines correct order from Correlation ID/Helmet through Centralized Error Handler."
+    },
+    {
+      "name": "Redis Caching & Invalidation Architecture",
+      "weight": 25,
+      "description": "Explains cache key design, TTL, X-Cache headers, and mutation invalidation."
+    },
+    {
+      "name": "Centralized Error Handling Contract",
+      "weight": 20,
+      "description": "Explains 4-parameter arity and RFC 7807 normalized error responses."
+    },
+    {
+      "name": "Multi-Core Clustering & Worker Lifecycle",
+      "weight": 25,
+      "description": "Explains cluster.fork, master TCP port sharing, round-robin, and worker self-healing."
+    }
+  ],
+  "tags": [
+    "Express.js",
+    "Middleware",
+    "Redis",
+    "Clustering",
+    "PM2",
+    "Security",
+    "Backend"
+  ]
+},
+{
+  "id": "iq-fs-rest-api-design-http-protocol-idempotency",
+  "topicSlug": "rest-api-design-http-protocol-idempotency",
+  "moduleNumber": 23,
+  "topicTitle": "RESTful API Architectural Constraints, HTTP Protocol & Idempotency",
+  "category": "APIS_INTEGRATION",
+  "categoryLabel": "REST APIs & API Security",
+  "difficulty": "Advanced",
+  "title": "Enterprise REST Architectural Principles, Idempotency Keys & Conditional Caching",
+  "prompt": "An interviewer asks: 'What are the 6 architectural constraints of REST according to Roy Fielding? How do you guarantee idempotency in payment/order POST requests using Idempotency Keys and Redis? Explain conditional caching using ETag, If-None-Match, and HTTP 304.'",
+  "explanation": "Tests theoretical foundation of REST, practical implementation of idempotency for non-idempotent HTTP methods, and HTTP conditional caching protocols.",
+  "hints": [
+    "Explain the 6 REST constraints: Client-Server, Stateless, Cacheable, Uniform Interface, Layered System, Code-on-Demand.",
+    "Explain Idempotency Key flow: Client sends UUID header -> Redis distributed lock -> Return cached response on duplicate.",
+    "Explain HTTP 304: Server calculates ETag hash; client sends If-None-Match; server returns 304 Not Modified with empty body."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. The 6 Architectural Constraints of REST (Roy Fielding):\n1. **Client-Server Architecture:** Separation of concerns; UI concerns are decoupled from data storage concerns.\n2. **Statelessness:** Each request from client to server must contain all information necessary to understand and process the request. No client context is stored on the server session.\n3. **Cacheability:** Responses must implicitly or explicitly define themselves as cacheable or non-cacheable (`Cache-Control`, `ETag`).\n4. **Uniform Interface:**\n   - Identification of resources (URIs).\n   - Manipulation of resources through representations (JSON/XML).\n   - Self-descriptive messages (Media types, HTTP headers).\n   - HATEOAS (Hypermedia As The Engine Of Application State).\n5. **Layered System:** Client cannot tell whether it is connected directly to the end server or an intermediate proxy, CDN, or load balancer.\n6. **Code on Demand (Optional):** Servers can temporarily extend client functionality by transferring executable code (e.g. JavaScript).\n\n#### 2. Idempotency Key Architecture for Financial POST Requests:\n- **The Challenge:** HTTP `POST` is non-idempotent by design. Network drops during checkout cause clients to retry, risking duplicate credit card charges.\n- **The Resolution Protocol:**\n  1. **Key Generation:** Client generates a unique UUIDv4 and attaches `Idempotency-Key: <uuid>` header.\n  2. **Atomic Lock in Redis:**\n     Backend executes `SET idempotency:<userId>:<key> \"IN_FLIGHT\" EX 120 NX`.\n     - If `NX` fails (key already exists):\n       - If status is `\"IN_FLIGHT\"`: Return `HTTP 409 Conflict` (concurrent duplicate request in progress).\n       - If status is `\"COMPLETED\"`: Return the previously saved HTTP status code and response body with header `X-Cache-Lookup: IDEMPOTENCY-HIT`.\n  3. **Execution & Cache Save:** If lock acquired, execute the charge and save the resulting response in Redis with a 24-hour expiration.\n\n#### 3. Conditional Caching with ETag & HTTP 304 Not Modified:\n- **ETag (Entity Tag):** A cryptographic hash (e.g. MD5/SHA) of the resource representation:\n  ```http\n  HTTP/1.1 200 OK\n  ETag: W/\"68b329da9893e34099c7d8ad5cb9c940\"\n  Cache-Control: public, max-age=3600, must-revalidate\n  ```\n- **Validation Request:** When the client re-requests the resource, it sends the stored hash in the request header:\n  ```http\n  GET /api/v1/products/42\n  If-None-Match: W/\"68b329da9893e34099c7d8ad5cb9c940\"\n  ```\n- **The 304 Response:** Server calculates the current ETag. If identical, the server sends:\n  ```http\n  HTTP/1.1 304 Not Modified\n  ```\n  With **0 bytes body**! The client immediately renders from local browser cache, saving 99% of bandwidth and network transfer time.",
+  "rubric": [
+    {
+      "name": "6 REST Constraints Definition",
+      "weight": 30,
+      "description": "Clearly outlines Fielding's 6 constraints with statelessness and uniform interface."
+    },
+    {
+      "name": "Idempotency Key Mechanism & Redis Locking",
+      "weight": 40,
+      "description": "Accurately details UUID header, SET NX lock, concurrent 409, and replay headers."
+    },
+    {
+      "name": "ETag & 304 Conditional Caching Flow",
+      "weight": 30,
+      "description": "Explains ETag hash, If-None-Match request, and 304 Not Modified bandwidth savings."
+    }
+  ],
+  "tags": [
+    "REST API",
+    "HTTP",
+    "Idempotency",
+    "ETag",
+    "Caching",
+    "Roy Fielding",
+    "APIs"
+  ]
+},
+{
+  "id": "iq-fs-api-security-jwt-rbac-rate-limiting-cors",
+  "topicSlug": "api-security-jwt-rbac-rate-limiting-cors",
+  "moduleNumber": 23,
+  "topicTitle": "API Security: JWT Token Lifecycle, RBAC Authorization, Rate Limiting & CORS",
+  "category": "APIS_INTEGRATION",
+  "categoryLabel": "REST APIs & API Security",
+  "difficulty": "Advanced",
+  "title": "Dual-Token JWT Security Architecture, Refresh Token Rotation & CORS Defense",
+  "prompt": "An interviewer asks: 'How do you design a secure full-stack authentication system using JWT? Address: 1) Why storing tokens in localStorage is dangerous and how httpOnly cookies solve this. 2) Short-lived access tokens vs Refresh Token Rotation (RTR). 3) Instant token revocation for stateless JWTs. 4) How CORS preflight works and how to configure it safely in production.'",
+  "explanation": "Tests comprehensive knowledge of web application security, token vulnerabilities, XSS/CSRF mitigation, and enterprise CORS configuration.",
+  "hints": [
+    "Explain localStorage XSS risk: accessible to any rogue JS dependency or XSS script.",
+    "Explain httpOnly, Secure, SameSite=Strict cookies: inaccessible to JavaScript.",
+    "Explain RTR: Refresh token can only be used once; reuse invalidates entire token family.",
+    "Explain revocation: token version in Redis blacklist checked at API gateway.",
+    "Explain CORS: Origin, Access-Control-Allow-Origin, credentials require explicit origin (never *)."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Token Storage Vulnerabilities (LocalStorage vs httpOnly Cookies):\n- **The LocalStorage Hazard:** Any script executing in the browser (via third-party npm packages, malicious ads, or XSS vulnerabilities) can read `localStorage.getItem('token')` and exfiltrate it. It is completely undefended against XSS.\n- **The httpOnly Cookie Defense:**\n  - Marking the cookie `httpOnly` prevents client-side JavaScript from reading `document.cookie`.\n  - Marking `Secure` ensures the cookie is only transmitted over encrypted HTTPS.\n  - Setting `SameSite=Strict` (or `Lax`) prevents Cross-Site Request Forgery (CSRF) by preventing the browser from attaching the cookie to cross-site requests.\n\n#### 2. Dual-Token Architecture with Refresh Token Rotation (RTR):\n- **Access Token:**\n  - Short-lived (10-15 minutes).\n  - Stored in memory (e.g. Angular service variable) or short-lived cookie.\n  - Contains claims (userId, roles, permissions) for stateless API verification.\n- **Refresh Token & Rotation:**\n  - Long-lived (7-30 days), stored in an `httpOnly` cookie.\n  - **One-Time Use Guarantee:** Every time the refresh token is presented to `/auth/refresh`, the backend issues a **NEW access token AND a NEW refresh token**, immediately invalidating the old refresh token.\n  - **Automatic Breach Detection:** If an attacker and a legitimate user both attempt to use the same refresh token, the server detects **token reuse**, immediately revokes the entire token family, and forces re-login across all devices.\n\n#### 3. Instant Token Revocation for Stateless JWTs:\n- **The Paradox:** Purely stateless JWTs cannot be revoked until their expiration timestamp passes.\n- **Enterprise Solutions:**\n  - **Approach A (Redis Blacklist):** When a user logs out or is suspended, store the `jti` (JWT ID) in Redis with TTL matching remaining token lifespan. API gateway checks Redis before forwarding.\n  - **Approach B (User Token Versioning):** Store a `tokenVersion` integer on the user record in Redis/DB. Embed `version: 3` in the JWT. When revoking, increment version to 4. Any JWT with version 3 is rejected instantly in sub-millisecond cache check.\n\n#### 4. CORS Architecture & Preflight OPTIONS:\n- **Preflight Requirement:** Browser fires an `OPTIONS` request before any 'non-simple' request (e.g. `PUT`, `DELETE`, or any request with `Content-Type: application/json` or custom headers).\n- **Production Rules:**\n  - **Never use `Access-Control-Allow-Origin: *`** when authentication credentials (`Access-Control-Allow-Credentials: true`) are enabled. Browsers strictly reject this combination.\n  - Maintain an explicit whitelist of trusted origins:\n    ```javascript\n    const whitelist = ['https://app.enterprise.domain', 'https://admin.enterprise.domain'];\n    if (whitelist.includes(req.headers.origin)) {\n      res.setHeader('Access-Control-Allow-Origin', req.headers.origin);\n      res.setHeader('Access-Control-Allow-Credentials', 'true');\n      res.setHeader('Access-Control-Max-Age', '86400'); // 24-hr preflight cache\n    }\n    ```",
+  "rubric": [
+    {
+      "name": "Token Storage Security & XSS/CSRF",
+      "weight": 25,
+      "description": "Accurately contrasts localStorage XSS vulnerability with httpOnly/Secure/SameSite cookies."
+    },
+    {
+      "name": "Refresh Token Rotation & Family Defense",
+      "weight": 30,
+      "description": "Explains one-time refresh token usage, issuance of new pairs, and reuse breach detection."
+    },
+    {
+      "name": "Stateless Revocation Patterns",
+      "weight": 25,
+      "description": "Details Redis blacklist by JTI or user token versioning for instantaneous termination."
+    },
+    {
+      "name": "CORS Rules & Preflight Mechanics",
+      "weight": 20,
+      "description": "Explains OPTIONS preflight, credential rules, and whitelisting trusted origins."
+    }
+  ],
+  "tags": [
+    "API Security",
+    "JWT",
+    "RTR",
+    "CORS",
+    "XSS",
+    "CSRF",
+    "APIs"
+  ]
+},
+{
+  "id": "iq-fs-api-validation-pagination-filtering-error-handling",
+  "topicSlug": "api-validation-pagination-filtering-error-handling",
+  "moduleNumber": 23,
+  "topicTitle": "Schema Validation, Cursor Pagination, Filtering, Sorting & RFC 7807 Errors",
+  "category": "APIS_INTEGRATION",
+  "categoryLabel": "REST APIs & API Security",
+  "difficulty": "Advanced",
+  "title": "High-Scale Cursor Pagination, Schema Validation & RFC 7807 Error Standards",
+  "prompt": "An interviewer asks: 'Why does OFFSET pagination collapse on large tables, and how does Keyset (Cursor) pagination fix it? Explain how to implement robust request schema validation in Node.js, and detail how RFC 7807 Problem Details improves API client error handling.'",
+  "explanation": "Tests API scalability, pagination algorithms, schema validation integrity, and adhering to RFC 7807 error communication standards.",
+  "hints": [
+    "Explain OFFSET disk seek penalty: database reads N+M rows and discards N.",
+    "Explain Cursor pagination: WHERE (created_at, id) < (cursor_date, cursor_id) ORDER BY ... LIMIT M.",
+    "Explain Schema validation: Zod / Joi stripping unknown fields and returning 422.",
+    "Explain RFC 7807: standardized JSON with type, title, status, detail, instance, and invalidParams."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Why OFFSET Pagination Collapses vs Cursor Pagination:\n- **The Flaw of OFFSET:**\n  Executing `SELECT * FROM transactions ORDER BY created_at DESC LIMIT 20 OFFSET 100000` forces the database engine to **traverse 100,020 index nodes**, fetch the table rows, and discard the first 100,000 rows. Query execution time degrades linearly (O(N)), leading to disk thrashing and high latency.\n- **The Stability Problem:** If new rows are inserted while a user browses page 2, records shift, causing users to see duplicate rows or miss items.\n- **The Cursor (Keyset) Solution:**\n  Instead of an offset, the client passes an opaque cursor representing the last seen record's sort keys:\n  ```sql\n  SELECT * FROM transactions\n  WHERE (created_at, id) < ($last_created_at, $last_id)\n  ORDER BY created_at DESC, id DESC\n  LIMIT 20;\n  ```\n  - **O(log N) Performance:** The database performs a direct B-tree index seek to the exact row, executing in **< 1ms** whether fetching page 1 or page 50,000.\n  - **Completely Stable:** Newly inserted items never cause duplicate or skipped records.\n\n#### 2. Request Schema Validation (Zod / Joi):\n- **Why Validation Must Occur at the Edge:** Unvalidated request bodies lead to SQL/NoSQL injection, prototype pollution, and silent database corruption.\n- **Modern Schema Validation (e.g. Zod):**\n  - Validates types, string lengths, regex patterns, and nested objects.\n  - **Strips Unknown Properties (`strip`):** Eliminates mass-assignment vulnerabilities where malicious users inject `isAdmin: true`.\n  - **Infers TypeScript Types:** Automatically generates compile-time types from runtime schemas.\n  - On failure, aborts request before controller logic with **HTTP 422 Unprocessable Entity**.\n\n#### 3. Standardized Error Handling with RFC 7807 Problem Details:\n- **The Problem:** Inconsistent error shapes (`{ error: '...' }` vs `{ msg: '...' }` vs `{ errors: [] }`) break frontend error handling.\n- **RFC 7807 Standard (`application/problem+json`):**\n  ```json\n  {\n    \"type\": \"https://api.enterprise.domain/errors/validation-failed\",\n    \"title\": \"Validation Failed\",\n    \"status\": 422,\n    \"detail\": \"The request payload failed schema validation constraints.\",\n    \"instance\": \"/api/v1/users\",\n    \"correlationId\": \"req_a9f812b4\",\n    \"invalidParams\": [\n      { \"field\": \"email\", \"reason\": \"Must be a valid corporate email address.\" },\n      { \"field\": \"password\", \"reason\": \"Must contain at least 1 uppercase and 1 symbol.\" }\n    ]\n  }\n  ```\n  This enables Angular HTTP interceptors to build automated, accessible UI error toasts and attach field-level validation messages directly onto form controls.",
+  "rubric": [
+    {
+      "name": "OFFSET vs Keyset Performance Mechanics",
+      "weight": 35,
+      "description": "Explains O(N) scan-and-discard vs O(log N) B-tree seek and data drift stability."
+    },
+    {
+      "name": "Edge Schema Validation & Mass-Assignment Defense",
+      "weight": 30,
+      "description": "Details Zod/Joi validation, unknown property stripping, and 422 responses."
+    },
+    {
+      "name": "RFC 7807 Specification & Client Integration",
+      "weight": 35,
+      "description": "Details problem+json structure, correlation IDs, and Angular interceptor integration."
+    }
+  ],
+  "tags": [
+    "Pagination",
+    "Cursor",
+    "Schema Validation",
+    "RFC 7807",
+    "Zod",
+    "APIs"
+  ]
+},
+{
+  "id": "iq-fs-sql-nosql-schema-modeling-indexing",
+  "topicSlug": "sql-nosql-schema-modeling-indexing",
+  "moduleNumber": 24,
+  "topicTitle": "SQL vs NoSQL Data Modeling, B-Tree Indexing & ACID Transactions",
+  "category": "DATABASE_SYSTEM_DESIGN",
+  "categoryLabel": "Databases & System Design",
+  "difficulty": "Advanced",
+  "title": "SQL vs NoSQL Architectural Decisions, B-Tree Index Mechanics & ACID Isolation",
+  "prompt": "An interviewer asks: 'How do you decide between a Relational SQL database (PostgreSQL) and a NoSQL Document store (MongoDB) for an enterprise application? Explain how B-Tree indexes work internally and the Leftmost Prefix rule. What are the 4 ACID transaction isolation levels, and what anomalies do they prevent?'",
+  "explanation": "Tests foundational data engineering, storage engine internals, B-tree mechanics, and concurrency isolation anomalies.",
+  "hints": [
+    "Explain SQL vs NoSQL: ACID/relational joins/strict schemas vs horizontal scaling/polymorphic schema/high write volume.",
+    "Explain B-Tree: balanced search tree with O(log N) seeks; leftmost prefix rule requires leading columns.",
+    "Explain 4 Isolation Levels: Read Uncommitted, Read Committed, Repeatable Read, Serializable.",
+    "Explain anomalies: Dirty Read, Non-Repeatable Read, Phantom Read, Serialization Anomaly."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. SQL vs NoSQL Architectural Decision Matrix:\n- **Choose Relational SQL (PostgreSQL / MySQL) when:**\n  - Strong ACID guarantees and financial transactional integrity are mandatory.\n  - Complex relational joins, multi-table foreign key constraints, and declarative schema integrity are required.\n  - Access patterns are varied and unpredictable (analytical queries, dynamic reporting).\n- **Choose NoSQL Document Store (MongoDB) when:**\n  - Data is hierarchical or polymorphic with rapidly evolving schemas.\n  - Workloads require massive horizontal scale (sharding) across clusters with terabytes of writes per day.\n  - Data access is predominantly key-value or document-centric (e.g. user session, shopping cart, product catalog).\n\n#### 2. B-Tree Index Internals & The Leftmost Prefix Rule:\n- **B-Tree Structure:** A balanced, self-balancing search tree where each node contains multiple sorted keys and child pointers (typically matching an 8 KB OS disk page).\n- **Seek Performance:** Navigating from the root node through branch pages to leaf pages takes **O(log N)** operations, converting random full-table disk scans into a handful of page reads. Leaf nodes are linked bidirectionally for fast range scans.\n- **The Leftmost Prefix Rule:**\n  - A composite index on `(tenant_id, status, created_at)` sorts data by `tenant_id` first, then by `status` within each tenant, then by `created_at`.\n  - **Satisfies:** Queries filtering on `(tenant_id)`, `(tenant_id, status)`, or `(tenant_id, status, created_at)`.\n  - **CANNOT Satisfy:** A query filtering ONLY on `(status)` or `(status, created_at)` cannot use the index because the tree branches are partitioned by `tenant_id`. Skipping the leading column forces a Full Table Scan!\n\n#### 3. ACID Transaction Isolation Levels & Prevented Anomalies:\n1. **Read Uncommitted:**\n   - Transactions can read uncommitted data written by other concurrent transactions.\n   - *Suffers from:* **Dirty Reads** (reading data that gets rolled back).\n2. **Read Committed (PostgreSQL / SQL Server default):**\n   - Transactions only read data committed before the query started. Prevents Dirty Reads.\n   - *Suffers from:* **Non-Repeatable Reads** (re-reading the same row within the same transaction returns different values because another transaction committed an update).\n3. **Repeatable Read (MySQL InnoDB default):**\n   - Guarantees that any row read by a transaction remains unchanged for the duration of the transaction (via MVCC snapshot).\n   - *Suffers from:* **Phantom Reads** (re-running a range query returns newly inserted rows committed by other transactions).\n4. **Serializable:**\n   - Strictest isolation level. Guarantees execution is equivalent to serial, non-concurrent execution.\n   - Prevents all anomalies (Dirty Read, Non-Repeatable Read, Phantom Read, and Write Skew). Trades throughput for safety.",
+  "rubric": [
+    {
+      "name": "SQL vs NoSQL Architectural Decision Framework",
+      "weight": 30,
+      "description": "Accurately contrasts ACID/relational integrity with sharding/polymorphic document storage."
+    },
+    {
+      "name": "B-Tree Mechanics & Leftmost Prefix Rule",
+      "weight": 35,
+      "description": "Explains balanced page nodes, leaf range chains, and composite index ordering constraints."
+    },
+    {
+      "name": "4 ACID Isolation Levels & Database Anomalies",
+      "weight": 35,
+      "description": "Correctly outlines Read Uncommitted, Read Committed, Repeatable Read, Serializable, and anomalies."
+    }
+  ],
+  "tags": [
+    "Databases",
+    "PostgreSQL",
+    "MongoDB",
+    "B-Tree",
+    "ACID",
+    "Indexes",
+    "System Design"
+  ]
+},
+{
+  "id": "iq-fs-query-optimization-execution-plans-caching",
+  "topicSlug": "query-optimization-execution-plans-caching",
+  "moduleNumber": 24,
+  "topicTitle": "Query Optimization, EXPLAIN ANALYZE, Joins & Cache Invalidation Patterns",
+  "category": "DATABASE_SYSTEM_DESIGN",
+  "categoryLabel": "Databases & System Design",
+  "difficulty": "Advanced",
+  "title": "Database Query Tuning: EXPLAIN ANALYZE, Joins, N+1 Elimination & Cache-Aside Invalidation",
+  "prompt": "An interviewer asks: 'How do you profile a slow database query using EXPLAIN ANALYZE? Walk through how to eliminate the N+1 query problem, compare the 3 primary relational join algorithms, and detail the Cache-Aside pattern with strategies to prevent Cache Stampede.'",
+  "explanation": "Tests practical database performance tuning, execution plan interpretation, join strategies, and caching resiliency.",
+  "hints": [
+    "Explain EXPLAIN ANALYZE: Seq Scan vs Index Scan, execution time, buffers shared hit/read.",
+    "Explain N+1: 1 parent query + N loop queries; fixed by eager loading JOIN or DataLoader.",
+    "Explain 3 Joins: Nested Loop, Hash Join, Merge Join.",
+    "Explain Cache Stampede: Mutex lock (Redlock) or Probabilistic Early Expiration (XFetch)."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. Interpreting EXPLAIN ANALYZE:\n- **`EXPLAIN` vs `EXPLAIN ANALYZE`:** `EXPLAIN` only prints the optimizer's estimated cost. `EXPLAIN (ANALYZE, BUFFERS)` actually executes the query and reports actual execution time and hardware buffer usage.\n- **Critical Red Flags in Execution Plans:**\n  - **Seq Scan (Sequential Scan):** Scanning millions of rows on disk instead of an index. Solution: Add index on filter/join columns.\n  - **Cost `(cost=0.42..8.44 rows=1)`:** Estimated startup cost vs total completion cost in arbitrary page fetch units.\n  - **Buffers: shared read=... vs hit=...:** `hit` means data was served from RAM buffer cache; `read` means data had to be fetched from physical NVMe/SSD disk. High `read` indicates memory cache pressure.\n\n#### 2. Eliminating the N+1 Query Problem:\n- **The Problem:** An application queries 100 users, and then inside a loop queries the orders for each user: 1 initial query + 100 loop queries = 101 queries!\n- **Solution 1 (Relational SQL JOIN):**\n  Use eager loading to fetch users and orders in a single SQL statement:\n  ```sql\n  SELECT u.id, u.name, o.id AS order_id, o.amount\n  FROM users u\n  LEFT JOIN orders o ON o.user_id = u.id\n  WHERE u.status = 'ACTIVE';\n  ```\n- **Solution 2 (Application-Level Batching / DataLoader):**\n  Collect all user IDs (`[1, 2, ... 100]`) and execute a single batched query:\n  ```sql\n  SELECT * FROM orders WHERE user_id IN (1, 2, ..., 100);\n  ```\n  Reduces 101 queries to exactly **2 queries** with zero relational Cartesian product overhead.\n\n#### 3. The 3 Primary Relational Join Algorithms:\n1. **Nested Loop Join:** For each row in the outer table, searches matching rows in the inner table. Optimal when outer set is small (< 1,000 rows) and inner table has a B-tree index on the join key.\n2. **Hash Join:** Scans the smaller table, builds an in-memory hash table of join keys, and probes it while scanning the larger table. Optimal for large, unsorted sets.\n3. **Merge Join:** Both tables must be sorted on the join key (e.g. from index scans). Walks both tables in parallel like a merge sort. Highly efficient for massive sorted datasets.\n\n#### 4. Cache-Aside Pattern & Cache Stampede Defense:\n- **Cache-Aside Architecture:** Application checks Redis. On hit, returns data. On miss, reads SQL database, writes to Redis with TTL, and returns.\n- **The Cache Stampede (Thundering Herd) Disaster:**\n  When a high-traffic cache key (e.g. homepage banner) expires, 10,000 concurrent requests simultaneously experience a cache miss. All 10,000 fire identical queries to the database, causing DB CPU to spike to 100% and crash.\n- **Stampede Defenses:**\n  1. **Distributed Mutex Lock (Redlock / SET NX):** Only the first worker acquires a lock to query the DB and refresh cache; others wait or receive stale data.\n  2. **Probabilistic Early Expiration (XFetch Algorithm):** Background workers compute whether to recompute the cache before it officially expires based on remaining TTL and computation time.",
+  "rubric": [
+    {
+      "name": "EXPLAIN ANALYZE Plan Interpretation",
+      "weight": 30,
+      "description": "Explains Seq Scan vs Index Scan, actual time, and shared buffer hit vs read."
+    },
+    {
+      "name": "N+1 Problem & Eager Batching Solutions",
+      "weight": 25,
+      "description": "Contrasts loop queries with SQL JOINs and DataLoader IN batching."
+    },
+    {
+      "name": "3 Relational Join Algorithms",
+      "weight": 20,
+      "description": "Accurately details Nested Loop, Hash Join, and Merge Join heuristics."
+    },
+    {
+      "name": "Cache-Aside & Cache Stampede Defenses",
+      "weight": 25,
+      "description": "Details Redis Lazy Loading, distributed mutex locking, and probabilistic early refresh."
+    }
+  ],
+  "tags": [
+    "Query Optimization",
+    "EXPLAIN ANALYZE",
+    "N+1",
+    "Joins",
+    "Redis",
+    "Cache Stampede"
+  ]
+},
+{
+  "id": "iq-fs-fullstack-system-design-angular-node-integration",
+  "topicSlug": "fullstack-system-design-angular-node-integration",
+  "moduleNumber": 24,
+  "topicTitle": "Full-Stack Enterprise System Design: Angular + Node.js + DB + WebSockets",
+  "category": "DATABASE_SYSTEM_DESIGN",
+  "categoryLabel": "Databases & System Design",
+  "difficulty": "Advanced",
+  "title": "Full-Stack Enterprise System Design: Angular SPA + Node.js Microservices + Redis + DB",
+  "prompt": "An interviewer asks: 'Design a resilient, high-throughput enterprise web platform supporting 100,000 concurrent users built with Angular, Node.js, WebSockets, Redis, and PostgreSQL. Address: 1) High-level multi-tier topology (CDN, reverse proxy, microservices, databases). 2) Bi-directional real-time architecture and horizontal WebSocket scaling. 3) Optimistic UI updates with failure rollback in Angular. 4) Distributed tracing across microservice boundaries.'",
+  "explanation": "Tests end-to-end full-stack system design, real-time bi-directional scalability, client-side optimistic UI patterns, and distributed observability.",
+  "hints": [
+    "Explain Tier topology: Cloudflare CDN -> Nginx load balancer -> Node.js cluster -> Redis + PostgreSQL read replicas.",
+    "Explain WebSockets: Socket.io with Redis Pub/Sub adapter to broadcast events across independent Node worker instances.",
+    "Explain Optimistic UI: Update Signal/State immediately -> rollback on API rejection.",
+    "Explain Distributed Tracing: Correlation ID in Angular HTTP interceptor propagated through Nginx and Node via AsyncLocalStorage."
+  ],
+  "recommendedSolution": "### Model Senior Full-Stack Architect Answer:\n\n#### 1. High-Level Multi-Tier Production Topology:\n```\n[100,000 Angular Clients]\n         │\n         ▼ (HTTPS / WSS)\n[Cloudflare Edge CDN & WAF] (DDoS Mitigation, TLS 1.3, Edge Asset Caching)\n         │\n         ▼ (Port 443)\n[Nginx Reverse Proxy & Load Balancer] (SSL Termination, Gzip/Brotli, Round-Robin)\n         │\n   ┌─────┴─────────────────────┐\n   ▼                           ▼\n[Node.js API Microservice]  [Node.js WebSocket Cluster]\n(Stateless Express / Fastify)  (Real-Time Event Engine)\n   │                           │\n   ├──────────────┬────────────┤\n   ▼              ▼            ▼\n[Redis Cluster] [PostgreSQL Primary] ──▶ [PostgreSQL Read Replicas]\n(Cache / PubSub)  (ACID Writes)            (Read Queries)\n```\n\n#### 2. Bi-Directional Real-Time WebSockets at Scale:\n- **The Challenge:** WebSocket connections are stateful TCP sockets held open to a specific server. When scaling to multiple Node.js instances, Server A cannot emit a message directly to a client connected to Server B.\n- **The Solution (Redis Pub/Sub Adapter):**\n  - Attach `@socket.io/redis-adapter` to all Node.js WebSocket instances.\n  - When Server A emits `io.to('room:42').emit('ORDER_UPDATE', data)`, it publishes the event to a Redis Pub/Sub channel.\n  - All Node worker instances receive the Redis payload and broadcast it to their locally connected clients in that room.\n- **Client Reconnection Resiliency:** Angular client connects with randomized exponential backoff (Full Jitter) to avoid thundering herd storms on edge reconnects.\n\n#### 3. Angular Optimistic UI Updates with Error Rollback:\n- **Why Optimistic UI Matters:** Waiting for network round-trips (200-500ms) makes UI feel sluggish. Optimistic UI applies state updates immediately, creating instant responsiveness.\n- **The Architecture:**\n  ```typescript\n  @Injectable({ providedIn: 'root' })\n  export class TaskStore {\n    private tasks = signal<Task[]>([]);\n    \n    toggleTask(taskId: string) {\n      // 1. Snapshot previous state\n      const previousState = this.tasks();\n      \n      // 2. Optimistic Update (Immediate UI reaction)\n      this.tasks.update(tasks => tasks.map(t => t.id === taskId ? { ...t, done: !t.done } : t));\n      \n      // 3. Dispatch backend request\n      this.http.patch(`/api/v1/tasks/${taskId}`, { done: !task.done }).pipe(\n        catchError(error => {\n          // 4. Rollback on failure & alert user\n          this.tasks.set(previousState);\n          this.toastService.error('Failed to update task. Changes reverted.');\n          return EMPTY;\n        })\n      ).subscribe();\n    }\n  }\n  ```\n\n#### 4. Distributed Tracing Across Tiers (Correlation IDs):\n- **Generation:** Angular functional HTTP interceptor generates a UUIDv4 and attaches `X-Correlation-ID: req_8a7b1c...` to every outbound request.\n- **Proxy Forwarding:** Nginx preserves the header using `proxy_set_header X-Correlation-ID $http_x_correlation_id;`.\n- **Node.js Context Propagation:** Node backend attaches the ID to `AsyncLocalStorage`, ensuring all asynchronous database queries, logs, and downstream microservice HTTP calls log the exact same correlation ID without manual parameter passing.\n- **Observability:** Developers can search OpenTelemetry or Datadog for a single correlation ID and view the complete trace from Angular click through DB query in milliseconds.",
+  "rubric": [
+    {
+      "name": "Multi-Tier Production Architecture",
+      "weight": 25,
+      "description": "Explains CDN, reverse proxy, stateless Node backend, Redis cluster, and DB read replicas."
+    },
+    {
+      "name": "WebSocket Horizontal Scaling with Redis PubSub",
+      "weight": 30,
+      "description": "Explains cross-node event broadcasting via Redis adapter and client jitter reconnection."
+    },
+    {
+      "name": "Angular Optimistic UI Rollback Pattern",
+      "weight": 25,
+      "description": "Demonstrates Signal/state snapshotting, immediate UI update, and catchError rollback."
+    },
+    {
+      "name": "Distributed Tracing with AsyncLocalStorage",
+      "weight": 20,
+      "description": "Details X-Correlation-ID generation, Nginx pass-through, and AsyncLocalStorage propagation."
+    }
+  ],
+  "tags": [
+    "System Design",
+    "WebSockets",
+    "Angular",
+    "Node.js",
+    "Redis",
+    "Distributed Tracing"
+  ]
+}];
 
 
 /**

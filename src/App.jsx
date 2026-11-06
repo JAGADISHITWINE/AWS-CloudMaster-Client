@@ -19,6 +19,7 @@ import DefinitionsGlossary from './pages/DefinitionsGlossary';
 import HandsOnProjects from './pages/HandsOnProjects';
 import AiAssistantDrawer from './components/AiAssistantDrawer';
 import { api } from './services/api';
+import { FALLBACK_MODULES } from './data/fallbackModulesData';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -26,20 +27,8 @@ export default function App() {
   const [selectedTopicSlug, setSelectedTopicSlug] = useState('regions-azs-and-edge-infrastructure');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
-  const [modules, setModules] = useState([]);
+  const [modules, setModules] = useState(FALLBACK_MODULES);
   const [loading, setLoading] = useState(true);
-
-  // Theme state: 'coral' (AWS Signature Amber/Gold), 'indigo', 'emerald', 'light'
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('aws_platform_theme');
-    if (!saved || saved === 'indigo') return 'coral';
-    return saved;
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('aws_platform_theme', theme);
-  }, [theme]);
 
   // Load user from storage or fetch /auth/me
   useEffect(() => {
@@ -75,9 +64,19 @@ export default function App() {
 
     api.getModules()
       .then(res => {
-        setModules(res.modules || []);
+        if (res.modules && res.modules.length > 0) {
+          const existingNums = new Set(res.modules.map(m => m.moduleNumber));
+          const missing = FALLBACK_MODULES.filter(m => !existingNums.has(m.moduleNumber));
+          const merged = [...res.modules, ...missing].sort((a, b) => a.moduleNumber - b.moduleNumber);
+          setModules(merged);
+        } else {
+          setModules(FALLBACK_MODULES);
+        }
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.warn('Backend API unavailable, using offline fallback modules:', err.message);
+        setModules(FALLBACK_MODULES);
+      });
   };
 
   const handleSelectTopic = (slug, targetTab = 'topic-detail') => {
@@ -95,16 +94,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans transition-colors duration-300">
-      {/* Top Navigation with Theme Switcher */}
+    <div className="min-h-screen bg-[var(--bg-primary,#0b101b)] text-[var(--text-primary,#f8fafc)] flex flex-col font-sans transition-colors duration-300">
+      {/* Top Navigation Bar */}
       <Navbar
         user={user}
         onLogout={handleLogout}
         onOpenLogin={() => setIsLoginOpen(true)}
         onOpenSafety={() => setActiveTab('free-tier-safety')}
         onOpenAiTrainer={() => setActiveTab('ai-trainer')}
-        currentTheme={theme}
-        onSelectTheme={(t) => setTheme(t)}
       />
 
       {/* Main Body */}

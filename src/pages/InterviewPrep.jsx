@@ -45,7 +45,12 @@ const CATEGORY_ICONS = {
   SERVERLESS: Zap,
   MONITORING: Activity,
   TERRAFORM_IAC: Code,
-  DEVOPS_CICD: Workflow
+  DEVOPS_CICD: Workflow,
+  FULLSTACK_DEVELOPMENT: Layers,
+  ANGULAR_FRONTEND: Code,
+  NODEJS_BACKEND: Server,
+  APIS_INTEGRATION: Shield,
+  DATABASE_SYSTEM_DESIGN: Database
 };
 
 export default function InterviewPrep({ onNavigate }) {

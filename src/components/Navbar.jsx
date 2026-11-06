@@ -1,57 +1,33 @@
 import React from 'react';
-import { Cloud, Flame, ShieldAlert, Award, User, LogOut, Palette, Zap, Bot } from 'lucide-react';
+import { Cloud, Flame, ShieldAlert, Award, User, LogOut, Zap, Bot } from 'lucide-react';
 
-export default function Navbar({ user, onLogout, onOpenLogin, onOpenSafety, onOpenAiTrainer, currentTheme, onSelectTheme }) {
-  const themes = [
-    { id: 'indigo', name: 'Indigo Neon', color: 'bg-indigo-500' },
-    { id: 'coral', name: 'AWS Coral', color: 'bg-orange-500' },
-    { id: 'emerald', name: 'Matrix Emerald', color: 'bg-emerald-500' },
-    { id: 'light', name: 'Studio Light', color: 'bg-slate-200 border border-slate-400' }
-  ];
-
+export default function Navbar({ user, onLogout, onOpenLogin, onOpenSafety, onOpenAiTrainer }) {
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-2xl border-b border-indigo-500/20 text-slate-100 transition-colors">
+    <header className="sticky top-0 z-40 bg-[var(--bg-primary,#0b101b)]/90 backdrop-blur-2xl border-b border-white/[0.08] text-slate-100 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand with Glowing Logo */}
         <div className="flex items-center gap-3">
           <div className="relative group cursor-pointer">
             <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 rounded-2xl blur-md opacity-70 group-hover:opacity-100 transition duration-300"></div>
-            <div className="relative w-10 h-10 rounded-xl bg-slate-950 border border-indigo-400/40 flex items-center justify-center text-white shadow-xl">
-              <Cloud className="w-5 h-5 text-indigo-400" />
+            <div className="relative w-10 h-10 rounded-xl bg-slate-900 border border-cyan-400/30 flex items-center justify-center text-white shadow-xl">
+              <Cloud className="w-5 h-5 text-cyan-400" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight font-display bg-gradient-to-r from-indigo-400 via-cyan-300 to-white bg-clip-text text-transparent">
+              <span className="font-extrabold text-base tracking-tight font-display bg-gradient-to-r from-cyan-300 via-sky-200 to-white bg-clip-text text-transparent">
                 Cloud &amp; DevOps Master
               </span>
-              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 flex items-center gap-1 shadow-sm">
-                <Zap className="w-2.5 h-2.5 fill-amber-400 text-amber-400" /> 20 Modules + Ollama AI
+              <span className="text-[10px] font-black uppercase tracking-wider bg-cyan-500/15 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30 flex items-center gap-1 shadow-sm">
+                <Zap className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" /> 24 Modules + Ollama AI
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">AWS Cloud, GitHub, Jenkins, Docker &amp; Kubernetes</p>
+            <p className="text-[11px] text-slate-400 font-medium">AWS Cloud, DevOps CI/CD &amp; Full-Stack (Angular + Node.js)</p>
           </div>
         </div>
 
         {/* Right Action Widgets */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Quick Theme Switcher Pill */}
-          <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-slate-900/90 border border-indigo-500/30 shadow-inner">
-            <Palette className="w-3.5 h-3.5 text-indigo-400 ml-1 mr-0.5" />
-            {themes.map(t => (
-              <button
-                key={t.id}
-                onClick={() => onSelectTheme(t.id)}
-                className={`w-5 h-5 rounded-full ${t.color} transition-all transform ${
-                  currentTheme === t.id
-                    ? 'ring-2 ring-white scale-110 shadow-lg'
-                    : 'opacity-50 hover:opacity-100'
-                }`}
-                title={`Switch to ${t.name}`}
-              />
-            ))}
-          </div>
-
           {/* AI Trainer Button */}
           {onOpenAiTrainer && (
             <button

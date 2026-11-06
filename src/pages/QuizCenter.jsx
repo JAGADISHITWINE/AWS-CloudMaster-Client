@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
+import { FALLBACK_QUIZZES } from '../data/fallbackQuizzesData';
 
 export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
   const [quizData, setQuizData] = useState(null);
@@ -37,10 +38,33 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
 
     api.getTopicQuiz(topicSlug)
       .then(res => {
-        setQuizData(res);
+        if (res && res.questions && res.questions.length > 0) {
+          setQuizData(res);
+        } else {
+          const topicQuizzes = FALLBACK_QUIZZES.filter(q => q.topicSlug === topicSlug);
+          if (topicQuizzes.length > 0) {
+            setQuizData({
+              success: true,
+              topic: { id: topicSlug, title: topicSlug.replace(/-/g, ' ') },
+              totalQuestions: topicQuizzes.length,
+              passingScorePercentage: 70,
+              questions: topicQuizzes
+            });
+          }
+        }
       })
       .catch(err => {
-        console.error('Quiz load error:', err);
+        console.warn('Backend API unavailable, using offline fallback quiz:', err.message);
+        const topicQuizzes = FALLBACK_QUIZZES.filter(q => q.topicSlug === topicSlug);
+        if (topicQuizzes.length > 0) {
+          setQuizData({
+            success: true,
+            topic: { id: topicSlug, title: topicSlug.replace(/-/g, ' ') },
+            totalQuestions: topicQuizzes.length,
+            passingScorePercentage: 70,
+            questions: topicQuizzes
+          });
+        }
       })
       .finally(() => setLoading(false));
   }, [topicSlug]);
@@ -71,18 +95,75 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
 
     setSubmitting(true);
     try {
-      const res = await api.submitQuiz(quizData.topic.id, answersPayload, timerSeconds);
-      setQuizResult(res.result);
-      if (res.result.passed) {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 }
+      if (quizData.topic?.id && !quizData.topic.id.includes('-')) {
+        const res = await api.submitQuiz(quizData.topic.id, answersPayload, timerSeconds);
+        setQuizResult(res.result || res);
+        if ((res.result?.passed ?? res.passed)) {
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        }
+      } else {
+        // Offline / local fallback scoring
+        let correctCount = 0;
+        const detailedResults = quizData.questions.map(q => {
+          const chosenKey = selectedAnswers[q.id];
+          const correctOpt = q.options?.find(o => o.isCorrect);
+          const isCorrect = correctOpt && chosenKey === correctOpt.optionKey;
+          if (isCorrect) correctCount++;
+          return {
+            questionId: q.id,
+            title: q.title,
+            prompt: q.prompt,
+            explanation: q.explanation,
+            selectedOption: chosenKey,
+            correctOptionKey: correctOpt?.optionKey,
+            isCorrect,
+            options: q.options
+          };
         });
+        const scorePercentage = Math.round((correctCount / quizData.questions.length) * 100);
+        const passed = scorePercentage >= 70;
+        setQuizResult({
+          score: scorePercentage,
+          passed,
+          correctCount,
+          totalQuestions: quizData.questions.length,
+          detailedResults
+        });
+        if (passed) {
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert('Error submitting quiz: ' + err.message);
+      console.warn('API submission failed, evaluating locally:', err.message);
+      let correctCount = 0;
+      const detailedResults = quizData.questions.map(q => {
+        const chosenKey = selectedAnswers[q.id];
+        const correctOpt = q.options?.find(o => o.isCorrect);
+        const isCorrect = correctOpt && chosenKey === correctOpt.optionKey;
+        if (isCorrect) correctCount++;
+        return {
+          questionId: q.id,
+          title: q.title,
+          prompt: q.prompt,
+          explanation: q.explanation,
+          selectedOption: chosenKey,
+          correctOptionKey: correctOpt?.optionKey,
+          isCorrect,
+          options: q.options
+        };
+      });
+      const scorePercentage = Math.round((correctCount / quizData.questions.length) * 100);
+      const passed = scorePercentage >= 70;
+      setQuizResult({
+        score: scorePercentage,
+        passed,
+        correctCount,
+        totalQuestions: quizData.questions.length,
+        detailedResults
+      });
+      if (passed) {
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+      }
     } finally {
       setSubmitting(false);
     }

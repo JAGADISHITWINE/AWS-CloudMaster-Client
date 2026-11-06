@@ -18,6 +18,9 @@ import { DEVOPS_COMMANDS } from '../data/commandsData';
 
 export const CATEGORIES = [
   { id: 'all', label: 'All Commands', count: DEVOPS_COMMANDS.length },
+  { id: 'angular', label: '🅰️ Angular CLI', count: DEVOPS_COMMANDS.filter(c => c.category === 'angular').length },
+  { id: 'nodejs', label: '🟢 Node.js & npm', count: DEVOPS_COMMANDS.filter(c => c.category === 'nodejs').length },
+  { id: 'database', label: '🗄️ Database (SQL/Mongo)', count: DEVOPS_COMMANDS.filter(c => c.category === 'database').length },
   { id: 'git', label: '🌿 Git & GitHub', count: DEVOPS_COMMANDS.filter(c => c.category === 'git').length },
   { id: 'jenkins', label: '⚙️ Jenkins CI/CD', count: DEVOPS_COMMANDS.filter(c => c.category === 'jenkins').length },
   { id: 'docker', label: '🐳 Docker Containers', count: DEVOPS_COMMANDS.filter(c => c.category === 'docker').length },

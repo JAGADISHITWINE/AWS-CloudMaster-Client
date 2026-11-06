@@ -25,7 +25,7 @@ export default function Sidebar({ activeTab, onSelectTab, pendingCleanups = 0, d
     { id: 'hands-on-projects', label: 'Hands-on Projects', icon: FolderGit2, badgeText: '7 Real-World' },
     { id: 'definitions-glossary', label: 'Definitions Glossary', icon: BookMarked, badgeText: 'A-Z Terms' },
     { id: 'command-hub', label: 'Commands Hub', icon: Code, badgeText: 'Git/K8s/Doc' },
-    { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: '20 Mod' },
+    { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: '24 Mod' },
     { id: 'topic-detail', label: 'Topic Notes', icon: BookOpen },
     { id: 'practice-lab', label: 'Practice Lab', icon: Terminal },
   ];
@@ -84,7 +84,7 @@ export default function Sidebar({ activeTab, onSelectTab, pendingCleanups = 0, d
   };
 
   return (
-    <aside className="w-64 bg-slate-950/60 backdrop-blur-2xl border-r border-indigo-500/15 flex flex-col flex-shrink-0 min-h-[calc(100vh-4rem)] p-3">
+    <aside className="w-64 bg-[var(--bg-primary,#0b101b)]/80 backdrop-blur-2xl border-r border-white/[0.06] flex flex-col flex-shrink-0 min-h-[calc(100vh-4rem)] p-3">
       <div className="space-y-4">
         <div className="space-y-1">
           <p className="px-3 text-[10px] font-black uppercase tracking-widest text-indigo-400/80">Core Roadmap</p>

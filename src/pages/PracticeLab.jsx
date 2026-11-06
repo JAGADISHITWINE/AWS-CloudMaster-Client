@@ -22,6 +22,7 @@ import CostRiskBadge from '../components/CostRiskBadge';
 import CliSimulator from '../components/CliSimulator';
 import { api } from '../services/api';
 import { getLabStepScreenshot } from '../data/topicRealImagesData';
+import { FALLBACK_LABS } from '../data/fallbackLabsData';
 
 export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
   const [lab, setLab] = useState(null);
@@ -36,23 +37,35 @@ export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
     setLoading(true);
     api.getLab(topicSlug)
       .then(res => {
-        setLab(res.lab);
-        setCompletedSteps(res.lab?.userProgress?.completedSteps || []);
-        setIsCleanedUp(res.lab?.userProgress?.isCleanedUp || false);
+        if (res && res.lab) {
+          setLab(res.lab);
+          setCompletedSteps(res.lab?.userProgress?.completedSteps || []);
+          setIsCleanedUp(res.lab?.userProgress?.isCleanedUp || false);
+        } else if (FALLBACK_LABS[topicSlug]) {
+          setLab(FALLBACK_LABS[topicSlug]);
+        }
       })
       .catch(err => {
-        console.error('Failed to load lab:', err);
+        console.warn('Backend API unavailable, using offline fallback lab:', err.message);
+        if (FALLBACK_LABS[topicSlug]) {
+          setLab(FALLBACK_LABS[topicSlug]);
+        }
       })
       .finally(() => setLoading(false));
   }, [topicSlug]);
 
   const handleToggleStep = async (stepNum) => {
     if (!lab) return;
+    setCompletedSteps(prev => 
+      prev.includes(stepNum) ? prev.filter(s => s !== stepNum) : [...prev, stepNum]
+    );
     try {
-      const res = await api.toggleLabStep(lab.id, stepNum);
-      setCompletedSteps(res.completedSteps);
+      if (lab.id) {
+        const res = await api.toggleLabStep(lab.id, stepNum);
+        if (res && res.completedSteps) setCompletedSteps(res.completedSteps);
+      }
     } catch (err) {
-      console.error(err);
+      console.warn('Could not persist lab step to server:', err.message);
     }
   };
 

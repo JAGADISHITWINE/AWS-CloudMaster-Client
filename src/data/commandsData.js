@@ -1107,4 +1107,159 @@ export const DEVOPS_COMMANDS = [
     example: 'aws ec2 describe-transit-gateways --transit-gateway-ids tgw-0123456789abcdef0',
     bestPractice: 'Use Transit Gateway route tables to create separate routing domains (e.g. isolating Dev from Prod) across accounts.'
   }
-];
+,
+{
+  "id": "ng-generate-standalone",
+  "category": "angular",
+  "categoryLabel": "Angular CLI",
+  "subcategory": "Component & Architecture Generation",
+  "title": "Generate Standalone Component with Scoped Styles",
+  "command": "ng generate component components/user-profile --standalone --style=scss --change-detection=OnPush",
+  "explanation": "Generates a modern standalone component declaring direct imports and configured with OnPush change detection strategy for optimal rendering performance.",
+  "flags": [
+    {
+      "flag": "--standalone",
+      "desc": "Creates component without NgModule dependency (default in Angular 17+)"
+    },
+    {
+      "flag": "--change-detection=OnPush",
+      "desc": "Sets ChangeDetectionStrategy.OnPush for fine-grained dirty checking"
+    },
+    {
+      "flag": "--style=scss",
+      "desc": "Configures SCSS preprocessor for scoped ViewEncapsulation styling"
+    }
+  ],
+  "example": "npx ng g c components/order-table --standalone --inline-template=false",
+  "bestPractice": "Always use --change-detection=OnPush for performance-critical table views and complex component subtrees."
+},
+{
+  "id": "ng-build-production",
+  "category": "angular",
+  "categoryLabel": "Angular CLI",
+  "subcategory": "Production Compilation",
+  "title": "Compile Production Bundle with Optimization & Budgets",
+  "command": "ng build --configuration=production",
+  "explanation": "Invokes the Ivy / esbuild compiler in production mode, applying Ahead-of-Time (AOT) compilation, tree-shaking, minification, and verifying bundle size budgets.",
+  "flags": [
+    {
+      "flag": "--configuration=production",
+      "desc": "Enables AOT, Dead Code Elimination, and production environment replacement"
+    },
+    {
+      "flag": "--source-map=false",
+      "desc": "Excludes source maps from public production output for IP protection"
+    },
+    {
+      "flag": "--stats-json",
+      "desc": "Generates webpack/esbuild bundle statistics report for webpack-bundle-analyzer"
+    }
+  ],
+  "example": "npx ng build --configuration=production --stats-json",
+  "bestPractice": "Configure strict bundle size budgets (e.g. maximum initial 350kb) in angular.json to prevent bundle bloat."
+},
+{
+  "id": "node-inspect-debug",
+  "category": "nodejs",
+  "categoryLabel": "Node.js & npm",
+  "subcategory": "Debugging & Performance Profiling",
+  "title": "Start Node with Chrome DevTools Remote Inspector",
+  "command": "node --inspect=0.0.0.0:9229 dist/server.js",
+  "explanation": "Opens the V8 debugging port on 9229, enabling Chrome DevTools (chrome://inspect) to attach breakpoints, take heap memory snapshots, and profile CPU flame graphs.",
+  "flags": [
+    {
+      "flag": "--inspect",
+      "desc": "Activates inspector agent on default port 9229"
+    },
+    {
+      "flag": "--inspect-brk",
+      "desc": "Breaks on the very first line of application code to debug initialization"
+    },
+    {
+      "flag": "--max-old-space-size=4096",
+      "desc": "Increases V8 maximum heap allocation to 4 GB for data-heavy workloads"
+    }
+  ],
+  "example": "node --inspect --max-old-space-size=2048 server.js",
+  "bestPractice": "Never expose port 9229 to public WAN in production; tunnel via SSH: ssh -L 9229:localhost:9229 user@remote."
+},
+{
+  "id": "node-threadpool-scale",
+  "category": "nodejs",
+  "categoryLabel": "Node.js & npm",
+  "subcategory": "Concurrency & Threading",
+  "title": "Scale libuv Thread Pool for Cryptography & File I/O",
+  "command": "UV_THREADPOOL_SIZE=16 node server.js",
+  "explanation": "Overrides the default 4-thread libuv pool, allowing up to 16 concurrent blocking operations (crypto pbkdf2, bcrypt, fs, and DNS lookups) to execute in parallel without stalling.",
+  "flags": [
+    {
+      "flag": "UV_THREADPOOL_SIZE",
+      "desc": "Environment variable configuring worker threads (min: 1, max: 1024)"
+    }
+  ],
+  "example": "UV_THREADPOOL_SIZE=8 node --enable-source-maps dist/index.js",
+  "bestPractice": "Must be set as an OS environment variable BEFORE the Node process initializes; setting in JS code has zero effect."
+},
+{
+  "id": "curl-idempotent-api",
+  "category": "nodejs",
+  "categoryLabel": "Node.js & npm",
+  "subcategory": "API Testing & Idempotency",
+  "title": "Test Idempotency-Key Header & 304 ETag Caching",
+  "command": "curl -i -X POST https://api.enterprise.domain/v1/checkout \\n  -H \"Content-Type: application/json\" \\n  -H \"Idempotency-Key: 9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d\" \\n  -d '{\"orderId\": \"ord_99\", \"amount\": 150.00}'",
+  "explanation": "Simulates mobile client network retries with IETF Idempotency-Key header; repeat calls return cached 201 response with X-Cache-Lookup: IDEMPOTENCY-HIT.",
+  "flags": [
+    {
+      "flag": "-i",
+      "desc": "Includes HTTP response headers in terminal output"
+    },
+    {
+      "flag": "-H \"If-None-Match: ...\"",
+      "desc": "Tests conditional 304 Not Modified cache validation"
+    }
+  ],
+  "example": "curl -i https://api.domain/v1/products -H \"If-None-Match: W/\"hash123\"\"",
+  "bestPractice": "Verify that retried requests with identical Idempotency-Key return cached response without double charges."
+},
+{
+  "id": "psql-explain-analyze",
+  "category": "database",
+  "categoryLabel": "Database (SQL & Mongo)",
+  "subcategory": "Query Profiling & Indexing",
+  "title": "Profile Query Execution Plan with EXPLAIN ANALYZE",
+  "command": "psql -U postgres -d enterprise_db -c \"EXPLAIN (ANALYZE, BUFFERS) SELECT * FROM orders WHERE user_id = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' AND created_at &gt;= '2025-01-01';\"",
+  "explanation": "Executes the query inside PostgreSQL and outputs the real execution plan, distinguishing between slow Sequential Scans and fast Index Scans, alongside shared buffer cache hit rates.",
+  "flags": [
+    {
+      "flag": "ANALYZE",
+      "desc": "Actually executes the query to collect actual time and row count statistics"
+    },
+    {
+      "flag": "BUFFERS",
+      "desc": "Displays shared buffer cache hits (RAM) versus physical disk reads"
+    }
+  ],
+  "example": "psql -d prod -c \"CREATE INDEX CONCURRENTLY idx_orders_user ON orders(user_id);\"",
+  "bestPractice": "Always use CREATE INDEX CONCURRENTLY on live production PostgreSQL databases to avoid locking tables against writes."
+},
+{
+  "id": "prisma-migrate-studio",
+  "category": "database",
+  "categoryLabel": "Database (SQL & Mongo)",
+  "subcategory": "ORM Schema & Migrations",
+  "title": "Execute Prisma Database Migration & Launch Studio",
+  "command": "npx prisma migrate dev --name init_schema\nnpx prisma studio --port 5555",
+  "explanation": "Generates SQL migration files from schema.prisma, applies them to the database, updates the generated TypeScript client, and launches a visual database inspection browser on port 5555.",
+  "flags": [
+    {
+      "flag": "migrate dev",
+      "desc": "Applies migrations in development and updates Prisma Client"
+    },
+    {
+      "flag": "migrate deploy",
+      "desc": "Applies pending migrations in production CI/CD pipelines without schema prompt"
+    }
+  ],
+  "example": "npx prisma generate && npx prisma db push",
+  "bestPractice": "Use prisma migrate deploy in production containers rather than migrate dev to prevent unintended schema resets."
+}];

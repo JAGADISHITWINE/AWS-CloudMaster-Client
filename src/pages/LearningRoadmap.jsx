@@ -32,10 +32,18 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
 
   const filteredModules = modules.filter(m => {
     const matchesLevel = filterLevel === 'ALL' || m.level.toUpperCase() === filterLevel;
-    const isDevOps = m.moduleNumber >= 16;
+    const isDevOps = m.moduleNumber >= 16 && m.moduleNumber <= 20;
+    const isFullStack = m.moduleNumber >= 21;
+    const isAWS = m.moduleNumber <= 15;
+
     let matchesCategory = true;
-    if (categoryFilter === 'AWS') matchesCategory = !isDevOps;
+    if (categoryFilter === 'AWS') matchesCategory = isAWS;
     else if (categoryFilter === 'DEVOPS') matchesCategory = isDevOps;
+    else if (categoryFilter === 'FULLSTACK') matchesCategory = isFullStack;
+    else if (categoryFilter === 'ANGULAR') matchesCategory = m.moduleNumber === 21;
+    else if (categoryFilter === 'NODEJS') matchesCategory = m.moduleNumber === 22;
+    else if (categoryFilter === 'APIS') matchesCategory = m.moduleNumber === 23;
+    else if (categoryFilter === 'DATABASE') matchesCategory = m.moduleNumber === 24;
     else if (categoryFilter === 'GIT') matchesCategory = m.moduleNumber === 16;
     else if (categoryFilter === 'JENKINS') matchesCategory = m.moduleNumber === 17;
     else if (categoryFilter === 'DOCKER') matchesCategory = m.moduleNumber === 18;
@@ -59,13 +67,13 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
             <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-300 border border-amber-500/35 flex items-center gap-1.5 shadow-sm">
               <Sparkles className="w-3 h-3 text-amber-400" /> {modules.length} Structured Modules
             </span>
-            <span className="text-xs text-slate-400 font-medium">AWS Cloud + GitHub + Jenkins + Docker + K8s</span>
+            <span className="text-xs text-slate-400 font-medium">AWS Cloud + DevOps Pipelines + Full-Stack (Angular &amp; Node.js)</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white mt-1.5 tracking-tight font-display bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
-            Cloud &amp; DevOps Engineering Roadmap
+            Enterprise Cloud, DevOps &amp; Full-Stack Roadmap
           </h1>
           <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-            From foundational AWS infrastructure and IAM to GitHub version control, Jenkins pipelines, Docker multi-stage builds, and Kubernetes orchestration.
+            From foundational AWS infrastructure, IAM, and DevOps CI/CD pipelines to Angular standalone frontend architecture, Node.js asynchronous backends, RESTful APIs, and full-stack system design.
           </p>
         </div>
 
@@ -115,6 +123,66 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
         </button>
 
         <button
+          onClick={() => setCategoryFilter('FULLSTACK')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            categoryFilter === 'FULLSTACK'
+              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>⚡ Full-Stack (Angular &amp; Node)</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-500/30 text-rose-300 font-bold">4 Mods</span>
+        </button>
+
+        <button
+          onClick={() => setCategoryFilter('ANGULAR')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            categoryFilter === 'ANGULAR'
+              ? 'bg-red-500/20 text-red-300 border border-red-500/40 shadow-sm'
+              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>🅰️ Angular</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-500/30 text-red-300 font-bold">Mod 21</span>
+        </button>
+
+        <button
+          onClick={() => setCategoryFilter('NODEJS')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            categoryFilter === 'NODEJS'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>🟢 Node.js</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-bold">Mod 22</span>
+        </button>
+
+        <button
+          onClick={() => setCategoryFilter('APIS')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            categoryFilter === 'APIS'
+              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 shadow-sm'
+              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>🛡️ REST APIs</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-500/30 text-blue-300 font-bold">Mod 23</span>
+        </button>
+
+        <button
+          onClick={() => setCategoryFilter('DATABASE')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            categoryFilter === 'DATABASE'
+              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>🗄️ Database &amp; System Design</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500/30 text-purple-300 font-bold">Mod 24</span>
+        </button>
+
+        <button
           onClick={() => setCategoryFilter('AWS')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
             categoryFilter === 'AWS'
@@ -123,7 +191,7 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
           }`}
         >
           <span>☁️ AWS Cloud</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold">15</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold">15 Mods</span>
         </button>
 
         <button

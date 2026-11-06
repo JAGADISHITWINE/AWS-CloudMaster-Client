@@ -30,6 +30,8 @@ import { YOUTUBE_TOPIC_VIDEOS } from '../data/youtubeData';
 import { getArchitectureForTopic } from '../data/architectureData';
 import { getRealVisualsForTopic } from '../data/topicRealImagesData';
 import { getInterviewQuestionsForTopic } from '../data/interviewQuestionsData';
+import { FALLBACK_NOTES } from '../data/fallbackNotesData';
+import { getFallbackTopic } from '../data/fallbackModulesData';
 
 export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   const [data, setData] = useState(null);
@@ -48,14 +50,27 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       api.getTopic(topicSlug)
     ])
       .then(([notesRes, topicRes]) => {
-        setData({
-          notes: notesRes.notes,
-          topic: topicRes.topic
-        });
-        setIsRead(topicRes.topic?.userProgress?.notesRead || false);
+        if (notesRes && notesRes.notes && topicRes && topicRes.topic) {
+          setData({
+            notes: notesRes.notes,
+            topic: topicRes.topic
+          });
+          setIsRead(topicRes.topic?.userProgress?.notesRead || false);
+        } else if (FALLBACK_NOTES[topicSlug]) {
+          setData({
+            notes: FALLBACK_NOTES[topicSlug],
+            topic: topicRes?.topic || getFallbackTopic(topicSlug)
+          });
+        }
       })
       .catch(err => {
-        console.error('Failed to load topic notes:', err);
+        console.warn('Backend API unavailable, using offline fallback notes:', err.message);
+        if (FALLBACK_NOTES[topicSlug]) {
+          setData({
+            notes: FALLBACK_NOTES[topicSlug],
+            topic: getFallbackTopic(topicSlug)
+          });
+        }
       })
       .finally(() => setLoading(false));
   }, [topicSlug]);

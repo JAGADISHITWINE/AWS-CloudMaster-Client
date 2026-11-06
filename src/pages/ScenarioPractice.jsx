@@ -14,6 +14,7 @@ import {
   Tag
 } from 'lucide-react';
 import { api } from '../services/api';
+import { FALLBACK_SCENARIOS } from '../data/fallbackScenariosData';
 
 export default function ScenarioPractice({ onNavigate }) {
   const [scenarios, setScenarios] = useState([]);
@@ -29,29 +30,54 @@ export default function ScenarioPractice({ onNavigate }) {
     setLoading(true);
     api.getScenarios()
       .then(res => {
-        setScenarios(res.scenarios || []);
-        if (res.scenarios?.length > 0) {
-          setSelectedId(res.scenarios[0].id);
+        if (res.scenarios && res.scenarios.length > 0) {
+          const apiSlugs = new Set(res.scenarios.map(s => s.topicSlug));
+          const missing = FALLBACK_SCENARIOS.filter(s => !apiSlugs.has(s.topicSlug));
+          const merged = [...res.scenarios, ...missing];
+          setScenarios(merged);
+          setSelectedId(merged[0]?.id);
+        } else {
+          setScenarios(FALLBACK_SCENARIOS);
+          setSelectedId(FALLBACK_SCENARIOS[0]?.id);
         }
       })
-      .catch(err => console.error(err))
+      .catch(err => {
+        console.warn('Backend API unavailable, using offline fallback scenarios:', err.message);
+        setScenarios(FALLBACK_SCENARIOS);
+        setSelectedId(FALLBACK_SCENARIOS[0]?.id);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (!selectedId) return;
+    const fallbackItem = FALLBACK_SCENARIOS.find(s => s.id === selectedId || s.topicSlug === selectedId);
     api.getScenario(selectedId)
       .then(res => {
-        setActiveScenario(res.scenario);
-        setUserAnswer(res.scenario.previousAttempts?.[0]?.submittedText || '');
-        setResult(res.scenario.hasAttempted ? {
-          score: res.scenario.previousAttempts?.[0]?.scoreGiven || 80,
-          feedback: res.scenario.previousAttempts?.[0]?.feedback || "Previously completed solution.",
-          recommendedSolution: res.scenario.recommendedSolution
-        } : null);
+        if (res && res.scenario) {
+          setActiveScenario(res.scenario);
+          setUserAnswer(res.scenario.previousAttempts?.[0]?.submittedText || '');
+          setResult(res.scenario.hasAttempted ? {
+            score: res.scenario.previousAttempts?.[0]?.scoreGiven || 80,
+            feedback: res.scenario.previousAttempts?.[0]?.feedback || "Previously completed solution.",
+            recommendedSolution: res.scenario.recommendedSolution
+          } : null);
+        } else if (fallbackItem) {
+          setActiveScenario(fallbackItem);
+          setUserAnswer('');
+          setResult(null);
+        }
         setRevealedHints(0);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.warn('Backend API unavailable, using offline scenario details:', err.message);
+        if (fallbackItem) {
+          setActiveScenario(fallbackItem);
+          setUserAnswer('');
+          setResult(null);
+        }
+        setRevealedHints(0);
+      });
   }, [selectedId]);
 
   const handleSubmitAnswer = async () => {

@@ -1,6 +1,8 @@
 // Visual Architecture Diagrams, Concept Flow Images, and In-Depth Explanations for Every Topic & Module
 // Vector SVG format ensures high resolution, responsiveness, fast loading, and crisp rendering on any screen.
 
+import { fullstackArchitecture } from './fullstackArchitectureData.js';
+
 export const TOPIC_ARCHITECTURE = {
   // -------------------------------------------------------------------------
   // MODULE 1: AWS Cloud Account Setup, Free Tier Governance & Global Infrastructure
@@ -2107,6 +2109,8 @@ export const TOPIC_ARCHITECTURE = {
     </svg>`
   },
 };
+
+Object.assign(TOPIC_ARCHITECTURE, fullstackArchitecture);
 
 // Fallback & Dynamic Generator ensuring all 24 topics have complete step-by-step, relationships, and flows
 export function getArchitectureForTopic(topicSlug, moduleNumber, topicTitle) {
