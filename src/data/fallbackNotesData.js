@@ -1,4 +1,1803 @@
 export const FALLBACK_NOTES = {
+  "12": {
+  "simpleExplanation": "Amazon CloudWatch is the central monitoring and observability service for DevOps engineers and SREs on AWS. It collects operational performance metrics, monitors log files, visualizes dashboards, and triggers automated alarms across services like EC2, RDS, S3, and ELB. The golden rule of AWS management is: CloudWatch monitors PERFORMANCE (operations, CPU, latency), whereas CloudTrail monitors ACTIONS (who called which API, from where, and when).",
+  "internalsExplanation": "CloudWatch operates at two monitoring levels: Basic Monitoring (default for EC2, reports metrics at 5-minute intervals at no charge) and Detailed Monitoring (reports metrics at 1-minute intervals for fine-grained scaling, with 10 free metrics in the Free Tier). CloudWatch Alarms evaluate metric thresholds over specified periods and transition across 3 states: OK (metric within thresholds), ALARM (threshold breached), and INSUFFICIENT_DATA (metric missing or initializing). Multiple alarms can be attached to a single metric, each executing multiple actions: sending Amazon SNS notifications, invoking Auto Scaling policies, or triggering EC2 Auto-Recovery.",
+  "coreConcepts": [
+    {
+      "title": "Basic vs Detailed Monitoring",
+      "description": "Basic Monitoring collects metrics every 5 minutes at zero cost; Detailed Monitoring collects data points every 1 minute for rapid auto scaling and critical microservices."
+    },
+    {
+      "title": "CloudWatch vs CloudTrail Golden Rule",
+      "description": "CloudWatch = Operations & Performance (is CPU at 90%? is latency spiking?). CloudTrail = Security & Governance (who terminated the EC2 instance? which IP called DeleteBucket? was MFA used?)."
+    },
+    {
+      "title": "3 CloudWatch Alarm States",
+      "description": "OK (within normal limits), INSUFFICIENT_DATA (not enough data to determine status), and ALARM (metric has breached threshold). Alarms retain 14 days of historical evaluation data."
+    },
+    {
+      "title": "Multi-Action Alarm Triggers",
+      "description": "An alarm can trigger multiple actions simultaneously: dispatching an SNS topic message, triggering Auto Scaling to launch instances, or invoking EC2 Auto-Recovery to restart on new hardware."
+    },
+    {
+      "title": "Global Dashboards",
+      "description": "CloudWatch Dashboards are global single-pane-of-glass views that can aggregate metrics and graphs from multiple AWS regions. Free Tier provides 3 dashboards with up to 50 metrics free."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws cloudwatch put-metric-alarm --alarm-name 'HighCPU-Prod' --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 60 --threshold 80 --comparison-operator GreaterThanThreshold --dimensions Name=InstanceId,Value=i-0e54d474bc8e85f27 --evaluation-periods 2 --alarm-actions arn:aws:sns:us-east-1:123456789012:DevOpsAlerts",
+      "description": "Create an alarm triggering an SNS notification when CPU exceeds 80% for two 1-minute periods."
+    },
+    {
+      "command": "aws ec2 monitor-instances --instance-ids i-0e54d474bc8e85f27",
+      "description": "Enable 1-minute Detailed Monitoring on an existing EC2 instance."
+    },
+    {
+      "command": "aws cloudwatch get-metric-data --metric-data-queries file://query.json --start-time 2026-11-06T08:00:00Z --end-time 2026-11-06T10:00:00Z",
+      "description": "Retrieve metric time-series data using CloudWatch Metric Math queries."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Enable Detailed Monitoring on Auto Scaling Instances",
+      "explanation": "1-minute metrics allow Auto Scaling Groups to react 5x faster to sudden traffic spikes compared to 5-minute basic monitoring."
+    },
+    {
+      "rule": "Configure TreatMissingData Explicitly",
+      "explanation": "Specify how alarms handle missing metrics (e.g. 'notBreaching' for sparse data, 'breaching' for heartbeat failures) to prevent false alarms."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Using CloudWatch to Investigate Who Deleted a Cloud Resource",
+      "remedy": "CloudWatch only tracks metrics; use AWS CloudTrail Event History to identify the user ARN, access key, and IP address that executed the API call."
+    },
+    {
+      "mistake": "Assuming Free Tier Covers Unlimited CloudWatch Alarms",
+      "remedy": "AWS Free Tier includes 10 alarm metrics; audit alarms regularly to avoid unbudgeted monthly alarm charges."
+    }
+  ],
+  "quickRevision": [
+    "CloudWatch = Performance & Operations; CloudTrail = Actions, Auditing & Security.",
+    "Basic monitoring: 5-minute interval (free); Detailed monitoring: 1-minute interval (paid).",
+    "3 Alarm states: OK, INSUFFICIENT_DATA, ALARM.",
+    "Alarm history is retained for 14 days.",
+    "Free Tier provides 3 global dashboards (up to 50 metrics) at no charge."
+  ],
+  "securityNotes": "Require MFA on sensitive CloudWatch alarm deletion and protect CloudTrail log integrity by enabling S3 log file validation.",
+  "costImplications": "Basic metrics are free; custom metrics, detailed monitoring, and alarms beyond the 10 free metrics incur standard CloudWatch fees."
+},
+
+  "cloudwatch-servicelens-synthetics-and-xray": {
+  "simpleExplanation": "Modern microservices require distributed observability beyond simple CPU graphs. CloudWatch ServiceLens unifies metrics, logs, and distributed traces from AWS X-Ray into a single visual service map, providing end-to-end visibility into infrastructure and transaction health. CloudWatch Synthetics deploys 24x7 canaries (headless browser scripts) that continuously test REST APIs, URLs, and web flows, alerting you to broken customer experiences, latency spikes, or unauthorized code injection.",
+  "internalsExplanation": "ServiceLens correlates data across two dimensions: (1) Infrastructure Monitoring (node metrics, CPU, memory, pod status) and (2) Transaction Monitoring (distributed requests tracing through API Gateway, Lambda, ECS, and DynamoDB). CloudWatch Synthetics creates Node.js or Python canaries powered by Puppeteer/Selenium that run every minute, 24x7. Canaries simulate user logins, form submissions, and API requests from multiple global AWS regions, verifying response codes, DOM elements, and network latency, while detecting phishing, unauthorized redirects, and Cross-Site Scripting (XSS).",
+  "coreConcepts": [
+    {
+      "title": "CloudWatch ServiceLens",
+      "description": "A single observability interface that ties together CloudWatch metrics, CloudWatch Logs, and AWS X-Ray traces, presenting an interactive service map to quickly isolate microservices bottlenecks."
+    },
+    {
+      "title": "CloudWatch Synthetics Canaries",
+      "description": "Configurable scripts running 24x7 on a schedule (every minute) that emulate real user actions on REST APIs, URLs, and website content to detect downtime before customers are impacted."
+    },
+    {
+      "title": "Infrastructure vs Transaction Monitoring",
+      "description": "Infrastructure monitoring tracks host health (CPU, memory, disk, network); Transaction monitoring tracks distributed request execution paths and latency across microservices via X-Ray trace IDs."
+    },
+    {
+      "title": "Security & Phishing Detection via Canaries",
+      "description": "Synthetics canaries inspect page source code and DOM snapshots to alert developers if website content is modified by unauthorized code injection, defacement, or XSS attacks."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws synthetics create-canary --name checkout-api-canary --artifact-s3-location s3://canary-artifacts/ --execution-role-arn arn:aws:iam::123456789012:role/CanaryRole --schedule Expression='rate(1 minute)' --runtime-version syn-nodejs-puppeteer-6.0 --code file://canary.zip",
+      "description": "Deploy a CloudWatch Synthetics canary testing the checkout API every minute."
+    },
+    {
+      "command": "aws xray get-trace-summaries --start-time 1700000000 --end-time 1700003600 --filter-expression 'responsetime > 2'",
+      "description": "Query AWS X-Ray traces to identify transactions taking longer than 2 seconds."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Run Canaries Across Multiple AWS Regions",
+      "explanation": "Deploy Synthetics canaries in multiple regions to verify global availability and isolate regional CDN or routing failures."
+    },
+    {
+      "rule": "Integrate X-Ray SDK in All Microservices",
+      "explanation": "Propagate the 'X-Amzn-Trace-Id' HTTP header across all frontend, backend, and database calls to enable complete ServiceLens end-to-end tracing."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Relying Exclusively on Passive Monitoring",
+      "remedy": "Passive metrics only reveal problems after users experience errors; Synthetics active canaries detect API failures 24x7 even during zero-traffic hours."
+    },
+    {
+      "mistake": "Hardcoding Passwords Inside Canary Scripts",
+      "remedy": "Store test credentials in AWS Secrets Manager and retrieve them programmatically within the canary execution."
+    }
+  ],
+  "quickRevision": [
+    "ServiceLens combines CloudWatch metrics + logs with AWS X-Ray distributed traces.",
+    "Provides both Infrastructure Monitoring and Transaction Monitoring.",
+    "CloudWatch Synthetics runs 24x7 canaries every minute to test APIs and URLs.",
+    "Canaries detect broken user flows, unauthorized code injection, phishing, and XSS.",
+    "X-Ray distributed tracing isolates latency bottlenecks across microservices."
+  ],
+  "securityNotes": "Configure canaries to alert immediately on unauthorized changes to web page DOM structures or unexpected third-party scripts.",
+  "costImplications": "CloudWatch Synthetics is billed per canary run (e.g. ~$0.0012 per run; 1-minute 24x7 canary costs ~$50/month). AWS X-Ray charges per trace recorded and retrieved."
+},
+
+  "cloudwatch-logs-insights-events-and-cron": {
+  "simpleExplanation": "Amazon CloudWatch Logs centralizes log collection from EC2 instances, on-premises servers, Lambda functions, and AWS services into a scalable, searchable repository. You can write interactive queries using CloudWatch Logs Insights to scan gigabytes of logs in seconds. Amazon EventBridge (formerly CloudWatch Events) delivers a near real-time stream of system events describing operational changes, allowing you to trigger automated functions using 6-field Cron expressions and Rate expressions.",
+  "internalsExplanation": "Logs are organized into Log Groups (defining retention and permissions) and Log Streams (representing identical sources like a container or EC2 instance). CloudWatch Logs Insights features a dedicated query language supporting commands like 'fields', 'filter', 'stats', 'sort', and 'limit'. EventBridge rules match JSON event patterns or run on schedules. AWS Cron expressions require SIX mandatory fields: Minutes (0-59), Hours (0-23), Day-of-month (1-31), Month (1-12/JAN-DEC), Day-of-week (1-7/SUN-SAT), and Year (1970-2199). Rate expressions follow the syntax: 'rate(value unit)' where unit is minute, minutes, hour, hours, day, or days.",
+  "coreConcepts": [
+    {
+      "title": "Log Groups & Log Streams",
+      "description": "A Log Group represents a collection of logs sharing common retention policies (e.g. expire after 30 days) and IAM access controls. Log Streams are individual sequences of log events from a specific instance, pod, or Lambda execution."
+    },
+    {
+      "title": "CloudWatch Logs Insights",
+      "description": "A purpose-built interactive query engine that executes high-speed searches across log data using SQL-like expressions (e.g. 'fields @timestamp, @message | filter @message like /ERROR/ | sort @timestamp desc | limit 20')."
+    },
+    {
+      "title": "EventBridge (CloudWatch Events) System Streams",
+      "description": "Emits near real-time JSON event documents when AWS resource states change (e.g. EC2 instance state changes from running to stopped, or S3 object upload complete)."
+    },
+    {
+      "title": "6-Field AWS Cron Expressions",
+      "description": "Cron expressions in AWS require 6 fields separated by white space: cron(Minutes Hours Day-of-month Month Day-of-week Year). Wildcards include * (all), , (list), - (range), / (increments), ? (unspecified), L (last), W (nearest weekday), # (nth weekday)."
+    },
+    {
+      "title": "Rate Expressions Syntax",
+      "description": "Syntax: rate(value unit). Value is a positive integer; unit is minute | minutes | hour | hours | day | days (e.g. rate(5 minutes) or rate(1 hour))."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws logs start-query --log-group-name /aws/lambda/checkout-api --start-time 1700000000 --end-time 1700003600 --query-string 'fields @timestamp, @message | filter @message like /TIMEOUT/ | limit 20'",
+      "description": "Start an interactive CloudWatch Logs Insights query searching for Lambda timeouts."
+    },
+    {
+      "command": "aws events put-rule --name DailyBackupRule --schedule-expression 'cron(0 2 * * ? *)' --state ENABLED",
+      "description": "Create an EventBridge scheduled rule running daily at 02:00 UTC using 6-field Cron syntax."
+    },
+    {
+      "command": "aws events put-rule --name HealthCheckRule --schedule-expression 'rate(15 minutes)' --state ENABLED",
+      "description": "Create a scheduled event rule running every 15 minutes using rate syntax."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Configure Log Retention Policies",
+      "explanation": "By default, CloudWatch Logs retains logs indefinitely, creating compounding storage bills; set log group retention to 30, 90, or 365 days."
+    },
+    {
+      "rule": "Use '?' for Unspecified Day in Cron Expressions",
+      "explanation": "In AWS 6-field Cron expressions, you cannot specify both Day-of-month and Day-of-week simultaneously; set one of them to '?' (e.g. cron(0 12 ? * SUN *))."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Using Standard Linux 5-Field Cron Syntax in EventBridge",
+      "remedy": "Linux cron uses 5 fields; AWS EventBridge requires SIX fields (including Year as the 6th field), otherwise rule creation fails."
+    },
+    {
+      "mistake": "Missing CloudWatch Agent IAM Permissions on EC2",
+      "remedy": "EC2 instances running the CloudWatch Logs Agent must have an IAM role with the 'CloudWatchAgentServerPolicy' attached."
+    }
+  ],
+  "quickRevision": [
+    "CloudWatch Logs centralizes system, app, and AWS service logs.",
+    "Logs Insights provides fast interactive query syntax with fields, filter, stats, sort.",
+    "EventBridge Cron syntax has 6 fields: Minutes, Hours, Day-of-month, Month, Day-of-week, Year.",
+    "You cannot specify both Day-of-month and Day-of-week simultaneously; one must be '?'.",
+    "Rate syntax: rate(value unit) e.g. rate(1 minute) or rate(5 minutes)."
+  ],
+  "securityNotes": "Encrypt log groups at rest using AWS KMS Customer Master Keys and restrict log group reading permissions via IAM least-privilege.",
+  "costImplications": "Billed on log data ingested (per GB), log storage (per GB/mo), and data scanned by CloudWatch Logs Insights ($0.005 per GB scanned)."
+},
+
+  "cloudwatch-cloudtrail-config-xray-observability": {
+  "simpleExplanation": "Amazon CloudWatch is the central monitoring and observability service for DevOps engineers and SREs on AWS. It collects operational performance metrics, monitors log files, visualizes dashboards, and triggers automated alarms across services like EC2, RDS, S3, and ELB. The golden rule of AWS management is: CloudWatch monitors PERFORMANCE (operations, CPU, latency), whereas CloudTrail monitors ACTIONS (who called which API, from where, and when).",
+  "internalsExplanation": "CloudWatch operates at two monitoring levels: Basic Monitoring (default for EC2, reports metrics at 5-minute intervals at no charge) and Detailed Monitoring (reports metrics at 1-minute intervals for fine-grained scaling, with 10 free metrics in the Free Tier). CloudWatch Alarms evaluate metric thresholds over specified periods and transition across 3 states: OK (metric within thresholds), ALARM (threshold breached), and INSUFFICIENT_DATA (metric missing or initializing). Multiple alarms can be attached to a single metric, each executing multiple actions: sending Amazon SNS notifications, invoking Auto Scaling policies, or triggering EC2 Auto-Recovery.",
+  "coreConcepts": [
+    {
+      "title": "Basic vs Detailed Monitoring",
+      "description": "Basic Monitoring collects metrics every 5 minutes at zero cost; Detailed Monitoring collects data points every 1 minute for rapid auto scaling and critical microservices."
+    },
+    {
+      "title": "CloudWatch vs CloudTrail Golden Rule",
+      "description": "CloudWatch = Operations & Performance (is CPU at 90%? is latency spiking?). CloudTrail = Security & Governance (who terminated the EC2 instance? which IP called DeleteBucket? was MFA used?)."
+    },
+    {
+      "title": "3 CloudWatch Alarm States",
+      "description": "OK (within normal limits), INSUFFICIENT_DATA (not enough data to determine status), and ALARM (metric has breached threshold). Alarms retain 14 days of historical evaluation data."
+    },
+    {
+      "title": "Multi-Action Alarm Triggers",
+      "description": "An alarm can trigger multiple actions simultaneously: dispatching an SNS topic message, triggering Auto Scaling to launch instances, or invoking EC2 Auto-Recovery to restart on new hardware."
+    },
+    {
+      "title": "Global Dashboards",
+      "description": "CloudWatch Dashboards are global single-pane-of-glass views that can aggregate metrics and graphs from multiple AWS regions. Free Tier provides 3 dashboards with up to 50 metrics free."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws cloudwatch put-metric-alarm --alarm-name 'HighCPU-Prod' --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 60 --threshold 80 --comparison-operator GreaterThanThreshold --dimensions Name=InstanceId,Value=i-0e54d474bc8e85f27 --evaluation-periods 2 --alarm-actions arn:aws:sns:us-east-1:123456789012:DevOpsAlerts",
+      "description": "Create an alarm triggering an SNS notification when CPU exceeds 80% for two 1-minute periods."
+    },
+    {
+      "command": "aws ec2 monitor-instances --instance-ids i-0e54d474bc8e85f27",
+      "description": "Enable 1-minute Detailed Monitoring on an existing EC2 instance."
+    },
+    {
+      "command": "aws cloudwatch get-metric-data --metric-data-queries file://query.json --start-time 2026-11-06T08:00:00Z --end-time 2026-11-06T10:00:00Z",
+      "description": "Retrieve metric time-series data using CloudWatch Metric Math queries."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Enable Detailed Monitoring on Auto Scaling Instances",
+      "explanation": "1-minute metrics allow Auto Scaling Groups to react 5x faster to sudden traffic spikes compared to 5-minute basic monitoring."
+    },
+    {
+      "rule": "Configure TreatMissingData Explicitly",
+      "explanation": "Specify how alarms handle missing metrics (e.g. 'notBreaching' for sparse data, 'breaching' for heartbeat failures) to prevent false alarms."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Using CloudWatch to Investigate Who Deleted a Cloud Resource",
+      "remedy": "CloudWatch only tracks metrics; use AWS CloudTrail Event History to identify the user ARN, access key, and IP address that executed the API call."
+    },
+    {
+      "mistake": "Assuming Free Tier Covers Unlimited CloudWatch Alarms",
+      "remedy": "AWS Free Tier includes 10 alarm metrics; audit alarms regularly to avoid unbudgeted monthly alarm charges."
+    }
+  ],
+  "quickRevision": [
+    "CloudWatch = Performance & Operations; CloudTrail = Actions, Auditing & Security.",
+    "Basic monitoring: 5-minute interval (free); Detailed monitoring: 1-minute interval (paid).",
+    "3 Alarm states: OK, INSUFFICIENT_DATA, ALARM.",
+    "Alarm history is retained for 14 days.",
+    "Free Tier provides 3 global dashboards (up to 50 metrics) at no charge."
+  ],
+  "securityNotes": "Require MFA on sensitive CloudWatch alarm deletion and protect CloudTrail log integrity by enabling S3 log file validation.",
+  "costImplications": "Basic metrics are free; custom metrics, detailed monitoring, and alarms beyond the 10 free metrics incur standard CloudWatch fees."
+},
+
+  "4": {
+  "simpleExplanation": "Amazon Elastic Compute Cloud (Amazon EC2) provides scalable, on-demand virtual servers in the cloud, eliminating the need to invest in or manage physical hardware. You can select tailored instance types, storage, and networking configurations to run web applications, batch analytics, containerized microservices, or high-performance computing (HPC) workloads. EC2 features 4 primary instance families, 5 purchasing models, and automated health monitoring via CloudWatch and EC2 Status Checks.",
+  "internalsExplanation": "EC2 instances run on physical host machines managed by AWS hypervisors (Nitro System or Xen). AWS monitors instance health through two distinct status checks: (1) System Status Checks (hypervisor, physical host, network, or power loss; resolved by stopping and starting the instance to migrate to a new healthy physical host), and (2) Instance Status Checks (guest OS corruption, kernel panic, filesystem errors, or incorrect network configuration; resolved by rebooting or inspecting system logs). Purchasing options include On-Demand, Reserved Instances, Savings Plans, Spot Instances (up to 90% discount on spare AWS capacity with a 2-minute interruption notice), and Dedicated Hosts.",
+  "coreConcepts": [
+    {
+      "title": "4 Primary Instance Families",
+      "description": "General Purpose (T-series burstable, M-series balanced for web apps and small DBs); Compute Optimized (C-series for batch, HPC, video transcoding, ML inference); Memory Optimized (R, X, High Memory, z-series for in-memory DBs like Redis/SAP HANA and real-time big data); Storage Optimized (I, D, H-series with NVMe SSDs/HDDs for high IOPS NoSQL and data warehousing)."
+    },
+    {
+      "title": "5 Purchasing Models",
+      "description": "On-Demand (pay per second/hour, maximum flexibility, no commitment); Reserved Instances (1 or 3-year commitment for predictable steady-state discounts); Savings Plans (hourly spend commitment, flexible across families/regions); Spot Instances (bid on unused capacity at up to 90% discount, 2-minute termination notice); Dedicated Hosts (physical servers dedicated to a single customer for licensing compliance)."
+    },
+    {
+      "title": "System vs Instance Status Checks",
+      "description": "System status checks monitor physical host infrastructure (loss of system power, hardware issues; remediated via stop/start to migrate host). Instance status checks monitor the virtual OS (exhausted memory, corrupt file system, incompatible drivers; remediated via OS reboot or volume detach)."
+    },
+    {
+      "title": "Right-Sizing Best Practices",
+      "description": "Continuously monitoring CPU, memory, and disk metrics via CloudWatch to adjust instance sizes and avoid over-provisioning (wasted budget) or under-provisioning (performance degradation)."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws ec2 describe-instance-status --instance-ids i-0e54d474bc8e85f27",
+      "description": "Inspect system and instance status check results for a running EC2 instance."
+    },
+    {
+      "command": "aws ec2 request-spot-instances --spot-price '0.015' --instance-count 1 --type 'one-time' --launch-specification file://specification.json",
+      "description": "Request a cost-effective Spot instance for fault-tolerant batch processing."
+    },
+    {
+      "command": "aws ec2 stop-instances --instance-ids i-0e54d474bc8e85f27 && aws ec2 start-instances --instance-ids i-0e54d474bc8e85f27",
+      "description": "Stop and start an instance to migrate off a degraded physical hardware host."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Leverage Spot Instances for Stateless Workloads",
+      "explanation": "Combine Spot Instances with Auto Scaling Groups for batch analytics, CI/CD runners, and containerized microservices to cut compute costs by up to 90%."
+    },
+    {
+      "rule": "Configure Automated Recovery on CloudWatch Alarms",
+      "explanation": "Attach an EC2 Auto-Recovery action to a CloudWatch alarm monitoring StatusCheckFailed_System to automatically reboot instances on new hardware."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Rebooting an Instance Failing System Status Checks",
+      "remedy": "Rebooting keeps the instance on the same degraded physical host; you must STOP and START the instance so AWS moves it to healthy hardware."
+    },
+    {
+      "mistake": "Running Stateful Databases on Unmanaged Spot Instances",
+      "remedy": "Spot instances can be reclaimed with a 2-minute notice; never run single-instance stateful databases on Spot."
+    }
+  ],
+  "quickRevision": [
+    "EC2 provides on-demand resizable virtual servers without physical hardware management.",
+    "4 core families: General Purpose (T/M), Compute (C), Memory (R/X/z), Storage (I/D/H).",
+    "System status check = AWS physical host failure (fix: stop/start to migrate).",
+    "Instance status check = Guest OS / software failure (fix: reboot / inspect logs).",
+    "Spot Instances offer up to 90% savings with a 2-minute interruption warning."
+  ],
+  "securityNotes": "Always assign IAM Roles via Instance Profiles rather than saving AWS API access keys on instance disks; enforce IMDSv2 for metadata security.",
+  "costImplications": "Free Tier includes 750 hours/month of Linux and Windows t2.micro or t3.micro instances for 12 months. Turn off idle instances to avoid hourly charges."
+},
+  "5": {
+  "simpleExplanation": "Amazon Elastic Load Balancing (ELB) automatically distributes incoming application traffic across multiple Amazon EC2 instances, containers, and IP addresses across multiple Availability Zones to maximize fault tolerance. ELB exposes a single DNS entry point and performs continuous health checks to stop sending traffic to degraded instances. AWS offers 4 load balancer products across the OSI model: Application Load Balancer (ALB), Network Load Balancer (NLB), Gateway Load Balancer (GLB), and Classic Load Balancer (CLB).",
+  "internalsExplanation": "ELBs can be configured as Internet-Facing (public IPs, publicly resolvable DNS, accepting client traffic over the web) or Internal-Facing (private IPs only, routing internal traffic between web, application, and database tiers). ALB operates at Layer 7 (Application Layer) supporting HTTP/HTTPS and content-based routing (Host-based, Path-based, HTTP headers, HTTP methods, query string parameters, source IP CIDR). NLB operates at Layer 4 (Transport Layer) handling TCP/UDP with ultra-low latency, scaling to millions of requests per second, and providing a static IP or Elastic IP per AZ. GLB operates at Layer 3 (Network Layer) providing transparent packet inspection and load balancing for third-party virtual appliances (firewalls, IDS/IPS) via GENEVE protocol encapsulation.",
+  "coreConcepts": [
+    {
+      "title": "Internet-Facing vs Internal Load Balancers",
+      "description": "Internet-facing load balancers possess public IPs and resolve publicly to route traffic from external clients. Internal load balancers have private IPs only and resolve within the VPC, allowing secure multi-tier architectures where targets do not need public IP addresses."
+    },
+    {
+      "title": "Application Load Balancer (ALB - Layer 7)",
+      "description": "Operating at Layer 7 (OSI), ALB inspects application headers and routes traffic based on content: Host headers (api.domain.com), URL paths (/checkout/*), HTTP methods (POST), query parameters, and client source CIDRs. Supports TCP ports 1-65535."
+    },
+    {
+      "title": "Network Load Balancer (NLB - Layer 4)",
+      "description": "Operating at Layer 4 (OSI), NLB routes raw TCP/UDP/TLS connections with ultra-high throughput and microsecond latency. Capable of handling sudden traffic spikes to millions of requests/sec; provides a dedicated static IP and Elastic IP per AZ."
+    },
+    {
+      "title": "Gateway Load Balancer (GLB - Layer 3)",
+      "description": "Operates at the network layer to deploy, scale, and manage virtual security appliances (Palo Alto, Fortinet firewalls, IDS/IPS). Uses GENEVE protocol encapsulation (port 6081) and GWLB endpoints to route traffic across VPC boundaries transparently without altering IP headers."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws elbv2 create-load-balancer --name prod-alb --subnets subnet-123 subnet-456 --security-groups sg-web --type application",
+      "description": "Provision an internet-facing Application Load Balancer across two Availability Zones."
+    },
+    {
+      "command": "aws elbv2 create-load-balancer --name ultra-fast-nlb --subnets subnet-123 subnet-456 --type network",
+      "description": "Provision a Layer 4 Network Load Balancer with static IP support for high throughput."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Deploy Load Balancers Across at Least 2 Availability Zones",
+      "explanation": "ELB requires subnets in at least two AZs to provide high availability and automatic zone failover."
+    },
+    {
+      "rule": "Use NLB for Gaming, IoT & Extreme Throughput",
+      "explanation": "NLB bypasses application-layer parsing, providing wire-speed TCP performance and preserved client IP addresses."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Pointing Hardcoded IP Addresses to an ALB",
+      "remedy": "ALB node IP addresses change dynamically as it scales; always point DNS CNAME records or Route 53 Alias records to the ALB DNS name, never static IPs (use NLB if static IPs are required)."
+    },
+    {
+      "mistake": "Placing an Internet-Facing ALB in Private Subnets",
+      "remedy": "Internet-facing ALBs must be deployed into Public Subnets that have route table targets pointing to an Internet Gateway (0.0.0.0/0 -> igw)."
+    }
+  ],
+  "quickRevision": [
+    "ELB distributes incoming traffic across instances in multiple Availability Zones.",
+    "ALB = Layer 7 (HTTP/HTTPS, content-based routing: host, path, headers, method).",
+    "NLB = Layer 4 (TCP/UDP, ultra-low latency, millions of req/sec, static/Elastic IPs).",
+    "GLB = Layer 3 (transparent virtual security appliances, GENEVE encapsulation).",
+    "Internal load balancers route traffic securely between tiers without public IPs."
+  ],
+  "securityNotes": "Attach dedicated Security Groups to ALBs allowing only ports 80 and 443; configure downstream EC2 security groups to only allow traffic from the ALB's security group ID.",
+  "costImplications": "Billed on load balancer capacity units (LCU for ALB/NLB/GLB) measuring new connections, active connections, processed bytes, and rule evaluations."
+},
+
+  "asg-scaling-policies-lifecycle-and-resilience": {
+  "simpleExplanation": "An Amazon EC2 Auto Scaling Group (ASG) automatically monitors and adjusts the number of EC2 instances in a fleet to match application demand. When traffic spikes, the ASG scales out (adds instances) to maintain performance; when traffic subsides, it scales in (removes instances) to minimize cost. ASGs also enforce self-healing fault tolerance by continuously checking target health and automatically terminating and replacing unhealthy instances.",
+  "internalsExplanation": "An ASG uses a Launch Template to define instance configurations (AMI, instance type, key pair, security groups, user data scripts). ASG size is bounded by Minimum, Maximum, and Desired Capacity. Scaling is driven by policies: (1) Target Tracking Scaling Policies (maintains a metric at a set target, e.g. Average CPU Utilization at 50% or ALB RequestCountPerTarget), (2) Step Scaling Policies (increases capacity in steps based on metric breach thresholds), and (3) Simple Scaling Policies (triggers fixed scaling with a cooldown timer). The Health Check Grace Period prevents the ASG from prematurely killing newly launched instances that are still booting and warming up application servers.",
+  "coreConcepts": [
+    {
+      "title": "Auto Scaling Group Capacity Parameters",
+      "description": "Minimum Capacity (lower floor; ASG will never scale below this), Maximum Capacity (ceiling; protects against runaway billing), and Desired Capacity (current target number of running instances)."
+    },
+    {
+      "title": "Target Tracking Scaling Policies",
+      "description": "The recommended, modern scaling policy. Acts like a thermostat: you configure a target metric (e.g. maintain 50% average CPU across the fleet), and the ASG automatically adds or removes instances to keep the metric steady."
+    },
+    {
+      "title": "Step Scaling vs Simple Scaling",
+      "description": "Step scaling adds different numbers of instances based on the severity of the threshold breach (e.g. CPU > 70% add 2; CPU > 85% add 4). Simple scaling executes a single scaling adjustment and waits for a cooldown period to expire."
+    },
+    {
+      "title": "Health Check Grace Period & Self-Healing",
+      "description": "The time (in seconds) the ASG waits before checking an instance's health after launch (default: 300s). Allows user data and software to initialize so slow-booting instances are not marked unhealthy and terminated prematurely."
+    },
+    {
+      "title": "Spot Fleet Integration in ASGs",
+      "description": "ASGs support mixed instance policies, blending On-Demand baseline capacity with Spot instances across multiple instance types and Availability Zones for maximum resilience at 70-90% discount."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws autoscaling create-auto-scaling-group --auto-scaling-group-name web-asg --launch-template LaunchTemplateName=web-template,Version='$Latest' --min-size 2 --max-size 10 --desired-capacity 4 --vpc-zone-identifier 'subnet-123,subnet-456'",
+      "description": "Create an Auto Scaling Group spanning two Availability Zones."
+    },
+    {
+      "command": "aws autoscaling put-scaling-policy --auto-scaling-group-name web-asg --policy-name cpu50-target --policy-type TargetTrackingScaling --target-tracking-configuration file://target-tracking.json",
+      "description": "Attach a target tracking policy maintaining 50% average CPU utilization."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Configure Adequate Health Check Grace Periods",
+      "explanation": "Set the grace period longer than the average application boot and initialization time (e.g. 300-600 seconds) to avoid boot loops."
+    },
+    {
+      "rule": "Diversify Spot Instance Types in ASGs",
+      "explanation": "Configure mixed instance types (e.g. c5.large, c6i.large, c7g.large) in Spot fleets so interruptions in one pool fail over seamlessly to another."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Setting ASG Maximum Capacity Equal to Desired Capacity",
+      "remedy": "If max-size equals desired-capacity, the ASG cannot scale out during traffic spikes, leading to 502/504 gateway timeout errors."
+    },
+    {
+      "mistake": "Aggressive Scale-In Policies Leading to Thrashing (Flapping)",
+      "remedy": "Ensure cooldown periods and scale-in thresholds are sufficiently buffered so the group does not continuously add and remove instances in rapid succession."
+    }
+  ],
+  "quickRevision": [
+    "ASG automatically scales instances out (spikes) and in (idle) to match demand.",
+    "Launch Templates define instance AMI, type, key pair, and user data.",
+    "Target Tracking acts like a thermostat (e.g. maintain 50% CPU utilization).",
+    "Health Check Grace Period prevents premature termination of booting instances.",
+    "ASG self-healing automatically terminates and replaces unhealthy instances."
+  ],
+  "securityNotes": "Ensure Launch Templates specify least-privilege IAM instance profiles and do not embed plaintext secrets or passwords in User Data.",
+  "costImplications": "Auto Scaling service is free of charge; you pay only for the underlying EC2 instances and EBS volumes provisioned by the group."
+},
+
+  "elb-advanced-features-target-groups-health-checks": {
+  "simpleExplanation": "Modern application architectures rely on the advanced traffic engineering features of the Application Load Balancer (ALB). An ALB uses Listeners and Rules to inspect incoming client requests and forward them to designated Target Groups (EC2 instances, private IP addresses, or AWS Lambda functions). Health checks continuously test targets, while Server Name Indication (SNI) allows hosting dozens of distinct domain SSL certificates on a single listener.",
+  "internalsExplanation": "Listeners listen on specific ports (80 HTTP, 443 HTTPS). Routing rules evaluate conditions (Path `/api/*`, Host `mobile.domain.com`) and execute actions: Forward to Target Group, Redirect (HTTP to HTTPS 301/302), or Return Fixed Response (return 404/custom JSON without invoking backend). Health checks probe a specific port and path (e.g. `GET /health`); if a target returns a non-200 code or exceeds the unhealthy threshold count, the ALB immediately stops routing traffic to it. Server Name Indication (SNI) extends TLS so clients announce the target hostname during the TLS handshake, enabling the ALB to serve the exact matching SSL certificate from ACM.",
+  "coreConcepts": [
+    {
+      "title": "Target Groups & Target Types",
+      "description": "Logical groupings of compute resources. Target types include: (1) Instance (EC2 instance IDs), (2) IP addresses (private RFC 1918 IPs in VPC or on-premises over Direct Connect/VPN), and (3) Lambda functions (invoked directly over HTTP)."
+    },
+    {
+      "title": "Health Checks & Unhealthy Thresholds",
+      "description": "The load balancer periodically sends ping requests (protocol, port, path e.g. /health). Parameters include HealthCheckIntervalSeconds, HealthCheckTimeoutSeconds, HealthyThresholdCount (consecutive successes to consider healthy), and UnhealthyThresholdCount (consecutive failures to evict)."
+    },
+    {
+      "title": "Server Name Indication (SNI)",
+      "description": "TLS protocol extension that allows a client to specify the hostname it is attempting to reach during the initial handshake. Allows binding multiple AWS Certificate Manager (ACM) SSL certificates to a single HTTPS listener on port 443."
+    },
+    {
+      "title": "Advanced ALB Routing & Features",
+      "description": "Sticky Sessions (cookie-based session affinity to route same user to same target), Request Tracing (X-Amzn-Trace-Id header injected for distributed tracing), Slow Start mode (gradually ramps up traffic to newly added targets), and AWS WAF integration."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws elbv2 create-target-group --name web-tg --protocol HTTP --port 80 --vpc-id vpc-01a9d5172f55d7391 --health-check-path /health --health-check-interval-seconds 15",
+      "description": "Create a target group with custom health check path and interval."
+    },
+    {
+      "command": "aws elbv2 register-targets --target-group-arn arn:aws:elasticloadbalancing:...:targetgroup/web-tg/... --targets Id=i-0e54d474bc8e85f27",
+      "description": "Register an EC2 instance target into the load balancer target group."
+    },
+    {
+      "command": "aws elbv2 create-listener --load-balancer-arn arn:aws:elasticloadbalancing:... --protocol HTTPS --port 443 --certificates CertificateArn=arn:aws:acm:... --default-actions Type=forward,TargetGroupArn=arn:aws:elasticloadbalancing:...",
+      "description": "Create an HTTPS listener with SSL certificate and default forward action."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Implement Dedicated Health Check Endpoints",
+      "explanation": "Configure health checks to probe a lightweight endpoint (e.g. /health) that verifies database connectivity and core services without heavy CPU overhead."
+    },
+    {
+      "rule": "Enforce HTTP-to-HTTPS Redirection at the ALB Level",
+      "explanation": "Create an HTTP listener on port 80 with an action of Type=redirect to HTTPS on port 443 with a 301 permanently moved status code."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Misconfigured Security Groups Between ALB and Targets",
+      "remedy": "Target security groups must permit inbound traffic on application ports from the ALB's security group; otherwise health checks will fail."
+    },
+    {
+      "mistake": "Relying on Classic Load Balancers for Multi-Domain SSL",
+      "remedy": "CLB does not support Server Name Indication (SNI); migrate to Application Load Balancer to host multiple certificates on a single IP/port."
+    }
+  ],
+  "quickRevision": [
+    "Target Groups route to EC2 instances, private IPs, or Lambda functions.",
+    "Health checks probe protocol/port/path (/health); non-200 marks target unhealthy.",
+    "Server Name Indication (SNI) enables multi-certificate SSL on 1 HTTPS listener.",
+    "ALB supports HTTP-to-HTTPS 301 redirects and Fixed Responses directly.",
+    "X-Amzn-Trace-Id header allows tracking requests across microservices."
+  ],
+  "securityNotes": "Integrate AWS WAF directly on the ALB to block SQL injection, cross-site scripting (XSS), and rate-limit abusive IP addresses.",
+  "costImplications": "Evaluating complex rule sets beyond the default rule consumes additional rule evaluation LCUs."
+},
+
+  "elb-types-routing-rules-auto-scaling": {
+  "simpleExplanation": "Amazon Elastic Load Balancing (ELB) automatically distributes incoming application traffic across multiple Amazon EC2 instances, containers, and IP addresses across multiple Availability Zones to maximize fault tolerance. ELB exposes a single DNS entry point and performs continuous health checks to stop sending traffic to degraded instances. AWS offers 4 load balancer products across the OSI model: Application Load Balancer (ALB), Network Load Balancer (NLB), Gateway Load Balancer (GLB), and Classic Load Balancer (CLB).",
+  "internalsExplanation": "ELBs can be configured as Internet-Facing (public IPs, publicly resolvable DNS, accepting client traffic over the web) or Internal-Facing (private IPs only, routing internal traffic between web, application, and database tiers). ALB operates at Layer 7 (Application Layer) supporting HTTP/HTTPS and content-based routing (Host-based, Path-based, HTTP headers, HTTP methods, query string parameters, source IP CIDR). NLB operates at Layer 4 (Transport Layer) handling TCP/UDP with ultra-low latency, scaling to millions of requests per second, and providing a static IP or Elastic IP per AZ. GLB operates at Layer 3 (Network Layer) providing transparent packet inspection and load balancing for third-party virtual appliances (firewalls, IDS/IPS) via GENEVE protocol encapsulation.",
+  "coreConcepts": [
+    {
+      "title": "Internet-Facing vs Internal Load Balancers",
+      "description": "Internet-facing load balancers possess public IPs and resolve publicly to route traffic from external clients. Internal load balancers have private IPs only and resolve within the VPC, allowing secure multi-tier architectures where targets do not need public IP addresses."
+    },
+    {
+      "title": "Application Load Balancer (ALB - Layer 7)",
+      "description": "Operating at Layer 7 (OSI), ALB inspects application headers and routes traffic based on content: Host headers (api.domain.com), URL paths (/checkout/*), HTTP methods (POST), query parameters, and client source CIDRs. Supports TCP ports 1-65535."
+    },
+    {
+      "title": "Network Load Balancer (NLB - Layer 4)",
+      "description": "Operating at Layer 4 (OSI), NLB routes raw TCP/UDP/TLS connections with ultra-high throughput and microsecond latency. Capable of handling sudden traffic spikes to millions of requests/sec; provides a dedicated static IP and Elastic IP per AZ."
+    },
+    {
+      "title": "Gateway Load Balancer (GLB - Layer 3)",
+      "description": "Operates at the network layer to deploy, scale, and manage virtual security appliances (Palo Alto, Fortinet firewalls, IDS/IPS). Uses GENEVE protocol encapsulation (port 6081) and GWLB endpoints to route traffic across VPC boundaries transparently without altering IP headers."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws elbv2 create-load-balancer --name prod-alb --subnets subnet-123 subnet-456 --security-groups sg-web --type application",
+      "description": "Provision an internet-facing Application Load Balancer across two Availability Zones."
+    },
+    {
+      "command": "aws elbv2 create-load-balancer --name ultra-fast-nlb --subnets subnet-123 subnet-456 --type network",
+      "description": "Provision a Layer 4 Network Load Balancer with static IP support for high throughput."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Deploy Load Balancers Across at Least 2 Availability Zones",
+      "explanation": "ELB requires subnets in at least two AZs to provide high availability and automatic zone failover."
+    },
+    {
+      "rule": "Use NLB for Gaming, IoT & Extreme Throughput",
+      "explanation": "NLB bypasses application-layer parsing, providing wire-speed TCP performance and preserved client IP addresses."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Pointing Hardcoded IP Addresses to an ALB",
+      "remedy": "ALB node IP addresses change dynamically as it scales; always point DNS CNAME records or Route 53 Alias records to the ALB DNS name, never static IPs (use NLB if static IPs are required)."
+    },
+    {
+      "mistake": "Placing an Internet-Facing ALB in Private Subnets",
+      "remedy": "Internet-facing ALBs must be deployed into Public Subnets that have route table targets pointing to an Internet Gateway (0.0.0.0/0 -> igw)."
+    }
+  ],
+  "quickRevision": [
+    "ELB distributes incoming traffic across instances in multiple Availability Zones.",
+    "ALB = Layer 7 (HTTP/HTTPS, content-based routing: host, path, headers, method).",
+    "NLB = Layer 4 (TCP/UDP, ultra-low latency, millions of req/sec, static/Elastic IPs).",
+    "GLB = Layer 3 (transparent virtual security appliances, GENEVE encapsulation).",
+    "Internal load balancers route traffic securely between tiers without public IPs."
+  ],
+  "securityNotes": "Attach dedicated Security Groups to ALBs allowing only ports 80 and 443; configure downstream EC2 security groups to only allow traffic from the ALB's security group ID.",
+  "costImplications": "Billed on load balancer capacity units (LCU for ALB/NLB/GLB) measuring new connections, active connections, processed bytes, and rule evaluations."
+},
+
+  "ec2-networking-eni-security-groups-key-pairs": {
+  "simpleExplanation": "Connecting to and securing EC2 instances relies on core networking and authentication primitives: Elastic Network Interfaces (ENIs), Public vs Private IP addresses, stateful Security Groups, and cryptographic Key Pairs. Following the standard AWS Management Console workflow, you can launch a production-ready Linux instance in 10 simple steps from AMI selection to 2/2 status check verification.",
+  "internalsExplanation": "An Elastic Network Interface (ENI) is a virtual network adapter bound to a subnet; it contains a primary private IPv4, optional secondary private IPs, a MAC address, and attached Security Groups. ENIs can be hot-detached from one instance and attached to another in the same VPC for instant failover. Security Groups act as stateful firewalls (allowing inbound port 22/80/443 automatically permits outbound response traffic on ephemeral ports). Key Pairs use asymmetric RSA or ED25519 cryptography: AWS installs the public key into ~/.ssh/authorized_keys during launch, and the user holds the private key (.pem for OpenSSH or .ppk for PuTTY) to authenticate via SSH.",
+  "coreConcepts": [
+    {
+      "title": "Elastic Network Interfaces (ENIs)",
+      "description": "Virtual network cards that can be attached, detached, and reattached between instances in the same VPC. Enables creating dual-homed instances (management network + public network), network monitoring, and low-cost failover."
+    },
+    {
+      "title": "Public vs Private IPv4 Addresses",
+      "description": "Private IPs are internal to the VPC, non-routable over the internet, and persist through stop/start. Public IPs are assigned from AWS's IPv4 pool, reachable over the internet, and are released when an instance is stopped (unless an Elastic IP is associated)."
+    },
+    {
+      "title": "Stateful Security Groups",
+      "description": "Virtual firewalls operating at the ENI level. Security Groups are stateful: if an inbound rule permits traffic on port 80/443, the outbound response traffic is automatically allowed, regardless of outbound rules."
+    },
+    {
+      "title": "Key Pairs (.pem vs .ppk)",
+      "description": "Asymmetric authentication tokens. AWS stores the public key; the user downloads the private key (.pem for Linux/macOS OpenSSH, .ppk for PuTTY on Windows). If the private key is lost, direct SSH access is permanently lost unless rescued via EC2 Serial Console or Session Manager."
+    },
+    {
+      "title": "10-Step Console Launch Workflow",
+      "description": "(1) Login, (2) Open EC2, (3) Click Launch Instance, (4) Select AMI e.g. Amazon Linux 2023, (5) Select Type e.g. t3.micro, (6) Create/Select Key Pair, (7) Configure Network Settings (VPC, Subnet, Public IP, Security Group), (8) Configure Storage (8 GB gp3), (9) Review & Launch, (10) Verify 'Running' state and 2/2 Status Checks."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "chmod 400 myweb-key.pem && ssh -i myweb-key.pem ec2-user@54.82.216.96",
+      "description": "Set restrictive read permissions on private key and connect to EC2 instance via SSH."
+    },
+    {
+      "command": "aws ec2 authorize-security-group-ingress --group-id sg-0123456789abcdef0 --protocol tcp --port 80 --cidr 0.0.0.0/0",
+      "description": "Add an inbound rule to a Security Group allowing HTTP traffic on port 80 from anywhere."
+    },
+    {
+      "command": "aws ec2 create-network-interface --subnet-id subnet-0da0f24ec1193a84f --groups sg-0123456789abcdef0",
+      "description": "Create a standalone Elastic Network Interface (ENI) in a VPC subnet."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Restrict SSH (Port 22) to Known IPs",
+      "explanation": "Never leave port 22 open to 0.0.0.0/0; restrict SSH access strictly to your corporate CIDR or use AWS Systems Manager Session Manager (no open inbound ports)."
+    },
+    {
+      "rule": "Use Session Manager Instead of Key Pairs",
+      "explanation": "AWS Systems Manager Session Manager allows browser-based terminal access governed by IAM policies and CloudTrail logging without managing .pem files."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Overly Permissive Key File Permissions (Permissions 0644 are too open)",
+      "remedy": "SSH clients reject private keys with open permissions; run 'chmod 400 key.pem' on Linux/macOS before connecting."
+    },
+    {
+      "mistake": "Assuming Public IP Persists After Stopping an Instance",
+      "remedy": "Standard auto-assigned public IPv4 addresses change upon instance stop and restart; allocate and associate an Elastic IP (EIP) for a fixed static address."
+    }
+  ],
+  "quickRevision": [
+    "ENI is a virtual NIC containing private IP, MAC address, and Security Groups.",
+    "Security Groups are stateful; return traffic is automatically permitted.",
+    "Private IPs persist on stop/start; standard public IPs change upon restart.",
+    "Key Pairs use asymmetric encryption (.pem for OpenSSH, .ppk for PuTTY).",
+    "Standard default storage: 8 GB gp3 root volume with 3,000 baseline IOPS."
+  ],
+  "securityNotes": "Always delete unused default security group rules allowing all traffic; attach least-privilege security groups dedicated to individual application tiers.",
+  "costImplications": "AWS charges for all in-use and idle public IPv4 addresses ($0.005/hour per IPv4); private IPs inside a VPC are completely free."
+},
+
+  "ec2-storage-ebs-types-vs-instance-store": {
+  "simpleExplanation": "Amazon EC2 offers two primary block storage choices: persistent Amazon Elastic Block Store (EBS) and ephemeral Instance Store. EBS volumes act like networked virtual hard drives that persist data independently of the instance lifecycle (persisting through stop and reboot). In contrast, Instance Store disks are physical drives directly attached to the host server, offering blistering I/O speeds and ultra-low latency, but with 100% ephemeral data retention (all data is permanently lost if the instance stops or the host fails).",
+  "internalsExplanation": "EBS communicates with EC2 over a dedicated private storage network; volumes can be dynamically resized, encrypted, snapshot to Amazon S3, and detached/reattached within the same Availability Zone. EBS offers 4 primary types: gp3 (General Purpose SSD, baseline 3000 IOPS and 125 MB/s, independent IOPS/throughput scaling), io1/io2 (Provisioned IOPS SSD, up to 64,000 IOPS and 99.999% durability for sub-millisecond OLTP), st1 (Throughput Optimized HDD, 500 MB/s for big data/streaming), and sc1 (Cold HDD, lowest cost for infrequent sequential access). Instance Store uses physically mounted NVMe SSDs or HDDs; when an instance stops or terminates, the host hardware block allocation is wiped.",
+  "coreConcepts": [
+    {
+      "title": "Persistent EBS vs Ephemeral Instance Store",
+      "description": "EBS volumes persist independently of instance restarts and stops, can be snapshotted to S3, and moved across instances in the same AZ. Instance Store is temporary storage physically attached to the host machine—data is permanently lost if the instance is stopped, terminated, or suffers hardware failure."
+    },
+    {
+      "title": "EBS General Purpose SSD (gp3)",
+      "description": "The modern default SSD volume. Delivers a baseline performance of 3,000 IOPS and 125 MB/s throughput regardless of volume size, and allows independently scaling IOPS up to 16,000 and throughput up to 1,000 MB/s at 20% lower cost than gp2."
+    },
+    {
+      "title": "EBS Provisioned IOPS SSD (io1 & io2)",
+      "description": "Designed for I/O-intensive, mission-critical relational databases (Oracle, SQL Server, SAP HANA) requiring sustained low-latency OLTP performance up to 64,000 IOPS with 99.999% durability."
+    },
+    {
+      "title": "Throughput Optimized (st1) & Cold (sc1) HDDs",
+      "description": "Magnetic spinning disk volumes designed for large sequential streaming workloads: st1 is optimized for big data, data warehousing, and log processing; sc1 provides the lowest cost storage for cold, infrequently accessed sequential datasets."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws ec2 create-volume --availability-zone us-east-1a --size 100 --volume-type gp3 --iops 4000 --throughput 250",
+      "description": "Provision a 100 GB gp3 volume with custom provisioned IOPS and throughput."
+    },
+    {
+      "command": "aws ec2 attach-volume --volume-id vol-0123456789abcdef0 --instance-id i-0e54d474bc8e85f27 --device /dev/sdf",
+      "description": "Attach an existing persistent EBS volume to a running EC2 instance."
+    },
+    {
+      "command": "aws ec2 create-snapshot --volume-id vol-0123456789abcdef0 --description 'Weekly DB backup snapshot'",
+      "description": "Create an incremental point-in-time snapshot of an EBS volume stored durably in S3."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Migrate Legacy gp2 Volumes to gp3",
+      "explanation": "gp3 provides baseline 3,000 IOPS at 20% lower cost per GB compared to gp2, with independent scaling of IOPS and throughput."
+    },
+    {
+      "rule": "Use Instance Store Strictly for Ephemeral Data",
+      "explanation": "Limit Instance Store to cache tiers, buffer pools, scratch files, and distributed replicate clusters (Cassandra/Elasticsearch) where node loss is tolerated."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Stopping an EC2 Instance with Instance Store Root Volume",
+      "remedy": "EC2 instances with instance store root volumes cannot be 'Stopped' (only Rebooted or Terminated); stopping an EBS-backed instance with secondary instance store wipes all data on the instance store."
+    },
+    {
+      "mistake": "Attaching an EBS Volume Across Different Availability Zones",
+      "remedy": "EBS volumes are AZ-locked; to move an EBS volume to another AZ, take a snapshot and restore a new volume in the destination AZ."
+    }
+  ],
+  "quickRevision": [
+    "EBS is persistent network block storage; survives instance stop and termination.",
+    "Instance Store is physical local storage; 100% ephemeral (lost on stop/terminate/hardware failure).",
+    "gp3 baseline: 3,000 IOPS and 125 MB/s throughput at lower cost than gp2.",
+    "io1/io2 Provisioned IOPS: mission-critical sub-millisecond OLTP database workloads.",
+    "EBS snapshots are incremental and stored durably in Amazon S3."
+  ],
+  "securityNotes": "Enable default EBS encryption on the AWS account so all newly created volumes and snapshots are encrypted with AWS KMS keys.",
+  "costImplications": "Free Tier includes 30 GB of EBS General Purpose (SSD or Magnetic) storage and 2 million I/Os with 1 GB snapshot storage for 12 months."
+},
+
+  "ec2-concepts-purchasing-models-lifecycle": {
+  "simpleExplanation": "Amazon Elastic Compute Cloud (Amazon EC2) provides scalable, on-demand virtual servers in the cloud, eliminating the need to invest in or manage physical hardware. You can select tailored instance types, storage, and networking configurations to run web applications, batch analytics, containerized microservices, or high-performance computing (HPC) workloads. EC2 features 4 primary instance families, 5 purchasing models, and automated health monitoring via CloudWatch and EC2 Status Checks.",
+  "internalsExplanation": "EC2 instances run on physical host machines managed by AWS hypervisors (Nitro System or Xen). AWS monitors instance health through two distinct status checks: (1) System Status Checks (hypervisor, physical host, network, or power loss; resolved by stopping and starting the instance to migrate to a new healthy physical host), and (2) Instance Status Checks (guest OS corruption, kernel panic, filesystem errors, or incorrect network configuration; resolved by rebooting or inspecting system logs). Purchasing options include On-Demand, Reserved Instances, Savings Plans, Spot Instances (up to 90% discount on spare AWS capacity with a 2-minute interruption notice), and Dedicated Hosts.",
+  "coreConcepts": [
+    {
+      "title": "4 Primary Instance Families",
+      "description": "General Purpose (T-series burstable, M-series balanced for web apps and small DBs); Compute Optimized (C-series for batch, HPC, video transcoding, ML inference); Memory Optimized (R, X, High Memory, z-series for in-memory DBs like Redis/SAP HANA and real-time big data); Storage Optimized (I, D, H-series with NVMe SSDs/HDDs for high IOPS NoSQL and data warehousing)."
+    },
+    {
+      "title": "5 Purchasing Models",
+      "description": "On-Demand (pay per second/hour, maximum flexibility, no commitment); Reserved Instances (1 or 3-year commitment for predictable steady-state discounts); Savings Plans (hourly spend commitment, flexible across families/regions); Spot Instances (bid on unused capacity at up to 90% discount, 2-minute termination notice); Dedicated Hosts (physical servers dedicated to a single customer for licensing compliance)."
+    },
+    {
+      "title": "System vs Instance Status Checks",
+      "description": "System status checks monitor physical host infrastructure (loss of system power, hardware issues; remediated via stop/start to migrate host). Instance status checks monitor the virtual OS (exhausted memory, corrupt file system, incompatible drivers; remediated via OS reboot or volume detach)."
+    },
+    {
+      "title": "Right-Sizing Best Practices",
+      "description": "Continuously monitoring CPU, memory, and disk metrics via CloudWatch to adjust instance sizes and avoid over-provisioning (wasted budget) or under-provisioning (performance degradation)."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws ec2 describe-instance-status --instance-ids i-0e54d474bc8e85f27",
+      "description": "Inspect system and instance status check results for a running EC2 instance."
+    },
+    {
+      "command": "aws ec2 request-spot-instances --spot-price '0.015' --instance-count 1 --type 'one-time' --launch-specification file://specification.json",
+      "description": "Request a cost-effective Spot instance for fault-tolerant batch processing."
+    },
+    {
+      "command": "aws ec2 stop-instances --instance-ids i-0e54d474bc8e85f27 && aws ec2 start-instances --instance-ids i-0e54d474bc8e85f27",
+      "description": "Stop and start an instance to migrate off a degraded physical hardware host."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Leverage Spot Instances for Stateless Workloads",
+      "explanation": "Combine Spot Instances with Auto Scaling Groups for batch analytics, CI/CD runners, and containerized microservices to cut compute costs by up to 90%."
+    },
+    {
+      "rule": "Configure Automated Recovery on CloudWatch Alarms",
+      "explanation": "Attach an EC2 Auto-Recovery action to a CloudWatch alarm monitoring StatusCheckFailed_System to automatically reboot instances on new hardware."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Rebooting an Instance Failing System Status Checks",
+      "remedy": "Rebooting keeps the instance on the same degraded physical host; you must STOP and START the instance so AWS moves it to healthy hardware."
+    },
+    {
+      "mistake": "Running Stateful Databases on Unmanaged Spot Instances",
+      "remedy": "Spot instances can be reclaimed with a 2-minute notice; never run single-instance stateful databases on Spot."
+    }
+  ],
+  "quickRevision": [
+    "EC2 provides on-demand resizable virtual servers without physical hardware management.",
+    "4 core families: General Purpose (T/M), Compute (C), Memory (R/X/z), Storage (I/D/H).",
+    "System status check = AWS physical host failure (fix: stop/start to migrate).",
+    "Instance status check = Guest OS / software failure (fix: reboot / inspect logs).",
+    "Spot Instances offer up to 90% savings with a 2-minute interruption warning."
+  ],
+  "securityNotes": "Always assign IAM Roles via Instance Profiles rather than saving AWS API access keys on instance disks; enforce IMDSv2 for metadata security.",
+  "costImplications": "Free Tier includes 750 hours/month of Linux and Windows t2.micro or t3.micro instances for 12 months. Turn off idle instances to avoid hourly charges."
+},
+
+  "2": {
+  "simpleExplanation": "AWS Identity and Access Management (IAM) is the central security control plane of your AWS environment. By default, newly created IAM users have NO access to any AWS services (implicit deny). Permissions are granted exclusively through JSON policy documents containing statements with Effects (Allow/Deny), Actions, Resources, and Conditions. Crucially, an Explicit Deny anywhere always overrides any Explicit Allow.",
+  "internalsExplanation": "When an API request hits AWS, the IAM authorization engine evaluates all applicable policies (Identity-based, Resource-based, Permissions Boundaries, and SCPs). The evaluation starts with a default deny. If any statement contains an explicit 'Deny', the request is instantly denied. If an explicit 'Allow' is found (and no Deny matches), the request succeeds. If no allow is matched, the default implicit deny blocks access.",
+  "coreConcepts": [
+    {
+      "title": "IAM Users vs IAM Groups",
+      "description": "An IAM user represents a person or workload with credentials (password or access keys). An IAM group is a collection of users to which policies can be attached; groups cannot be nested and individual users retain their own distinct credentials."
+    },
+    {
+      "title": "JSON Policy Statement Structure",
+      "description": "A JSON policy requires 'Version' ('2012-10-17') and a 'Statement' array containing Sid (optional ID), Effect ('Allow' | 'Deny'), Action (e.g. 's3:ListBucket'), Resource (ARN format), and optional Condition blocks (e.g. requiring MFA)."
+    },
+    {
+      "title": "Managed Policies vs Inline Policies",
+      "description": "Managed policies (AWS Managed or Customer Managed) are standalone documents that can be attached to multiple users, groups, or roles. Inline policies maintain a strict 1-to-1 relationship with a single identity and are deleted when that identity is deleted (not recommended by AWS)."
+    },
+    {
+      "title": "Policy Evaluation Logic",
+      "description": "AWS follows a strict evaluation order: (1) Default implicit deny, (2) Any Explicit Deny overrides all allows, (3) Explicit Allow grants access, (4) Absence of an allow results in implicit deny."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws iam create-user --user-name devops-engineer",
+      "description": "Create a new IAM user with zero permissions by default."
+    },
+    {
+      "command": "aws iam attach-user-policy --user-name devops-engineer --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+      "description": "Attach an AWS-managed policy granting read-only S3 access."
+    },
+    {
+      "command": "aws iam get-account-authorization-details",
+      "description": "Audit all users, groups, roles, and managed policies in the AWS account."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Enforce Principle of Least Privilege",
+      "explanation": "Grant only the minimum permissions required to perform a specific task; never use the root user for daily administrative activities."
+    },
+    {
+      "rule": "Enforce Multi-Factor Authentication (MFA)",
+      "explanation": "Require MFA on all IAM users with console access and especially on the AWS account root user."
+    },
+    {
+      "rule": "Avoid Inline Policies",
+      "explanation": "Use Customer Managed policies instead of Inline policies to enable reusability, version control, and centralized auditability."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Granting AdministratorAccess or Wildcards (Action: '*')",
+      "remedy": "Scope down permissions to specific actions and explicit resource ARNs."
+    },
+    {
+      "mistake": "Using Long-Term Access Keys in Code or EC2",
+      "remedy": "Use IAM Roles and STS temporary credentials instead of hardcoded access keys."
+    }
+  ],
+  "quickRevision": [
+    "IAM is a global service; users and policies apply across all AWS regions.",
+    "New IAM users have ZERO access by default (implicit deny).",
+    "Explicit Deny ALWAYS overrides Explicit Allow.",
+    "Policy Version must always be specified as '2012-10-17'.",
+    "Groups cannot contain other groups (no nested groups)."
+  ],
+  "securityNotes": "Never generate long-term access keys for root. Enforce password complexity policies and mandatory MFA rotation.",
+  "costImplications": "IAM is completely free of charge. You pay only for the AWS resources that authenticated IAM identities consume."
+},
+  "6": {
+  "simpleExplanation": "Amazon Simple Storage Service (S3) is scalable object storage offering 99.999999999% (11 9s) durability by redundantly syncing objects across multiple Availability Zones. S3 stores data as Objects (0 bytes to 5 TB) inside uniquely named global Buckets. S3 provides strong read-after-write consistency and 7 storage classes tailored for different access frequencies and cost budgets.",
+  "internalsExplanation": "Each S3 object is identified by a Key (key name + version) and consists of data, metadata, and ACLs. S3 provides strong read-after-write consistency for PUT, GET, and DELETE requests in all regions. Storage tiers range from S3 Standard (frequent millisecond access) to S3 Intelligent-Tiering (automated tiering without fees), S3 Standard-IA (infrequent, 30-day min), S3 One Zone-IA (single AZ, 20% cheaper), and Glacier storage classes (Flexible and Deep Archive for long-term archiving).",
+  "coreConcepts": [
+    {
+      "title": "11 9s Durability & Global Unique Namespace",
+      "description": "Objects are replicated across at least 3 geographically separated AZs for 99.999999999% durability. Bucket names are globally unique across all AWS accounts worldwide."
+    },
+    {
+      "title": "7 S3 Storage Classes",
+      "description": "S3 Standard, S3 Intelligent-Tiering (auto-adjusts tiers), S3 Standard-IA (infrequent access), S3 One Zone-IA (single AZ), S3 Glacier Instant Retrieval (ms access), S3 Glacier Flexible Retrieval (1-5 min to hours), and S3 Glacier Deep Archive (lowest cost, 12-hour default retrieval)."
+    },
+    {
+      "title": "Strong Read-After-Write Consistency",
+      "description": "After a successful PUT or DELETE of an object, subsequent GET requests immediately return the latest version of the object across all AWS regions."
+    },
+    {
+      "title": "Lifecycle Rules (Transitions & Expirations)",
+      "description": "Automated policies that transition objects to colder storage tiers (minimum 30-day interval) or permanently expire (delete) them to optimize costs."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws s3 mb s3://enterprise-cloudmaster-bucket-2026 --region us-east-1",
+      "description": "Create a new S3 bucket with a globally unique name."
+    },
+    {
+      "command": "aws s3 cp document.pdf s3://enterprise-cloudmaster-bucket-2026/docs/ --storage-class INTELLIGENT_TIERING",
+      "description": "Upload an object directly into S3 Intelligent-Tiering for automatic cost optimization."
+    },
+    {
+      "command": "aws s3api put-bucket-lifecycle-configuration --bucket mybucket --lifecycle-configuration file://lifecycle.json",
+      "description": "Apply automated lifecycle transition and expiration rules to a bucket."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use S3 Intelligent-Tiering for Unknown Access Patterns",
+      "explanation": "Automatically moves data between Frequent, Infrequent, and Archive tiers without retrieval fees or operational overhead."
+    },
+    {
+      "rule": "Observe Minimum Storage Durations",
+      "explanation": "Standard-IA requires 30 days, Glacier Flexible requires 90 days, and Deep Archive requires 180 days; premature deletion incurs prorated fees."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Using S3 One Zone-IA for Critical Irreplaceable Data",
+      "remedy": "One Zone-IA resides in a single AZ; if that physical AZ is destroyed, data is permanently lost. Use S3 Standard or Standard-IA."
+    },
+    {
+      "mistake": "Writing Lifecycle Rules with Transitions under 30 Days",
+      "remedy": "S3 requires a minimum 30-day interval before transitioning from Standard to Standard-IA or One Zone-IA."
+    }
+  ],
+  "quickRevision": [
+    "S3 durability is 99.999999999% (11 9s) across multiple Availability Zones.",
+    "Object size limits: 0 bytes up to 5 TB per individual object.",
+    "S3 features strong read-after-write consistency for PUT, GET, and DELETE.",
+    "S3 Glacier Deep Archive is the lowest-cost cloud storage in AWS (180-day min).",
+    "Lifecycle actions include Transition Actions and Expiration Actions."
+  ],
+  "securityNotes": "Enable default encryption and S3 Block Public Access immediately upon creating any bucket.",
+  "costImplications": "Costs depend on storage volume (GB/mo), storage class, request counts (PUT, GET), data retrieval fees (IA/Glacier), and cross-region transfer."
+},
+  "9": {
+  "simpleExplanation": "Amazon Relational Database Service (Amazon RDS) is a fully managed cloud database web service that automates hardware provisioning, database setup, OS patching, log management, and backups. RDS supports 7 database engines and provides cost-efficient, resizable compute and storage without granting access to the underlying operating system.",
+  "internalsExplanation": "A DB Instance is an isolated database environment in the cloud. RDS offers storage classes: General Purpose SSD (gp2/gp3) for balanced workloads, Provisioned IOPS SSD (io1/io2) delivering fast, predictable I/O performance optimized for I/O-intensive transactional (OLTP) database workloads, and legacy Magnetic storage. RDS Free Tier provides 750 hours/month of Single-AZ db.t2.micro/db.t3.micro/db.t4g.micro with 20 GB SSD and 20 GB backup storage.",
+  "coreConcepts": [
+    {
+      "title": "Managed Service Boundary",
+      "description": "RDS manages OS patching, backups, and failover, but does NOT allow direct SSH or root access to the underlying operating system."
+    },
+    {
+      "title": "Supported Database Engines",
+      "description": "Open source: MySQL, MariaDB, PostgreSQL. Commercial: Oracle, Microsoft SQL Server. Cloud-native: Amazon Aurora (MySQL/PostgreSQL compatible). Enterprise: IBM DB2."
+    },
+    {
+      "title": "Storage Engine Options",
+      "description": "General Purpose SSD (gp2/gp3) for baseline performance; Provisioned IOPS SSD (io1/io2) for high-concurrency transactional OLTP workloads requiring dedicated IOPS."
+    },
+    {
+      "title": "In-Place Scaling",
+      "description": "Compute (vCPU/RAM) and storage capacity can be scaled up dynamically with minimal maintenance downtime."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws rds create-db-instance --db-instance-identifier prod-mysql --db-instance-class db.t3.medium --engine mysql --allocated-storage 50 --master-username admin --master-user-password 'SuperSecret123!'",
+      "description": "Provision a managed MySQL RDS instance with 50 GB storage."
+    },
+    {
+      "command": "aws rds modify-db-instance --db-instance-identifier prod-mysql --allocated-storage 100 --apply-immediately",
+      "description": "Scale storage dynamically from 50 GB to 100 GB."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Select Provisioned IOPS for Critical OLTP",
+      "explanation": "Prevents I/O throttling during transaction spikes on high-volume production databases."
+    },
+    {
+      "rule": "Configure Maintenance Windows",
+      "explanation": "Set automated OS and minor engine patching to occur during off-peak weekend hours."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Expecting OS Root or SSH Access to RDS",
+      "remedy": "RDS is fully managed; if you require OS access or custom kernel modules, run your database on EC2 or use RDS Custom."
+    },
+    {
+      "mistake": "Under-Provisioning Initial Storage",
+      "remedy": "Enable Storage Auto-Scaling so RDS automatically expands disk space before the database runs out of room."
+    }
+  ],
+  "quickRevision": [
+    "RDS is a fully managed service (no OS access).",
+    "Supports 7 engines: MySQL, MariaDB, PostgreSQL, Oracle, SQL Server, Aurora, IBM DB2.",
+    "Provisioned IOPS SSD delivers fast, predictable performance for OLTP workloads.",
+    "Free Tier: 750 hrs Single-AZ db.t2/t3/t4g.micro + 20 GB SSD + 20 GB backups."
+  ],
+  "securityNotes": "Deploy RDS instances in Private Subnets with Security Groups allowing inbound SQL traffic strictly from application tier instances.",
+  "costImplications": "Billed per instance-hour, provisioned storage (GB/mo), provisioned IOPS, and data transfer."
+},
+  "10": {
+  "simpleExplanation": "AWS Lambda is a serverless compute service that lets you run code without provisioning or managing servers. You pay only for the compute time consumed in milliseconds—there is zero charge when your code is not running. Lambda automatically scales from zero to thousands of parallel requests and executes code in response to events from S3, Kinesis, DynamoDB, API Gateway, and IoT devices.",
+  "internalsExplanation": "Lambda code is executed inside secure, isolated MicroVMs (Firecracker). The function code must be written in a stateless style, assuming no affinity to underlying compute infrastructure. Lambda natively supports Node.js, Python, Java, C#, Go, PowerShell, and Ruby, and provides a Runtime API to support any custom language (Rust, PHP, C++). Handlers process event payloads and context objects.",
+  "coreConcepts": [
+    {
+      "title": "Serverless Event-Driven Model",
+      "description": "Code executes only when triggered by events (file upload to S3, message on SQS, HTTP request via API Gateway); instances spin down when idle."
+    },
+    {
+      "title": "Stateless Function Architecture",
+      "description": "Functions must assume no state persists between invocations; persistent application state belongs in DynamoDB, S3, or RDS."
+    },
+    {
+      "title": "Native Language Runtimes & Custom Runtime API",
+      "description": "Native support for Node.js, Python, Java, C#, Go, PowerShell, and Ruby; Runtime API allows compiling custom executables (e.g. bootstrap binary)."
+    },
+    {
+      "title": "Primary Production Use Cases",
+      "description": "Real-time file processing (S3 trigger), real-time stream processing (Kinesis/DynamoDB Streams), web/mobile backends (API Gateway), and IoT telemetry."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws lambda create-function --function-name ImageProcessor --runtime nodejs20.x --role arn:aws:iam::123456789012:role/LambdaExecutionRole --handler index.handler --zip-file fileb://function.zip",
+      "description": "Deploy a Node.js Lambda function from a zip archive."
+    },
+    {
+      "command": "aws lambda invoke --function-name ImageProcessor --payload '{\"action\":\"resize\"}' response.json",
+      "description": "Synchronously invoke a Lambda function and capture the output."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Separate Business Logic from Handler",
+      "explanation": "Keep the handler function lightweight; modularize business logic into standalone testable classes/services."
+    },
+    {
+      "rule": "Reuse Database Connections in Global Scope",
+      "explanation": "Instantiate database pools outside the handler function so warm containers reuse existing TCP connections across invocations."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Storing Local State in the Function Filesystem for Next Run",
+      "remedy": "Subsequent requests may hit completely new microVMs; store state in DynamoDB, ElastiCache, or S3."
+    },
+    {
+      "mistake": "Hardcoding Secrets in Function Code",
+      "remedy": "Fetch secrets dynamically from AWS Secrets Manager or Systems Manager Parameter Store."
+    }
+  ],
+  "quickRevision": [
+    "Lambda executes code without managing servers; zero charges when code is idle.",
+    "Functions must be stateless with no affinity to the host.",
+    "Supported runtimes: Node.js, Python, Java, C#, Go, PowerShell, Ruby, and Custom Runtime API.",
+    "Event triggers: S3 file uploads, Kinesis streams, API Gateway, IoT backends, SQS."
+  ],
+  "securityNotes": "Every Lambda function requires an IAM Execution Role with permissions to write logs to CloudWatch and access required AWS resources.",
+  "costImplications": "Free Tier includes 1 million free requests and 3.2 million seconds of compute time per month."
+},
+
+  "lambda-limits-deployment-and-cold-start-optimization": {
+  "simpleExplanation": "Architecting enterprise serverless functions requires navigating deployment package limits and optimizing cold starts. Deployment packages are limited to 50 MB (compressed zip) and 250 MB (uncompressed code + dependencies), or up to 10 GB when packaged as Docker Container Images. Cold starts occur when Lambda initializes a new container instance; Provisioned Concurrency eliminates this latency entirely.",
+  "internalsExplanation": "The Lambda invocation lifecycle consists of: (1) Init Phase (download code, start runtime, run initialization code outside the handler), and (2) Invoke Phase (execute the handler). Cold starts occur during the Init Phase on the first request or during scale-out. Container images (up to 10 GB) hosted in Amazon ECR are cached on underlying worker nodes. Environment variables are capped at 4 KB.",
+  "coreConcepts": [
+    {
+      "title": "Deployment Package Limits",
+      "description": "Direct zip upload: 50 MB compressed; uncompressed code + layers: 250 MB; Container Images: up to 10 GB via Amazon ECR; Environment variables: 4 KB."
+    },
+    {
+      "title": "Cold Start vs Warm Start",
+      "description": "Cold start includes container download, microVM launch, and runtime init. Warm starts reuse existing execution environments, executing handler code in single-digit milliseconds."
+    },
+    {
+      "title": "Provisioned Concurrency",
+      "description": "Pre-warms a configured number of execution environments so they are always ready to respond with double-digit millisecond latency, eliminating cold starts."
+    },
+    {
+      "title": "Container Image Support",
+      "description": "Allows packaging complex machine learning or image processing runtimes with large native libraries (PyTorch, OpenCV) up to 10 GB."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws lambda put-provisioned-concurrency-config --function-name CheckoutAPI --qualifier live --provisioned-concurrent-executions 20",
+      "description": "Pre-warm 20 execution environments to guarantee zero cold start latency for checkout APIs."
+    },
+    {
+      "command": "aws lambda update-function-code --function-name MLClassifier --image-uri 123456789012.dkr.ecr.us-east-1.amazonaws.com/ml-lambda:v1",
+      "description": "Deploy a 3 GB Docker container image to Lambda from Amazon ECR."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Minimize Package Size to Speed Up Init",
+      "explanation": "Exclude devDependencies, tests, and documentation to accelerate the download and initialization phases."
+    },
+    {
+      "rule": "Use Provisioned Concurrency for Critical User-Facing APIs",
+      "explanation": "Apply provisioned concurrency to customer-facing checkout or login endpoints to eliminate latency spikes."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Exceeding the 4 KB Environment Variable Limit",
+      "remedy": "Store large configuration objects in AWS AppConfig or Systems Manager Parameter Store instead of environment variables."
+    },
+    {
+      "mistake": "Heavy Processing Inside Handler That Belongs in Init",
+      "remedy": "SDK clients and database configs should be initialized in the global scope once, not on every individual handler call."
+    }
+  ],
+  "quickRevision": [
+    "Zip deployment limits: 50 MB compressed, 250 MB uncompressed.",
+    "Container image deployments support up to 10 GB via Amazon ECR.",
+    "Environment variables are capped at 4 KB.",
+    "Provisioned Concurrency completely eliminates cold starts for latency-sensitive APIs.",
+    "Ephemeral /tmp can be used to load secondary files or scratch buffers up to 10 GB."
+  ],
+  "securityNotes": "Scan container images in Amazon ECR for CVE vulnerabilities before deploying them to AWS Lambda.",
+  "costImplications": "Provisioned Concurrency is billed continuously for the pre-warmed capacity regardless of whether requests arrive."
+},
+
+  "lambda-runtime-memory-scaling-and-concurrency": {
+  "simpleExplanation": "Lambda function performance is configured primarily through memory allocation (128 MB to 10,240 MB in 64 MB increments). Allocating more memory proportionally increases CPU cores, memory bandwidth, and network speed. Lambda execution timeout ranges from 3 seconds (default) up to 15 minutes (900 seconds). Concurrency management governs how many instances can run in parallel without throttling.",
+  "internalsExplanation": "At 1,769 MB of RAM, Lambda provides the equivalent of 1 full dedicated vCPU (at 10 GB, up to 6 vCPUs are allocated). Regional default concurrency is 1,000 parallel executions. Functions exceeding concurrency limits receive HTTP 429 Too Many Requests. When connecting to private resources (like RDS), Lambda attaches Hyperplane ENIs in your VPC subnets, enabling sub-millisecond network attachments.",
+  "coreConcepts": [
+    {
+      "title": "Memory-to-CPU Proportional Allocation",
+      "description": "Memory ranges from 128 MB to 10,240 MB. Increasing RAM automatically scales CPU power and network throughput proportionally."
+    },
+    {
+      "title": "Execution Timeouts & Ephemeral Storage",
+      "description": "Default execution timeout is 3 seconds; maximum limit is 15 minutes (900 seconds). Ephemeral /tmp storage ranges from 512 MB to 10,240 MB."
+    },
+    {
+      "title": "Concurrency Controls (Reserved vs Provisioned)",
+      "description": "Default regional concurrency is 1,000. Reserved Concurrency guarantees capacity and prevents runaway functions; Provisioned Concurrency pre-warms containers."
+    },
+    {
+      "title": "VPC Networking via Hyperplane ENIs",
+      "description": "Lambda functions deployed inside a VPC share managed Hyperplane ENIs, eliminating the legacy 10-30 second ENI provisioning delay."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws lambda update-function-configuration --function-name ETLWorker --memory-size 2048 --timeout 300",
+      "description": "Allocate 2 GB RAM and set execution timeout to 5 minutes (300 seconds)."
+    },
+    {
+      "command": "aws lambda put-function-concurrency --function-name OrderProcessor --reserved-concurrent-executions 100",
+      "description": "Reserve 100 dedicated concurrent execution slots to prevent throttling."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use AWS Lambda Power Tuning",
+      "explanation": "Benchmark execution duration across various RAM configurations; higher memory often runs faster and costs less total money."
+    },
+    {
+      "rule": "Use RDS Proxy for Database Connections",
+      "explanation": "High Lambda concurrency can overwhelm relational databases with connection spikes; RDS Proxy pools and reuses connections."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Running 2-Hour Batch Jobs in Lambda",
+      "remedy": "Lambda hard timeout is 15 minutes (900s); use AWS Step Functions, ECS Fargate, or AWS Batch for long-running workflows."
+    },
+    {
+      "mistake": "Forgetting That Memory Scales CPU",
+      "remedy": "If CPU-bound tasks (encryption, compression) run slowly at 128 MB, scale to 1024 MB or 2048 MB to activate multi-core performance."
+    }
+  ],
+  "quickRevision": [
+    "Memory ranges from 128 MB to 10,240 MB in 64 MB increments.",
+    "Increasing RAM proportionally allocates CPU cores and network bandwidth.",
+    "Maximum execution timeout is 15 minutes (900 seconds).",
+    "Ephemeral /tmp storage is 512 MB default (expandable to 10 GB).",
+    "Default regional concurrency limit is 1,000 executions."
+  ],
+  "securityNotes": "Functions inside a VPC cannot access the public internet unless their subnet routes outbound traffic through a NAT Gateway.",
+  "costImplications": "Billed on GB-seconds (Memory allocated × execution duration rounded to nearest millisecond)."
+},
+
+  "lambda-api-gateway-event-driven-patterns": {
+  "simpleExplanation": "AWS Lambda is a serverless compute service that lets you run code without provisioning or managing servers. You pay only for the compute time consumed in milliseconds—there is zero charge when your code is not running. Lambda automatically scales from zero to thousands of parallel requests and executes code in response to events from S3, Kinesis, DynamoDB, API Gateway, and IoT devices.",
+  "internalsExplanation": "Lambda code is executed inside secure, isolated MicroVMs (Firecracker). The function code must be written in a stateless style, assuming no affinity to underlying compute infrastructure. Lambda natively supports Node.js, Python, Java, C#, Go, PowerShell, and Ruby, and provides a Runtime API to support any custom language (Rust, PHP, C++). Handlers process event payloads and context objects.",
+  "coreConcepts": [
+    {
+      "title": "Serverless Event-Driven Model",
+      "description": "Code executes only when triggered by events (file upload to S3, message on SQS, HTTP request via API Gateway); instances spin down when idle."
+    },
+    {
+      "title": "Stateless Function Architecture",
+      "description": "Functions must assume no state persists between invocations; persistent application state belongs in DynamoDB, S3, or RDS."
+    },
+    {
+      "title": "Native Language Runtimes & Custom Runtime API",
+      "description": "Native support for Node.js, Python, Java, C#, Go, PowerShell, and Ruby; Runtime API allows compiling custom executables (e.g. bootstrap binary)."
+    },
+    {
+      "title": "Primary Production Use Cases",
+      "description": "Real-time file processing (S3 trigger), real-time stream processing (Kinesis/DynamoDB Streams), web/mobile backends (API Gateway), and IoT telemetry."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws lambda create-function --function-name ImageProcessor --runtime nodejs20.x --role arn:aws:iam::123456789012:role/LambdaExecutionRole --handler index.handler --zip-file fileb://function.zip",
+      "description": "Deploy a Node.js Lambda function from a zip archive."
+    },
+    {
+      "command": "aws lambda invoke --function-name ImageProcessor --payload '{\"action\":\"resize\"}' response.json",
+      "description": "Synchronously invoke a Lambda function and capture the output."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Separate Business Logic from Handler",
+      "explanation": "Keep the handler function lightweight; modularize business logic into standalone testable classes/services."
+    },
+    {
+      "rule": "Reuse Database Connections in Global Scope",
+      "explanation": "Instantiate database pools outside the handler function so warm containers reuse existing TCP connections across invocations."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Storing Local State in the Function Filesystem for Next Run",
+      "remedy": "Subsequent requests may hit completely new microVMs; store state in DynamoDB, ElastiCache, or S3."
+    },
+    {
+      "mistake": "Hardcoding Secrets in Function Code",
+      "remedy": "Fetch secrets dynamically from AWS Secrets Manager or Systems Manager Parameter Store."
+    }
+  ],
+  "quickRevision": [
+    "Lambda executes code without managing servers; zero charges when code is idle.",
+    "Functions must be stateless with no affinity to the host.",
+    "Supported runtimes: Node.js, Python, Java, C#, Go, PowerShell, Ruby, and Custom Runtime API.",
+    "Event triggers: S3 file uploads, Kinesis streams, API Gateway, IoT backends, SQS."
+  ],
+  "securityNotes": "Every Lambda function requires an IAM Execution Role with permissions to write logs to CloudWatch and access required AWS resources.",
+  "costImplications": "Free Tier includes 1 million free requests and 3.2 million seconds of compute time per month."
+},
+
+  "rds-backup-strategies-snapshots-and-point-in-time-recovery": {
+  "simpleExplanation": "Amazon RDS protects against data corruption and system failures using two backup methods: Automated Backups and Database Snapshots. Automated Backups combine daily snapshots and transaction logs stored in Amazon S3 to provide point-in-time recovery down to any second within a 1 to 35-day retention window. Database Snapshots are manual, user-initiated backups kept until explicitly deleted.",
+  "internalsExplanation": "During automated backups, RDS takes a daily storage volume snapshot during the backup window and continuously uploads transaction logs to S3 every 5 minutes. Point-in-time recovery restores the nearest snapshot and replays transaction logs up to the exact requested second. Crucially, performing a restore operation NEVER overwrites an existing instance—it ALWAYS launches a brand-new DB Instance with a new DNS endpoint.",
+  "coreConcepts": [
+    {
+      "title": "Automated Backups",
+      "description": "Enabled by default with a retention period of 1 to 35 days (0 disables backups). Combines daily volume snapshots and continuous transaction logs in S3."
+    },
+    {
+      "title": "Point-in-Time Recovery (PITR)",
+      "description": "Allows restoring the database to any specific second within the retention period (e.g. 5 minutes ago, right before an accidental 'DROP TABLE')."
+    },
+    {
+      "title": "Database Snapshots (Manual Backups)",
+      "description": "User-initiated backups stored in Amazon S3 that persist indefinitely until manually deleted. Billed only for incremental storage usage."
+    },
+    {
+      "title": "Restore Mechanics & Endpoint Behavior",
+      "description": "Restoring from a snapshot or PITR always creates a NEW DB Instance with a NEW connection endpoint URL, preserving the original instance for comparison."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws rds create-db-snapshot --db-instance-identifier prod-db --db-snapshot-identifier prod-db-pre-migration-snap",
+      "description": "Create a manual database snapshot before running schema migrations."
+    },
+    {
+      "command": "aws rds restore-db-instance-to-point-in-time --source-db-instance-identifier prod-db --target-db-instance prod-db-restored --restore-time 2026-11-06T09:30:00Z",
+      "description": "Restore a database to its exact state at 09:30 UTC into a new instance."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Take Manual Snapshots Before High-Risk Deployments",
+      "explanation": "Manual snapshots never expire automatically and provide a reliable baseline if a schema deployment corrupts data."
+    },
+    {
+      "rule": "Copy Snapshots Across Regions for Disaster Recovery",
+      "explanation": "Copying manual DB snapshots to a secondary AWS region guarantees business continuity during regional catastrophic outages."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Setting Backup Retention Period to 0",
+      "remedy": "Setting retention to 0 disables automated backups, point-in-time recovery, and breaks Read Replica creation."
+    },
+    {
+      "mistake": "Expecting In-Place Restore of RDS Instances",
+      "remedy": "RDS restore ALWAYS creates a new instance with a new endpoint; update your application DNS or connection string accordingly."
+    }
+  ],
+  "quickRevision": [
+    "Automated backups retention: 1 to 35 days (enables point-in-time recovery).",
+    "Manual DB Snapshots persist until explicitly deleted by the user.",
+    "Backups and snapshots are durably stored in Amazon S3.",
+    "Restoring from backup always creates a brand-new DB Instance with a new endpoint."
+  ],
+  "securityNotes": "Snapshots of encrypted DB instances are encrypted using the same KMS key; sharing encrypted snapshots requires sharing the KMS key.",
+  "costImplications": "Backup storage equal to 100% of your total allocated DB storage is provided free of charge; additional backup storage is billed at S3 rates."
+},
+
+  "rds-high-availability-multi-az-and-read-replicas": {
+  "simpleExplanation": "High availability and read scalability in RDS are solved through two complementary mechanisms: Multi-AZ Deployments for automated disaster recovery and Read Replicas for scaling read performance. Multi-AZ uses synchronous physical replication to a standby instance in another Availability Zone; Read Replicas use asynchronous logical replication to serve read-only queries.",
+  "internalsExplanation": "In a Multi-AZ deployment, writes are synchronously committed to both the primary and the standby before being acknowledged. If the primary fails, RDS automatically fails over to the standby in 60-120 seconds by flipping the DNS CNAME record (keeping the exact same connection string/endpoint). Read Replicas (up to 5 per DB) replicate asynchronously using database binary logs; they actively serve SELECT queries and can be promoted to standalone databases during disaster recovery.",
+  "coreConcepts": [
+    {
+      "title": "Multi-AZ Deployments (Disaster Recovery)",
+      "description": "Synchronous replication to a standby instance in a different AZ. The standby CANNOT be queried; its sole purpose is automated failover without changing the application connection string."
+    },
+    {
+      "title": "Read Replicas (Performance Scaling)",
+      "description": "Asynchronous replication to up to 5 read-only instances. Can reside in the same AZ, a different AZ, or across AWS Regions to offload read-heavy reporting queries."
+    },
+    {
+      "title": "Automated Failover Mechanics",
+      "description": "Upon primary instance failure, OS crash, or AZ outage, RDS flips the DNS CNAME record to point to the standby. RTO is typically under 60-120 seconds with RPO = 0."
+    },
+    {
+      "title": "Converting Single-AZ to Multi-AZ",
+      "description": "When converting a Single-AZ instance to Multi-AZ, RDS takes a snapshot of the primary, creates a standby in another AZ from that snapshot, and configures synchronous replication without downtime."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws rds modify-db-instance --db-instance-identifier prod-db --multi-az --apply-immediately",
+      "description": "Convert a Single-AZ RDS instance to a high-availability Multi-AZ deployment live."
+    },
+    {
+      "command": "aws rds create-db-instance-read-replica --db-instance-identifier prod-db-replica-1 --source-db-instance-identifier prod-db",
+      "description": "Create an asynchronous read replica to offload read-heavy query traffic."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use Multi-AZ for Production, Read Replicas for Analytics",
+      "explanation": "Multi-AZ guarantees high availability (RPO=0); Read Replicas offload heavy reporting without slowing down transactional writes."
+    },
+    {
+      "rule": "Monitor CloudWatch ReplicaLag",
+      "explanation": "Because Read Replicas replicate asynchronously, monitor the ReplicaLag metric to prevent stale data reads."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Attempting to Run SELECT Queries Against a Multi-AZ Standby",
+      "remedy": "The standby in standard RDS Multi-AZ is completely passive and cannot accept connections. Use Read Replicas for read queries."
+    },
+    {
+      "mistake": "Confusing Asynchronous Replicas with Zero Data Loss DR",
+      "remedy": "Read replicas can experience replication lag; promoting a lagging replica during an emergency may result in minor data loss."
+    }
+  ],
+  "quickRevision": [
+    "Multi-AZ = Synchronous replication for Disaster Recovery (Standby is not readable).",
+    "Read Replicas = Asynchronous replication for Read Scalability (up to 5 replicas).",
+    "Failover preserves the primary DNS endpoint CNAME (zero application config change).",
+    "Converting Single-AZ to Multi-AZ triggers a snapshot and builds the standby live."
+  ],
+  "securityNotes": "Cross-region read replicas transmit data encrypted over AWS private network links; verify KMS cross-region key access.",
+  "costImplications": "Multi-AZ roughly doubles the hourly instance and storage cost (primary + standby). Read replicas are billed as full standalone instances."
+},
+
+  "multi-az-vs-read-replicas-aurora": {
+  "simpleExplanation": "Amazon Relational Database Service (Amazon RDS) is a fully managed cloud database web service that automates hardware provisioning, database setup, OS patching, log management, and backups. RDS supports 7 database engines and provides cost-efficient, resizable compute and storage without granting access to the underlying operating system.",
+  "internalsExplanation": "A DB Instance is an isolated database environment in the cloud. RDS offers storage classes: General Purpose SSD (gp2/gp3) for balanced workloads, Provisioned IOPS SSD (io1/io2) delivering fast, predictable I/O performance optimized for I/O-intensive transactional (OLTP) database workloads, and legacy Magnetic storage. RDS Free Tier provides 750 hours/month of Single-AZ db.t2.micro/db.t3.micro/db.t4g.micro with 20 GB SSD and 20 GB backup storage.",
+  "coreConcepts": [
+    {
+      "title": "Managed Service Boundary",
+      "description": "RDS manages OS patching, backups, and failover, but does NOT allow direct SSH or root access to the underlying operating system."
+    },
+    {
+      "title": "Supported Database Engines",
+      "description": "Open source: MySQL, MariaDB, PostgreSQL. Commercial: Oracle, Microsoft SQL Server. Cloud-native: Amazon Aurora (MySQL/PostgreSQL compatible). Enterprise: IBM DB2."
+    },
+    {
+      "title": "Storage Engine Options",
+      "description": "General Purpose SSD (gp2/gp3) for baseline performance; Provisioned IOPS SSD (io1/io2) for high-concurrency transactional OLTP workloads requiring dedicated IOPS."
+    },
+    {
+      "title": "In-Place Scaling",
+      "description": "Compute (vCPU/RAM) and storage capacity can be scaled up dynamically with minimal maintenance downtime."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws rds create-db-instance --db-instance-identifier prod-mysql --db-instance-class db.t3.medium --engine mysql --allocated-storage 50 --master-username admin --master-user-password 'SuperSecret123!'",
+      "description": "Provision a managed MySQL RDS instance with 50 GB storage."
+    },
+    {
+      "command": "aws rds modify-db-instance --db-instance-identifier prod-mysql --allocated-storage 100 --apply-immediately",
+      "description": "Scale storage dynamically from 50 GB to 100 GB."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Select Provisioned IOPS for Critical OLTP",
+      "explanation": "Prevents I/O throttling during transaction spikes on high-volume production databases."
+    },
+    {
+      "rule": "Configure Maintenance Windows",
+      "explanation": "Set automated OS and minor engine patching to occur during off-peak weekend hours."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Expecting OS Root or SSH Access to RDS",
+      "remedy": "RDS is fully managed; if you require OS access or custom kernel modules, run your database on EC2 or use RDS Custom."
+    },
+    {
+      "mistake": "Under-Provisioning Initial Storage",
+      "remedy": "Enable Storage Auto-Scaling so RDS automatically expands disk space before the database runs out of room."
+    }
+  ],
+  "quickRevision": [
+    "RDS is a fully managed service (no OS access).",
+    "Supports 7 engines: MySQL, MariaDB, PostgreSQL, Oracle, SQL Server, Aurora, IBM DB2.",
+    "Provisioned IOPS SSD delivers fast, predictable performance for OLTP workloads.",
+    "Free Tier: 750 hrs Single-AZ db.t2/t3/t4g.micro + 20 GB SSD + 20 GB backups."
+  ],
+  "securityNotes": "Deploy RDS instances in Private Subnets with Security Groups allowing inbound SQL traffic strictly from application tier instances.",
+  "costImplications": "Billed per instance-hour, provisioned storage (GB/mo), provisioned IOPS, and data transfer."
+},
+
+  "s3-advanced-versioning-replication-and-object-lock": {
+  "simpleExplanation": "Advanced S3 features deliver enterprise compliance, global distribution, and high throughput. S3 Versioning preserves multiple variants of an object to protect against accidental deletion or overwrite. S3 Object Lock enforces WORM (Write Once Read Many) compliance. Cross-Region Replication (CRR) automatically copies objects across accounts or regions. S3 Access Points simplify access management for shared datasets.",
+  "internalsExplanation": "Once Versioning is enabled on a bucket, it can NEVER be disabled—only suspended. Deleting an object adds a Delete Marker; restoring is achieved by deleting the marker. S3 Object Lock operates in Governance Mode (admin can bypass with permissions) or Compliance Mode (no one, not even root, can delete before retention expires). CRR requires versioning on both buckets and replicates asynchronously over TLS.",
+  "coreConcepts": [
+    {
+      "title": "S3 Versioning States",
+      "description": "Buckets can be in one of three states: Unversioned (default), Versioning-enabled, or Versioning-suspended. Deleting an object inserts a delete marker; previous versions remain recoverable."
+    },
+    {
+      "title": "S3 Object Lock (WORM Compliance)",
+      "description": "Prevents objects from being deleted or overwritten for a fixed retention period or indefinitely via Legal Hold. Used for SEC Rule 17a-4 and financial compliance."
+    },
+    {
+      "title": "Cross-Region (CRR) & Same-Region Replication (SRR)",
+      "description": "Asynchronous replication of objects across buckets. Requires Versioning enabled on both source and target buckets; existing objects can be synced via S3 Batch Operations."
+    },
+    {
+      "title": "S3 Access Points & Transfer Acceleration",
+      "description": "Access Points are dedicated hostnames with custom IAM policies for specific apps. Transfer Acceleration uses CloudFront Edge Locations to route data over the private AWS backbone."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws s3api put-bucket-versioning --bucket mybucket --versioning-configuration Status=Enabled",
+      "description": "Enable versioning on an S3 bucket to preserve object history."
+    },
+    {
+      "command": "aws s3api put-object-legal-hold --bucket mybucket --key audit.pdf --legal-hold Status=ON",
+      "description": "Apply an indefinite legal hold to prevent deletion during compliance investigations."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Configure Lifecycle Rules for Noncurrent Versions",
+      "explanation": "Retaining unlimited previous object versions drives up storage costs; configure rules to expire noncurrent versions after 30-90 days."
+    },
+    {
+      "rule": "Use S3 Access Points for Data Lakes",
+      "explanation": "Rather than managing a massive single bucket policy, create separate Access Points with scoped policies for each analytics team."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Assuming Versioning Can Be Disabled",
+      "remedy": "Once enabled, S3 Versioning can only be 'Suspended', never fully turned back to Unversioned."
+    },
+    {
+      "mistake": "Enabling Replication Without Versioning on Target",
+      "remedy": "CRR fails unless both the source and target buckets have S3 Versioning enabled."
+    }
+  ],
+  "quickRevision": [
+    "Versioning preserves every version of every object; once enabled it can only be suspended.",
+    "Object Lock Compliance Mode cannot be overridden by ANY user including root.",
+    "CRR is asynchronous and requires versioning on both source and target buckets.",
+    "Static Website Hosting endpoint: http://bucket-name.s3-website-Region.amazonaws.com.",
+    "Requester Pays buckets charge download bandwidth to the authenticated caller."
+  ],
+  "securityNotes": "Combine S3 Versioning with MFA Delete to prevent unauthorized users from permanently removing versioned objects.",
+  "costImplications": "Every version of an object consumes storage; versioning without lifecycle cleanups can double or triple monthly S3 storage bills."
+},
+
+  "s3-encryption-access-control-and-bpa": {
+  "simpleExplanation": "Securing S3 requires defense-in-depth across identity and storage layers. Bucket access is governed by S3 Bucket Policies (JSON up to 20 KB), IAM Policies, S3 Block Public Access (BPA), and S3 Object Ownership. Data is protected in-transit using TLS/HTTPS sessions and at-rest via Server-Side Encryption (SSE-S3, SSE-KMS, or SSE-C).",
+  "internalsExplanation": "S3 Object Ownership with 'BucketOwnerEnforced' disables legacy XML ACLs entirely, ensuring the bucket owner owns all uploaded objects. Encryption at rest encrypts data before writing to disk: SSE-S3 uses 256-bit AES keys managed by AWS; SSE-KMS uses Customer Master Keys (CMKs) with envelope encryption and CloudTrail auditing; SSE-C uses customer-provided keys where AWS performs encryption but never stores the key.",
+  "coreConcepts": [
+    {
+      "title": "S3 Block Public Access (BPA)",
+      "description": "Four centralized security switches at bucket and account levels: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, and RestrictPublicBuckets to eliminate accidental internet exposures."
+    },
+    {
+      "title": "Bucket Policies vs Legacy ACLs",
+      "description": "Bucket Policies are JSON documents (up to 20 KB) attached to buckets supporting complex conditions. ACLs are legacy XML grants; AWS recommends disabling ACLs via BucketOwnerEnforced."
+    },
+    {
+      "title": "Server-Side Encryption Options (SSE)",
+      "description": "SSE-S3 (AWS-managed keys), SSE-KMS (KMS customer managed keys with audit trails and rotation), and SSE-C (client-supplied keys where AWS manages encryption in memory)."
+    },
+    {
+      "title": "Default Bucket Encryption",
+      "description": "Automatically encrypts every new object written to the bucket with either SSE-S3 or SSE-KMS without requiring client headers."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws s3api put-public-access-block --bucket mybucket --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true",
+      "description": "Enable all 4 S3 Block Public Access controls on a bucket."
+    },
+    {
+      "command": "aws s3api put-bucket-encryption --bucket mybucket --server-side-encryption-configuration '{\"Rules\":[{\"ApplyServerSideEncryptionByDefault\":{\"SSEAlgorithm\":\"aws:kms\",\"KMSMasterKeyId\":\"arn:aws:kms:us-east-1:123456789012:key/abc\"}}]}'",
+      "description": "Set default bucket encryption using an AWS KMS Customer Master Key."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Enforce BucketOwnerEnforced",
+      "explanation": "Disable legacy ACLs so the bucket owner has full control of all objects uploaded by external accounts."
+    },
+    {
+      "rule": "Use KMS for Regulated Workloads",
+      "explanation": "SSE-KMS provides separate authorization controls and detailed CloudTrail audit logs of every decryption request."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Relying on Object ACLs for Permissions",
+      "remedy": "ACLs do not support Condition blocks and are difficult to audit; migrate entirely to IAM and Bucket Policies."
+    },
+    {
+      "mistake": "Allowing Cross-Account Uploads Without Object Ownership Enforcement",
+      "remedy": "External uploaders own their objects unless Object Ownership is set to BucketOwnerEnforced."
+    }
+  ],
+  "quickRevision": [
+    "S3 Block Public Access provides 4 independent protections against data leaks.",
+    "SSE-S3 uses AWS-managed keys; SSE-KMS uses customer keys with CloudTrail logs.",
+    "Bucket policies are limited to 20 KB in size.",
+    "BucketOwnerEnforced is the AWS recommended setting to disable legacy ACLs."
+  ],
+  "securityNotes": "Require TLS/HTTPS in-transit by adding a bucket policy condition: 'Bool': {'aws:SecureTransport': 'false'} with Effect: 'Deny'.",
+  "costImplications": "SSE-S3 is free; SSE-KMS incurs standard AWS KMS API request charges (can be reduced up to 99% using S3 Bucket Keys)."
+},
+
+  "s3-storage-classes-lifecycle-security": {
+  "simpleExplanation": "Amazon Simple Storage Service (S3) is scalable object storage offering 99.999999999% (11 9s) durability by redundantly syncing objects across multiple Availability Zones. S3 stores data as Objects (0 bytes to 5 TB) inside uniquely named global Buckets. S3 provides strong read-after-write consistency and 7 storage classes tailored for different access frequencies and cost budgets.",
+  "internalsExplanation": "Each S3 object is identified by a Key (key name + version) and consists of data, metadata, and ACLs. S3 provides strong read-after-write consistency for PUT, GET, and DELETE requests in all regions. Storage tiers range from S3 Standard (frequent millisecond access) to S3 Intelligent-Tiering (automated tiering without fees), S3 Standard-IA (infrequent, 30-day min), S3 One Zone-IA (single AZ, 20% cheaper), and Glacier storage classes (Flexible and Deep Archive for long-term archiving).",
+  "coreConcepts": [
+    {
+      "title": "11 9s Durability & Global Unique Namespace",
+      "description": "Objects are replicated across at least 3 geographically separated AZs for 99.999999999% durability. Bucket names are globally unique across all AWS accounts worldwide."
+    },
+    {
+      "title": "7 S3 Storage Classes",
+      "description": "S3 Standard, S3 Intelligent-Tiering (auto-adjusts tiers), S3 Standard-IA (infrequent access), S3 One Zone-IA (single AZ), S3 Glacier Instant Retrieval (ms access), S3 Glacier Flexible Retrieval (1-5 min to hours), and S3 Glacier Deep Archive (lowest cost, 12-hour default retrieval)."
+    },
+    {
+      "title": "Strong Read-After-Write Consistency",
+      "description": "After a successful PUT or DELETE of an object, subsequent GET requests immediately return the latest version of the object across all AWS regions."
+    },
+    {
+      "title": "Lifecycle Rules (Transitions & Expirations)",
+      "description": "Automated policies that transition objects to colder storage tiers (minimum 30-day interval) or permanently expire (delete) them to optimize costs."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws s3 mb s3://enterprise-cloudmaster-bucket-2026 --region us-east-1",
+      "description": "Create a new S3 bucket with a globally unique name."
+    },
+    {
+      "command": "aws s3 cp document.pdf s3://enterprise-cloudmaster-bucket-2026/docs/ --storage-class INTELLIGENT_TIERING",
+      "description": "Upload an object directly into S3 Intelligent-Tiering for automatic cost optimization."
+    },
+    {
+      "command": "aws s3api put-bucket-lifecycle-configuration --bucket mybucket --lifecycle-configuration file://lifecycle.json",
+      "description": "Apply automated lifecycle transition and expiration rules to a bucket."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use S3 Intelligent-Tiering for Unknown Access Patterns",
+      "explanation": "Automatically moves data between Frequent, Infrequent, and Archive tiers without retrieval fees or operational overhead."
+    },
+    {
+      "rule": "Observe Minimum Storage Durations",
+      "explanation": "Standard-IA requires 30 days, Glacier Flexible requires 90 days, and Deep Archive requires 180 days; premature deletion incurs prorated fees."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Using S3 One Zone-IA for Critical Irreplaceable Data",
+      "remedy": "One Zone-IA resides in a single AZ; if that physical AZ is destroyed, data is permanently lost. Use S3 Standard or Standard-IA."
+    },
+    {
+      "mistake": "Writing Lifecycle Rules with Transitions under 30 Days",
+      "remedy": "S3 requires a minimum 30-day interval before transitioning from Standard to Standard-IA or One Zone-IA."
+    }
+  ],
+  "quickRevision": [
+    "S3 durability is 99.999999999% (11 9s) across multiple Availability Zones.",
+    "Object size limits: 0 bytes up to 5 TB per individual object.",
+    "S3 features strong read-after-write consistency for PUT, GET, and DELETE.",
+    "S3 Glacier Deep Archive is the lowest-cost cloud storage in AWS (180-day min).",
+    "Lifecycle actions include Transition Actions and Expiration Actions."
+  ],
+  "securityNotes": "Enable default encryption and S3 Block Public Access immediately upon creating any bucket.",
+  "costImplications": "Costs depend on storage volume (GB/mo), storage class, request counts (PUT, GET), data retrieval fees (IA/Glacier), and cross-region transfer."
+},
+
+  "iam-advanced-governance-scps-and-boundaries": {
+  "simpleExplanation": "In enterprise multi-account environments, you need guardrails to prevent administrators or developers from escalating their own privileges. Permissions Boundaries set the maximum permissions an identity-based policy can grant, while Service Control Policies (SCPs) in AWS Organizations set the maximum permissions allowed across accounts or Organizational Units (OUs).",
+  "internalsExplanation": "Effective permissions are the mathematical INTERSECTION of all policy layers: Identity-Based Policy ∩ Permissions Boundary ∩ Service Control Policy (SCP) ∩ Resource Policy. If an SCP denies 's3:DeleteBucket', no IAM user or role (even AdministratorAccess or root in that member account) can delete an S3 bucket.",
+  "coreConcepts": [
+    {
+      "title": "Permissions Boundaries",
+      "description": "An advanced feature that sets the maximum allowable permissions an identity-based policy can grant. It prevents delegated admins from creating superuser accounts that bypass security controls."
+    },
+    {
+      "title": "Service Control Policies (SCPs)",
+      "description": "JSON policies in AWS Organizations that govern the maximum available permissions for member accounts. An Explicit Deny in an SCP overrides everything in the target account."
+    },
+    {
+      "title": "Resource-Based Policies vs Identity Policies",
+      "description": "Resource-based policies (e.g. S3 Bucket Policy, KMS Key Policy) are attached directly to the resource and specify the 'Principal'. Identity-based policies are attached to users/roles and the principal is implied."
+    },
+    {
+      "title": "Access Control Lists (ACLs)",
+      "description": "Legacy XML-based access control mechanism that predates IAM. Lacks conditions and granularity; AWS strongly recommends disabling ACLs using S3 Object Ownership."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws iam put-user-permissions-boundary --user-name junior-admin --permissions-boundary arn:aws:iam::123456789012:policy/AdminBoundary",
+      "description": "Attach a permissions boundary restricting the maximum privileges the user can acquire."
+    },
+    {
+      "command": "aws organizations attach-policy --policy-id p-scp12345 --target-id ou-prod-workloads",
+      "description": "Attach an SCP to a production Organizational Unit to block dangerous actions."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use SCPs to Enforce Region Restrictions",
+      "explanation": "Deploy an SCP that denies all actions in unapproved AWS regions to prevent shadow IT and compliance violations."
+    },
+    {
+      "rule": "Pair Role Creation with Permissions Boundaries",
+      "explanation": "Require that any IAM role created by developers must include an approved Permissions Boundary condition."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Expecting Permissions Boundaries to Grant Access",
+      "remedy": "Permissions Boundaries ONLY restrict; you still need an identity-based policy with an explicit Allow to grant permissions."
+    },
+    {
+      "mistake": "Applying Deny-All SCPs to the Master / Management Account",
+      "remedy": "SCPs do not affect users or roles in the Organizations Management Account; they only apply to member accounts."
+    }
+  ],
+  "quickRevision": [
+    "Effective access = Identity Policy ∩ Permissions Boundary ∩ SCP ∩ Resource Policy.",
+    "Permissions Boundaries prevent privilege escalation when delegating IAM administration.",
+    "SCPs specify maximum allowable permissions for an entire AWS Organization or OU.",
+    "Resource-based policies require an explicit 'Principal' field; identity policies do not."
+  ],
+  "securityNotes": "Deny 'iam:DeletePermissionsBoundary' inside the boundary policy itself to prevent users from removing their own guardrails.",
+  "costImplications": "AWS Organizations, SCPs, and Permissions Boundaries are free governance features."
+},
+
+  "iam-roles-sts-and-instance-profiles": {
+  "simpleExplanation": "An IAM role is an IAM identity that you can assume to obtain temporary security credentials generated dynamically by the AWS Security Token Service (STS). Unlike users, roles do not have permanent passwords or access keys. Roles are designed to delegate access to EC2 instances, Lambda functions, other AWS services, cross-account administrators, or federated external users.",
+  "internalsExplanation": "When an EC2 instance launches with an IAM Role, an Instance Profile delivers temporary credentials directly to the instance metadata service (IMDSv2 at 169.254.169.254). The AWS SDK automatically requests temporary credentials (AccessKeyId, SecretAccessKey, and SessionToken) from STS and refreshes them before expiration (usually 1 hour). A Role Trust Policy governs WHICH principal can call sts:AssumeRole.",
+  "coreConcepts": [
+    {
+      "title": "AWS Security Token Service (STS)",
+      "description": "STS generates temporary, dynamically rotated security credentials valid from 15 minutes up to 12 hours. Applications do not embed long-term credentials in code, eliminating key leakage risks."
+    },
+    {
+      "title": "IAM Role Trust Policy vs Permissions Policy",
+      "description": "A Role has TWO policies: (1) Trust Policy (Resource-based policy defining WHO can assume the role, e.g. 'Service: ec2.amazonaws.com'), and (2) Permissions Policy (defining WHAT actions the role can execute once assumed)."
+    },
+    {
+      "title": "EC2 Instance Profiles",
+      "description": "A container that passes an IAM role to an EC2 instance. An EC2 instance can only have ONE IAM role attached at any given time."
+    },
+    {
+      "title": "Cross-Account Access Delegation",
+      "description": "Allows users in Account B to assume an IAM role in Account A without creating duplicate user identities in Account A."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws sts assume-role --role-arn arn:aws:iam::123456789012:role/DeployRole --role-session-name AppSession",
+      "description": "Call STS to obtain temporary AccessKeyId, SecretAccessKey, and SessionToken."
+    },
+    {
+      "command": "aws ec2 associate-iam-instance-profile --instance-id i-0123456789abcdef0 --iam-instance-profile Name=WebServerRoleProfile",
+      "description": "Attach an IAM role instance profile to a running EC2 instance."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use Roles for All Workloads",
+      "explanation": "Applications running on EC2, ECS, or Lambda should always use IAM Roles rather than storing access keys in config files."
+    },
+    {
+      "rule": "Configure External IDs for Cross-Account Roles",
+      "explanation": "When granting third-party SaaS vendors cross-account role access, require an ExternalId condition to prevent the Confused Deputy problem."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Attaching Multiple IAM Roles to an EC2 Instance",
+      "remedy": "EC2 supports only 1 IAM role per instance; combine necessary permissions into that single role's policies."
+    },
+    {
+      "mistake": "Missing Trust Relationship in Role",
+      "remedy": "Ensure the Trust Policy includes 'sts:AssumeRole' for the caller principal (e.g., ec2.amazonaws.com or lambda.amazonaws.com)."
+    }
+  ],
+  "quickRevision": [
+    "IAM roles generate temporary STS credentials (no long-term access keys).",
+    "An EC2 instance can only have ONE IAM role attached at a time.",
+    "Trust Policy defines WHO can assume; Permissions Policy defines WHAT they can do.",
+    "Credentials are automatically delivered via IMDSv2 and rotated by the AWS SDK."
+  ],
+  "securityNotes": "Always use IMDSv2 (token-based session headers) to protect EC2 instance metadata from SSRF vulnerabilities.",
+  "costImplications": "IAM Roles and STS calls are free; standard pricing applies to the underlying compute and API actions."
+},
+
+  "iam-fundamentals-and-policy-evaluation": {
+  "simpleExplanation": "AWS Identity and Access Management (IAM) is the central security control plane of your AWS environment. By default, newly created IAM users have NO access to any AWS services (implicit deny). Permissions are granted exclusively through JSON policy documents containing statements with Effects (Allow/Deny), Actions, Resources, and Conditions. Crucially, an Explicit Deny anywhere always overrides any Explicit Allow.",
+  "internalsExplanation": "When an API request hits AWS, the IAM authorization engine evaluates all applicable policies (Identity-based, Resource-based, Permissions Boundaries, and SCPs). The evaluation starts with a default deny. If any statement contains an explicit 'Deny', the request is instantly denied. If an explicit 'Allow' is found (and no Deny matches), the request succeeds. If no allow is matched, the default implicit deny blocks access.",
+  "coreConcepts": [
+    {
+      "title": "IAM Users vs IAM Groups",
+      "description": "An IAM user represents a person or workload with credentials (password or access keys). An IAM group is a collection of users to which policies can be attached; groups cannot be nested and individual users retain their own distinct credentials."
+    },
+    {
+      "title": "JSON Policy Statement Structure",
+      "description": "A JSON policy requires 'Version' ('2012-10-17') and a 'Statement' array containing Sid (optional ID), Effect ('Allow' | 'Deny'), Action (e.g. 's3:ListBucket'), Resource (ARN format), and optional Condition blocks (e.g. requiring MFA)."
+    },
+    {
+      "title": "Managed Policies vs Inline Policies",
+      "description": "Managed policies (AWS Managed or Customer Managed) are standalone documents that can be attached to multiple users, groups, or roles. Inline policies maintain a strict 1-to-1 relationship with a single identity and are deleted when that identity is deleted (not recommended by AWS)."
+    },
+    {
+      "title": "Policy Evaluation Logic",
+      "description": "AWS follows a strict evaluation order: (1) Default implicit deny, (2) Any Explicit Deny overrides all allows, (3) Explicit Allow grants access, (4) Absence of an allow results in implicit deny."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "aws iam create-user --user-name devops-engineer",
+      "description": "Create a new IAM user with zero permissions by default."
+    },
+    {
+      "command": "aws iam attach-user-policy --user-name devops-engineer --policy-arn arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess",
+      "description": "Attach an AWS-managed policy granting read-only S3 access."
+    },
+    {
+      "command": "aws iam get-account-authorization-details",
+      "description": "Audit all users, groups, roles, and managed policies in the AWS account."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Enforce Principle of Least Privilege",
+      "explanation": "Grant only the minimum permissions required to perform a specific task; never use the root user for daily administrative activities."
+    },
+    {
+      "rule": "Enforce Multi-Factor Authentication (MFA)",
+      "explanation": "Require MFA on all IAM users with console access and especially on the AWS account root user."
+    },
+    {
+      "rule": "Avoid Inline Policies",
+      "explanation": "Use Customer Managed policies instead of Inline policies to enable reusability, version control, and centralized auditability."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Granting AdministratorAccess or Wildcards (Action: '*')",
+      "remedy": "Scope down permissions to specific actions and explicit resource ARNs."
+    },
+    {
+      "mistake": "Using Long-Term Access Keys in Code or EC2",
+      "remedy": "Use IAM Roles and STS temporary credentials instead of hardcoded access keys."
+    }
+  ],
+  "quickRevision": [
+    "IAM is a global service; users and policies apply across all AWS regions.",
+    "New IAM users have ZERO access by default (implicit deny).",
+    "Explicit Deny ALWAYS overrides Explicit Allow.",
+    "Policy Version must always be specified as '2012-10-17'.",
+    "Groups cannot contain other groups (no nested groups)."
+  ],
+  "securityNotes": "Never generate long-term access keys for root. Enforce password complexity policies and mandatory MFA rotation.",
+  "costImplications": "IAM is completely free of charge. You pay only for the AWS resources that authenticated IAM identities consume."
+},
+
   "1": {
     "simpleExplanation": "Think of AWS Global Infrastructure as a worldwide network of secure, ultra-fast data center complexes. Just like a bank has branches across different countries to serve local customers with low latency and comply with local data protection laws, AWS deploys data centers globally. A Region is a distinct geographical area (like us-east-1 in Virginia or ap-south-1 in Mumbai). Within each Region, AWS builds multiple isolated Availability Zones (AZs) connected by ultra-low latency fiber optic cables. Even if a lightning strike or flood takes down an entire facility, other AZs in that Region keep your application running.",
     "coreConceptsJson": "[{\"term\":\"Region\",\"definition\":\"A physical geographical location in the world with multiple isolated Availability Zones (typically 3 or more).\"},{\"term\":\"Availability Zone (AZ)\",\"definition\":\"One or more discrete physical data centers with redundant power, networking, and connectivity in an AWS Region.\"},{\"term\":\"Edge Location\",\"definition\":\"CloudFront content delivery endpoints placed close to end users worldwide to cache content with minimal latency.\"},{\"term\":\"Local Zone\",\"definition\":\"An extension of an AWS Region that places compute and storage services closer to large population or industrial centers.\"},{\"term\":\"AWS Global Network\",\"definition\":\"A redundant, private, 100GbE+ fiber-optic backbone connecting all AWS Regions and Edge Locations, bypassing the public internet.\"}]",
@@ -122,7 +1921,7 @@ export const FALLBACK_NOTES = {
     ]
   },
   "3": {
-    "simpleExplanation": "An Amazon Virtual Private Cloud (VPC) is your own isolated private data center in the AWS cloud. Inside your VPC, you decide the IP address range (CIDR block), create Subnets, configure Route Tables, and control traffic gates. Public Subnets have direct routes to an Internet Gateway (IGW) for web servers and public load balancers. Private Subnets have NO direct route to the outside world; outbound internet access for patching is routed safely through a NAT Gateway.",
+    "simpleExplanation": "Mastering networking for DevOps and cloud begins with physical hardware (Switches, Routers, Hubs), OSI 7-layer and TCP/IP 4-layer models, IPv4/IPv6, RFC 1918 private subnets, subnetting math (/24 into /25 with 126 usable hosts), DNS hierarchical resolution, and Linux diagnostics (ping, traceroute, dig, curl, netstat, nmap). In AWS, an Amazon Virtual Private Cloud (VPC) is your own isolated private data center in the AWS cloud. Inside your VPC, you decide the IP address range (CIDR block), create Subnets, configure Route Tables, and control traffic gates. Public Subnets have direct routes to an Internet Gateway (IGW) for web servers and public load balancers. Private Subnets have NO direct route to the outside world; outbound internet access for patching is routed safely through a NAT Gateway.",
     "coreConceptsJson": "[{\"term\":\"VPC\",\"definition\":\"A logically isolated virtual network dedicated to your AWS account defined by a private IPv4 CIDR (e.g. 10.0.0.0/16).\"},{\"term\":\"Public Subnet\",\"definition\":\"A subnet whose route table directs 0.0.0.0/0 to an Internet Gateway (IGW).\"},{\"term\":\"Private Subnet\",\"definition\":\"A subnet whose route table has no route to an IGW (uses NAT Gateway for outbound egress).\"},{\"term\":\"NAT Gateway\",\"definition\":\"A managed AWS service in a public subnet allowing private subnet instances to initiate outbound connections without exposing them to inbound internet traffic.\"},{\"term\":\"Security Group (SG)\",\"definition\":\"A virtual stateful firewall operating at the instance/ENI level.\"},{\"term\":\"Network ACL (NACL)\",\"definition\":\"A stateless subnet-level firewall evaluating inbound and outbound traffic with numbered rules.\"}]",
     "internalsExplanation": "Security Groups are STATEFUL: if you allow inbound traffic on port 443, the response traffic is automatically permitted out regardless of outbound rules. Network ACLs are STATELESS: inbound and outbound traffic must be explicitly allowed, including ephemeral ports (1024-65535) for return packets. VPC Peering and Transit Gateways route traffic privately across VPCs via AWS's internal network without internet exposure.",
     "architectureSvg": "<svg viewBox=\"0 0 800 220\" xmlns=\"http://www.w3.org/2000/svg\" class=\"w-full\">\n      <rect x=\"5\" y=\"5\" width=\"790\" height=\"210\" rx=\"10\" fill=\"#090D16\" stroke=\"#1E293B\"/>\n      <rect x=\"25\" y=\"25\" width=\"750\" height=\"170\" rx=\"8\" fill=\"#0F172A\" stroke=\"#3B82F6\" stroke-dasharray=\"4\"/>\n      <text x=\"45\" y=\"45\" fill=\"#38BDF8\" font-size=\"12\" font-family=\"system-ui\" font-weight=\"bold\">VPC (10.0.0.0/16)</text>\n      <!-- Public Subnet -->\n      <rect x=\"50\" y=\"60\" width=\"320\" height=\"120\" rx=\"6\" fill=\"#1E293B\" stroke=\"#10B981\"/>\n      <text x=\"65\" y=\"80\" fill=\"#34D399\" font-size=\"11\" font-family=\"system-ui\" font-weight=\"bold\">Public Subnet (10.0.1.0/24)</text>\n      <rect x=\"70\" y=\"95\" width=\"120\" height=\"65\" rx=\"4\" fill=\"#334155\"/>\n      <text x=\"130\" y=\"125\" fill=\"#F8FAFC\" font-size=\"10\" font-family=\"system-ui\" text-anchor=\"middle\">Internet Gateway</text>\n      <rect x=\"210\" y=\"95\" width=\"140\" height=\"65\" rx=\"4\" fill=\"#334155\"/>\n      <text x=\"280\" y=\"125\" fill=\"#F8FAFC\" font-size=\"10\" font-family=\"system-ui\" text-anchor=\"middle\">NAT Gateway / ALB</text>\n      <!-- Private Subnet -->\n      <rect x=\"420\" y=\"60\" width=\"330\" height=\"120\" rx=\"6\" fill=\"#1E293B\" stroke=\"#F59E0B\"/>\n      <text x=\"435\" y=\"80\" fill=\"#FBBF24\" font-size=\"11\" font-family=\"system-ui\" font-weight=\"bold\">Private Subnet (10.0.2.0/24)</text>\n      <rect x=\"440\" y=\"95\" width=\"130\" height=\"65\" rx=\"4\" fill=\"#334155\"/>\n      <text x=\"505\" y=\"125\" fill=\"#F8FAFC\" font-size=\"10\" font-family=\"system-ui\" text-anchor=\"middle\">Private EC2 App</text>\n      <rect x=\"590\" y=\"95\" width=\"140\" height=\"65\" rx=\"4\" fill=\"#334155\"/>\n      <text x=\"660\" y=\"125\" fill=\"#F8FAFC\" font-size=\"10\" font-family=\"system-ui\" text-anchor=\"middle\">RDS Database</text>\n    </svg>",
@@ -3716,5 +5515,166 @@ export const FALLBACK_NOTES = {
       "WebSockets provide full-duplex real-time updates, scaled horizontally via Redis Pub/Sub.",
       "BFF (Backend for Frontend) tailors API responses specifically for Angular client performance."
     ]
-  }
+  },
+
+  "devops-networking-osi-tcpip-subnetting-cidr": {
+  "simpleExplanation": "Computer networking allows systems to communicate and share data across cables, wireless signals, or fiber optics. For DevOps engineers, networking fundamentals—from physical switches and routers up to IP addressing, subnet calculation, and the OSI/TCP-IP models—are essential for designing secure VPCs, debugging container connectivity, and ensuring high application availability.",
+  "internalsExplanation": "Data flows through a structured encapsulation process. At Layer 7 down to Layer 5, applications format messages. Layer 4 adds a TCP or UDP header creating a Segment. Layer 3 adds source and destination IP addresses creating a Packet, which routers inspect to determine next-hop paths. Layer 2 adds MAC addresses and an error-checking frame check sequence creating a Frame, which switches forward based on MAC address tables. Finally, Layer 1 converts frames into physical electrical, optical, or radio bits transmitted across the medium.",
+  "coreConcepts": [
+    {
+      "title": "Network Devices: Switches vs. Routers vs. Hubs",
+      "description": "A Switch connects devices within the same Local Area Network (LAN) using Layer 2 MAC addresses and maintains a CAM table to reduce collision domains. A Router connects disparate networks across Layer 3 using IP addresses and routing tables. A Hub is a legacy Layer 1 dummy device that broadcasts electrical signals to all ports indiscriminately. A Modem performs modulation (digital to analog) and demodulation."
+    },
+    {
+      "title": "IPv4 vs. IPv6 & Octet Structure",
+      "description": "IPv4 is a 32-bit address represented in dotted-decimal notation with 4 octets (8 bits each, 0-255), providing approximately 4.3 billion addresses (e.g., 123.89.46.72). IPv6 is a 128-bit address formatted in 8 groups of hexadecimal characters separated by colons (e.g., 2001:0db8:85a3:0000:0000:8a2e:0370:7334), providing 3.4 x 10^38 addresses to permanently resolve IPv4 exhaustion."
+    },
+    {
+      "title": "Public vs. Private IP (RFC 1918) & Special Addresses",
+      "description": "Public IPs are globally routable on the Internet assigned by ISPs/IANA. Private IPs (RFC 1918) are non-routable on the Internet: Class A 10.0.0.0/8 (10.0.0.0-10.255.255.255), Class B 172.16.0.0/12 (172.16.0.0-172.31.255.255), Class C 192.168.0.0/16 (192.168.0.0-192.168.255.255). Special addresses: 0.0.0.0 represents any network/default route; 127.0.0.0/8 (notably 127.0.0.1) is the localhost loopback address used for local testing without physical network transmission."
+    },
+    {
+      "title": "Network ID vs. Host ID & Direct Routing Rule",
+      "description": "An IP address consists of a Network ID and a Host ID. Devices with the exact same Network ID can communicate directly through a Layer 2 switch without a router (e.g., 17.0.0.1 and 17.0.4.2 in Class A). Devices with different Network IDs (e.g., 17.0.0.1 and 192.168.1.5) strictly require a Layer 3 Router/Gateway to forward packets."
+    },
+    {
+      "title": "Subnetting Math: Splitting /24 into /25 Subnets",
+      "description": "Subnetting divides a larger network into smaller, isolated broadcast domains. Splitting 192.168.1.0/24 (256 total IPs, mask 255.255.255.0) into two /25 subnets (mask 255.255.255.128, 7 host bits): Subnet 1 (192.168.1.0 to 192.168.1.127) and Subnet 2 (192.168.1.128 to 192.168.1.255). Each subnet yields 128 total IPs and 126 usable host IPs (2^7 - 2, subtracting network and broadcast addresses). Note: AWS VPC subnets reserve 5 IPs per subnet (.0 network, .1 router, .2 DNS, .3 future, .255 broadcast)."
+    },
+    {
+      "title": "OSI 7-Layer vs. TCP/IP 4-Layer Models",
+      "description": "The theoretical OSI reference model contains 7 layers: 7-Application, 6-Presentation, 5-Session, 4-Transport, 3-Network, 2-Data Link, 1-Physical. The practical TCP/IP Internet Protocol suite compresses this into 4 layers: Application (OSI L5-7), Transport (OSI L4), Internet (OSI L3), and Network Interface / Access (OSI L1-2)."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "ip -br addr show && ip route show",
+      "description": "Display concise IP address assignments across network interfaces and the active Linux kernel routing table."
+    },
+    {
+      "command": "ipcalc 192.168.1.0/25",
+      "description": "Calculate network address, broadcast address, netmask, and usable host IP range using the Linux ipcalc utility."
+    },
+    {
+      "command": "arp -a",
+      "description": "Display the local Address Resolution Protocol (ARP) table mapping Layer 3 IP addresses to Layer 2 physical MAC addresses."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Size VPC Subnets with Future Growth in Mind",
+      "explanation": "Always account for AWS 5 reserved IP addresses per subnet (.0, .1, .2, .3, .255) and avoid overly tight CIDRs like /28 in production clusters running Kubernetes or ECS tasks with awsvpc trunking."
+    },
+    {
+      "rule": "Strictly Adhere to RFC 1918 Private CIDR Boundaries",
+      "explanation": "Never use public routable IP ranges (e.g. 1.0.0.0/8 or 17.0.0.0/8) inside internal VPCs or on-premises networks to avoid blackholing legitimate public SaaS services."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Assuming 192.168.1.0/25 provides 128 usable servers",
+      "remedy": "In standard networking, usable host IPs equal 2^H - 2 (126 usable) because the first address (.0) is the network ID and the last (.127) is the broadcast address. In AWS VPC, usable IPs equal 2^H - 5 (123 usable)."
+    },
+    {
+      "mistake": "Confusing Collision Domains with Broadcast Domains",
+      "remedy": "A switch breaks up collision domains per port but maintains a single broadcast domain. A router breaks up both collision and broadcast domains."
+    }
+  ],
+  "quickRevision": [
+    "IPv4 = 32 bits (4 octets, 0-255). IPv6 = 128 bits (8 hex blocks).",
+    "Private Ranges (RFC 1918): 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.",
+    "127.0.0.1 = localhost loopback (L3 internal loopback, no wire transmission).",
+    "0.0.0.0/0 = Default route / all Internet traffic.",
+    "Devices with same Network ID connect directly via switch; different Network IDs need a router.",
+    "/24 = 256 IPs (254 standard usable / 251 AWS usable). /25 = 128 IPs (126 standard usable / 123 AWS usable).",
+    "OSI Layers: Please Do Not Throw Sausage Pizza Away (Physical, Data Link, Network, Transport, Session, Presentation, Application).",
+    "TCP/IP Layers: Application, Transport, Internet, Network Access."
+  ],
+  "securityNotes": "Segregating workloads into isolated subnets with dedicated network boundaries prevents lateral movement during a security breach. Network Address Translation (NAT) allows private subnet instances to initiate outbound connections for security patches without exposing public listening ports.",
+  "costImplications": "Subnetting itself incurs no direct AWS fee, but traffic between instances across different Availability Zones incurs inter-AZ data transfer fees ($0.01/GB). Architect subnets within the same AZ when high-volume latency-sensitive inter-service traffic occurs."
+},
+
+  "devops-network-protocols-dns-troubleshooting-tools": {
+  "simpleExplanation": "Modern DevOps and cloud engineering relies on robust protocols and diagnostic tools. Understanding the TCP 3-way handshake, connectionless UDP, HTTP status codes, DNS hierarchical delegation, and mastering terminal commands like ping, traceroute, dig, curl, netstat, and nmap empowers engineers to quickly troubleshoot production latency, connection timeouts, and microservice outages.",
+  "internalsExplanation": "When establishing a TCP connection, a 3-way handshake occurs: the client sends a SYN packet with an initial sequence number, the server replies with a SYN-ACK, and the client returns an ACK. DNS resolution operates hierarchically: when querying 'www.example.com', the client queries the local resolver cache; if missed, it asks Root Nameservers (.), which delegate to TLD Nameservers (.com), which delegate to Authoritative Nameservers via NS records, finally returning an A record containing the IP address with a TTL cache timer.",
+  "coreConcepts": [
+    {
+      "title": "TCP 3-Way Handshake vs. Connectionless UDP",
+      "description": "TCP is connection-oriented and guarantees delivery with sequence numbers, flow control, and retransmission via the SYN -> SYN-ACK -> ACK handshake (used by HTTP/HTTPS, SSH, SQL). UDP is connectionless and sends datagrams without handshakes, acknowledgments, or delivery guarantees, minimizing latency for live streaming, gaming, and standard DNS queries."
+    },
+    {
+      "title": "Well-Known Ports & Protocol Mapping",
+      "description": "Ports enable transport multiplexing across a single IP: HTTP (80), HTTPS (443), SSH (22), DNS (53), SMTP (25), POP3 (110), IMAP (143), FTP (20/21), PPTP (1723), SQL Server (1433), MySQL (3306), PostgreSQL (5432). Ports operate at Layer 4 to deliver packets to the correct application process."
+    },
+    {
+      "title": "HTTP Statelessness, Cookies & Status Code Families",
+      "description": "HTTP is stateless; each request executes independently. State persistence is achieved via Cookies (client-stored strings sent in HTTP headers) and JWT tokens. Status codes: 2xx Success (200 OK, 201 Created), 3xx Redirection (301 Moved Permanently, 302 Found, 307/308 preserve HTTP verb), 4xx Client Errors (400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found), 5xx Server Errors (500 Internal Error, 502 Bad Gateway from upstream, 503 Unavailable, 504 Gateway Timeout)."
+    },
+    {
+      "title": "DNS Architecture, Delegation & Record Types",
+      "description": "DNS acts as the internet's phonebook. Domains are delegated hierarchically via NS records (Root -> TLD -> Authoritative). Key record types: A (IPv4), AAAA (IPv6), CNAME (canonical alias pointing name to name; cannot coexist at zone apex), ALIAS (AWS Route 53 virtual alias supporting apex domains), MX (mail server priority), TXT (domain verification, SPF/DKIM), and TTL (caching lifetime in seconds)."
+    },
+    {
+      "title": "Longest Prefix Match Routing Logic",
+      "description": "Routers and AWS route tables evaluate rules using Longest Prefix Match (the most specific subnet mask wins). If a packet destination is 10.21.5.10 with routes 10.21.0.0/16 (local), 10.0.0.0/8 (Transit Gateway), and 0.0.0.0/0 (NAT Gateway), the /16 rule matches first because 16 > 8 > 0."
+    },
+    {
+      "title": "DevOps Network Diagnostic Command Suite",
+      "description": "Essential Linux troubleshooting commands: ping (ICMP connectivity and RTT), traceroute (identifies routing hop delays and drops via incrementing TTL), telnet (tests TCP socket port reachability), curl (tests HTTP/S requests, headers, and payload), dig (inspects DNS record resolution and query path), netstat/ss (displays listening ports and active sockets), and nmap (scans network hosts and open ports)."
+    }
+  ],
+  "cliExamples": [
+    {
+      "command": "dig +trace www.example.com",
+      "description": "Perform a full hierarchical DNS lookup trace from Root nameservers down to authoritative nameservers."
+    },
+    {
+      "command": "traceroute -n -T -p 443 api.stripe.com",
+      "description": "Trace network routing hops using TCP SYN probes on port 443 to bypass firewalls blocking ICMP/UDP probes."
+    },
+    {
+      "command": "curl -Iv -w 'DNS: %{time_namelookup}s | Connect: %{time_connect}s | TTFB: %{time_starttransfer}s | Total: %{time_total}s\\n' https://api.example.com/health",
+      "description": "Inspect HTTP response headers, SSL handshake details, and breakdown latency milestones (DNS lookup, TCP connect, Time-to-First-Byte)."
+    },
+    {
+      "command": "ss -tlpn | grep ':443\\|:80'",
+      "description": "Display all listening TCP sockets on ports 80 and 443 with process names and PIDs using modern socket statistics."
+    },
+    {
+      "command": "nmap -sn 172.31.0.0/24 && nmap -sT -p 80,443,3306 172.31.0.15",
+      "description": "Perform host discovery ping sweep on the subnet, then run a TCP connect port scan on target IP."
+    }
+  ],
+  "bestPractices": [
+    {
+      "rule": "Use ALIAS Records instead of CNAME at Zone Apex",
+      "explanation": "RFC DNS standards forbid CNAME records on the root zone apex (e.g., example.com) because CNAME cannot coexist with SOA and NS records. Use AWS Route 53 ALIAS records to route apex traffic directly to ALBs or CloudFront."
+    },
+    {
+      "rule": "Always Set Appropriate DNS TTL for Deployments",
+      "explanation": "Set TTL to 60-300 seconds prior to planned server migrations or cutovers to ensure client caches refresh quickly, then restore to 86400 (1 day) to reduce DNS query costs."
+    }
+  ],
+  "commonMistakes": [
+    {
+      "mistake": "Confusing 502 Bad Gateway with 504 Gateway Timeout",
+      "remedy": "502 means the upstream application server actively responded with an invalid response or reset the TCP connection immediately. 504 means the upstream server failed to respond within the reverse proxy's timeout window."
+    },
+    {
+      "mistake": "Relying on ICMP ping to test if a web server is up",
+      "remedy": "Many enterprise security groups and firewalls block ICMP entirely. Use 'curl -Iv' or 'telnet host 443' to verify Layer 7 / Layer 4 socket availability."
+    }
+  ],
+  "quickRevision": [
+    "TCP = Reliable, 3-Way Handshake (SYN -> SYN-ACK -> ACK), Retransmission.",
+    "UDP = Connectionless, Fast, No ACKs (DNS, VoIP, Video Streaming).",
+    "Common Ports: HTTP 80, HTTPS 443, SSH 22, DNS 53, SMTP 25, MySQL 3306, Postgres 5432.",
+    "502 Bad Gateway = Invalid/premature response from upstream; 504 = Upstream response timed out.",
+    "CNAME = Alias pointing domain to domain (cannot be at zone apex); ALIAS = Route 53 apex-friendly virtual record.",
+    "Longest Prefix Match = The narrowest/most specific subnet mask (/16 over /8 over /0) wins in routing tables.",
+    "Troubleshooting tools: ping (ICMP RTT), traceroute (TTL hops), telnet (TCP port check), curl (HTTP test), dig (DNS lookup), ss/netstat (listening sockets), nmap (port/host scan)."
+  ],
+  "securityNotes": "Ensure firewall security groups follow the principle of least privilege: never open port 22 (SSH) or port 3306 (MySQL) to 0.0.0.0/0. Restrict administrative ports to specific bastion host CIDRs (/32).",
+  "costImplications": "AWS Route 53 queries to internal ALIAS records pointing to AWS resources (ALBs, CloudFront distributions, S3 website endpoints) are completely free, whereas external standard DNS queries incur $0.40 per million queries."
+},
 };

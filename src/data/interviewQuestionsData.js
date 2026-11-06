@@ -2625,7 +2625,991 @@ export const ALL_INTERVIEW_QUESTIONS = [
     "Redis",
     "Distributed Tracing"
   ]
-}];
+},
+  {
+  "id": "iq-lambda-execution-scaling",
+  "topicSlug": "lambda-runtime-memory-scaling-and-concurrency",
+  "moduleNumber": 10,
+  "topicTitle": "Lambda Execution Environment, Memory Scaling & Limits",
+  "category": "SERVERLESS",
+  "categoryLabel": "Serverless & Messaging",
+  "difficulty": "Advanced",
+  "title": "How does AWS Lambda allocate compute resources (CPU/network) as memory scales, and what are its hard execution boundaries?",
+  "prompt": "An interviewer asks: 'In AWS Lambda, how does memory allocation impact CPU cores and network throughput? What are the maximum execution limits (timeout, /tmp, payload, and concurrency), and why might increasing memory actually LOWER your AWS bill?'",
+  "explanation": "Tests deep knowledge of Lambda microVM resource allocation (Firecracker), proportional scaling of CPU/network, billing math (GB-seconds), and execution limits.",
+  "hints": [
+    "Memory ranges from 128 MB to 10,240 MB in 64 MB increments.",
+    "At 1,769 MB of RAM, Lambda provides the equivalent of 1 full dedicated vCPU.",
+    "Maximum execution timeout is 15 minutes (900 seconds).",
+    "Billing is based on GB-seconds; doubling RAM cuts execution time in half for CPU-bound tasks, resulting in identical or lower cost."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Resource Allocation Mechanics (Memory, CPU & Network)\n- **Proportional Resource Coupling:** In AWS Lambda, you do not directly configure CPU cores or network throughput. Instead, **memory allocation (128 MB to 10,240 MB in 64 MB steps)** is the single knob that controls compute power:\n  - At **1,769 MB RAM**, a function receives exactly **1 full vCPU core**.\n  - Above 1,769 MB, Lambda allocates multiple CPU cores (up to 6 vCPUs at 10,240 MB) enabling multi-threaded execution.\n  - Memory allocation also proportionally scales **network bandwidth** and disk throughput.\n\n### 2. Hard Execution & Infrastructure Boundaries\n- **Maximum Execution Duration:** **15 minutes (900 seconds)**. Tasks exceeding 15 minutes must be decoupled using AWS Step Functions, ECS Fargate, or AWS Batch.\n- **Ephemeral Storage (/tmp):** Default is **512 MB**, scalable up to **10,240 MB (10 GB)** for scratch disk operations.\n- **Concurrency:** Default regional pool of **1,000 concurrent executions** (shared across all functions in the account/region).\n- **Synchronous Payload Limits:** 6 MB for synchronous invocations (API Gateway); 256 KB for asynchronous invocations (SQS/EventBridge).\n\n### 3. The 'Higher Memory = Lower Cost' Paradox\n- AWS charges by **GB-seconds** (Allocated Memory × Execution Duration in milliseconds).\n- For CPU-bound operations (e.g. image manipulation, cryptographic hashing, JSON parsing):\n  - Running at 128 MB might take 10 seconds = 1.28 GB-seconds.\n  - Running at 1,024 MB provides 8x CPU power and completes in 1 second = 1.024 GB-seconds.\n  - **Result:** The 1,024 MB invocation executes 10x faster and is **20% cheaper** on your AWS invoice. AWS Lambda Power Tuning can be used to find this sweet spot automatically.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Proportional Scaling Mechanics",
+        "weight": 30,
+        "description": "Explains how RAM scales CPU and network, noting 1,769 MB = 1 vCPU."
+      },
+      {
+        "name": "Execution Limits",
+        "weight": 30,
+        "description": "Identifies 15-minute timeout, 10 GB /tmp, and 1,000 concurrency limit."
+      },
+      {
+        "name": "Cost Optimization Math",
+        "weight": 40,
+        "description": "Demonstrates how increased RAM can reduce execution time and lower total GB-second bill."
+      }
+    ]
+  },
+  "tags": [
+    "Lambda",
+    "Serverless",
+    "Limits",
+    "Compute",
+    "Cost Optimization"
+  ]
+},
+  {
+  "id": "iq-lambda-concurrency-throttling",
+  "topicSlug": "lambda-runtime-memory-scaling-and-concurrency",
+  "moduleNumber": 10,
+  "topicTitle": "Lambda Concurrency: Unreserved, Reserved & Provisioned",
+  "category": "SERVERLESS",
+  "categoryLabel": "Serverless & Messaging",
+  "difficulty": "Advanced",
+  "title": "How do Reserved and Provisioned Concurrency differ in AWS Lambda, and how do you prevent cold starts and 429 throttling?",
+  "prompt": "An interviewer asks: 'What is the operational difference between Reserved Concurrency and Provisioned Concurrency in AWS Lambda? How do you prevent a runaway background worker from exhausting your entire account concurrency and taking down your customer-facing checkout API?'",
+  "explanation": "Evaluates concurrency management, account-level blast radius containment, cold-start mitigation for latency-sensitive microservices, and throttling error remediation.",
+  "hints": [
+    "Reserved Concurrency sets a ceiling (max limit) AND guarantees a dedicated floor.",
+    "Provisioned Concurrency pre-initializes execution environments to eliminate cold-start latency.",
+    "Functions exceeding available concurrency receive HTTP 429 Too Many Requests.",
+    "Setting Reserved Concurrency to 0 acts as an emergency kill-switch."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Concurrency Models Explained\n1. **Unreserved Concurrency:**\n   - Functions draw from the shared regional account pool (default: 1,000).\n   - **Risk:** A sudden spike in background batch processing or an infinite loop can consume all 1,000 slots, starving other critical functions.\n2. **Reserved Concurrency:**\n   - Allocates a dedicated portion of the account concurrency to a specific function (e.g. 200).\n   - **Dual Action:** It guarantees the function can always scale to 200 (floor), but also **caps** it at 200 (ceiling).\n   - Any invocations beyond 200 are throttled with **HTTP 429 (Too Many Requests)**.\n   - Setting Reserved Concurrency to **0 acts as an instant emergency kill-switch** to stop a malfunctioning function without deleting code.\n3. **Provisioned Concurrency:**\n   - Pre-warms microVM execution environments (runs initialization code outside the handler).\n   - **Eliminates Cold Starts:** Incoming requests execute immediately with single-digit millisecond latency.\n   - Ideal for customer-facing REST APIs and checkout flows.\n\n### 2. Preventing Blast Radius Exhaustion\n- Apply **Reserved Concurrency** to non-critical background consumers (e.g., Kinesis/SQS processors capped at 100).\n- Assign **Provisioned Concurrency** to the checkout API function with Application Auto Scaling policies to handle anticipated traffic spikes without cold starts.\n- Always reserve at least 100 unreserved concurrency for functions without specific reservations.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Reserved vs Provisioned Distinction",
+        "weight": 35,
+        "description": "Explains ceiling/floor guarantees vs pre-warmed execution environments."
+      },
+      {
+        "name": "Blast Radius Isolation",
+        "weight": 35,
+        "description": "Shows how Reserved Concurrency prevents noisy neighbors from starving account pool."
+      },
+      {
+        "name": "Cold Start Elimination",
+        "weight": 30,
+        "description": "Details how Provisioned Concurrency executes runtime initialization in advance."
+      }
+    ]
+  },
+  "tags": [
+    "Lambda",
+    "Concurrency",
+    "Cold Starts",
+    "Provisioned Concurrency",
+    "Architecture"
+  ]
+},
+  {
+  "id": "iq-rds-multiaz-vs-readreplicas",
+  "topicSlug": "rds-high-availability-multi-az-and-read-replicas",
+  "moduleNumber": 9,
+  "topicTitle": "RDS Multi-AZ Failover vs Read Replicas",
+  "category": "DATABASES",
+  "categoryLabel": "Databases (RDS, DynamoDB, Redshift)",
+  "difficulty": "Intermediate",
+  "title": "What is the architectural and operational difference between RDS Multi-AZ deployments and Read Replicas?",
+  "prompt": "An interviewer asks: 'Can you compare Amazon RDS Multi-AZ deployments with Read Replicas across replication mode, read/write access, failover mechanics, and use cases? Can you read from a Multi-AZ standby instance?'",
+  "explanation": "Core enterprise database interview question testing high availability (synchronous DR) versus horizontal read scaling (asynchronous read copies).",
+  "hints": [
+    "Multi-AZ uses synchronous physical replication; Read Replicas use asynchronous logical replication.",
+    "Multi-AZ standby CANNOT accept read or write queries in standard RDS.",
+    "Failover in Multi-AZ automatically flips the DNS CNAME record (RTO < 60-120s, RPO = 0).",
+    "Up to 5 Read Replicas can be created; they can reside cross-region and be promoted to standalone DBs."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Comparative Architecture Matrix\n\n| Dimension | Multi-AZ Deployments | Read Replicas |\n|---|---|---|\n| **Primary Purpose** | **High Availability & Disaster Recovery** | **Read Performance & Scalability** |\n| **Replication Mode** | **Synchronous** (physical block-level storage replication) | **Asynchronous** (logical database binary logs) |\n| **Data Loss Risk (RPO)** | **RPO = 0** (Transactions committed synchronously to standby) | **RPO > 0** (Subject to replication lag) |\n| **Read / Write Access** | **Standby is PASSIVE** (Cannot accept connections or queries) | **ACTIVE for READ-ONLY** (Serves SELECT queries) |\n| **Failover Behavior** | **Automatic** (Flips DNS CNAME in 60-120s, no code change) | **Manual** (Must be promoted to standalone DB) |\n| **Geographic Scope** | Different Availability Zone within the **same region** | Same AZ, cross-AZ, or **Cross-Region** |\n| **Instance Limit** | 1 Standby instance per primary DB | Up to **5 Read Replicas** per primary DB |\n\n### 2. Key Clarifications for the Interviewer\n- **Can you read from a Multi-AZ standby?** **NO.** In standard Amazon RDS (MySQL, Postgres, Oracle, SQL Server), the standby instance is dedicated solely to synchronous replication and cannot accept client read queries.\n- **Failover Mechanism:** When the primary crashes or an AZ experiences power failure, RDS updates the DNS CNAME of your database endpoint to point to the standby instance's IP. Application connection strings remain 100% identical.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Replication Mechanism",
+        "weight": 30,
+        "description": "Contrasts synchronous physical block replication with asynchronous logical binlog replication."
+      },
+      {
+        "name": "Standby Readability",
+        "weight": 25,
+        "description": "Explicitly states that standard Multi-AZ standby cannot be queried."
+      },
+      {
+        "name": "Failover Mechanics",
+        "weight": 25,
+        "description": "Explains DNS CNAME switch and recovery time without code changes."
+      },
+      {
+        "name": "Read Replica Capabilities",
+        "weight": 20,
+        "description": "Notes 5 replica limit, cross-region capability, and promotion to standalone DB."
+      }
+    ]
+  },
+  "tags": [
+    "RDS",
+    "Multi-AZ",
+    "Read Replicas",
+    "High Availability",
+    "Disaster Recovery"
+  ]
+},
+  {
+  "id": "iq-rds-backup-pitr",
+  "topicSlug": "rds-backup-strategies-snapshots-and-point-in-time-recovery",
+  "moduleNumber": 9,
+  "topicTitle": "RDS Automated Backups vs Manual DB Snapshots & PITR",
+  "category": "DATABASES",
+  "categoryLabel": "Databases (RDS, DynamoDB, Redshift)",
+  "difficulty": "Intermediate",
+  "title": "How do RDS Automated Backups differ from manual DB Snapshots, and what happens to endpoints during a Point-in-Time Recovery?",
+  "prompt": "An interviewer asks: 'How does Amazon RDS handle automated backups versus manual snapshots? If a developer accidentally executes DROP TABLE at 10:14:22 AM, how does Point-in-Time Recovery work, and what happens to the existing database endpoint?'",
+  "explanation": "Validates understanding of database recovery procedures, transaction log replay, snapshot storage in S3, and restore endpoint provisioning.",
+  "hints": [
+    "Automated backups have a retention period of 1 to 35 days and combine daily snapshots with transaction logs in S3.",
+    "Manual snapshots persist indefinitely until explicitly deleted.",
+    "PITR restores the nearest daily snapshot and replays transaction logs up to the exact requested second.",
+    "A restore operation ALWAYS launches a brand-new DB instance with a NEW endpoint (it never overwrites the original)."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Automated Backups vs Manual Snapshots\n- **Automated Backups:**\n  - Configurable retention period between **1 and 35 days** (setting retention to 0 disables automated backups and breaks read replica creation).\n  - Takes a full daily storage volume snapshot during the backup window and continuously streams **transaction logs to Amazon S3 every 5 minutes**.\n  - All automated backups are automatically purged when the DB instance is deleted.\n- **Manual Database Snapshots:**\n  - Initiated manually by the user or through automation scripts/AWS Backup.\n  - Stored in Amazon S3 and **persist indefinitely** until explicitly deleted by an administrator.\n  - Storage is billed incrementally for modified storage blocks.\n\n### 2. Point-in-Time Recovery (PITR) Execution\n- When `DROP TABLE` happens at **10:14:22 AM**:\n  1. The administrator initiates a Point-in-Time Recovery with target timestamp **10:14:00 AM** (22 seconds prior to corruption).\n  2. RDS provisions a new volume from the most recent storage snapshot prior to that time.\n  3. RDS automatically replays the database transaction logs stored in S3 up to 10:14:00 AM and stops.\n\n### 3. Critical Endpoint Behavior\n- **RDS NEVER overwrites the existing DB instance.**\n- Restoring always provisions a **brand-new DB Instance with a NEW DNS endpoint URL**.\n- To restore production traffic:\n  - Export the missing table data and import it into production, OR\n  - Rename the corrupted instance (e.g. `prod-db-corrupted`) and rename the restored instance to `prod-db` so existing connection strings resolve to the restored instance.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Backup Mechanism Comparison",
+        "weight": 35,
+        "description": "Contrasts 1-35 day automated retention + logs vs persistent manual snapshots."
+      },
+      {
+        "name": "PITR Mechanics",
+        "weight": 35,
+        "description": "Explains snapshot restoration combined with continuous transaction log replay."
+      },
+      {
+        "name": "New Endpoint Provisioning",
+        "weight": 30,
+        "description": "Explicitly clarifies that restores create a new instance with a new endpoint."
+      }
+    ]
+  },
+  "tags": [
+    "RDS",
+    "Backups",
+    "PITR",
+    "Disaster Recovery",
+    "Database Administration"
+  ]
+},
+  {
+  "id": "iq-iam-policy-evaluation",
+  "topicSlug": "iam-fundamentals-and-policy-evaluation",
+  "moduleNumber": 2,
+  "topicTitle": "IAM Policy Evaluation Logic & JSON Anatomy",
+  "category": "IAM_SECURITY",
+  "categoryLabel": "IAM, Security & Governance",
+  "difficulty": "Advanced",
+  "title": "Detail the step-by-step evaluation logic of AWS IAM policies. How do Explicit Deny, Permissions Boundaries, and SCPs interact?",
+  "prompt": "An interviewer asks: 'Walk me through the exact mathematical decision tree AWS uses when evaluating whether an API request is authorized. If an IAM user has AdministratorAccess in their identity policy, but their Permissions Boundary omits S3, and an SCP contains an Explicit Deny on s3:DeleteBucket, can they delete an S3 bucket?'",
+  "explanation": "Tests deep mastery of IAM authorization mechanics, policy combination precedence, and multi-layered organizational governance.",
+  "hints": [
+    "Evaluation starts with a Default Implicit Deny.",
+    "An Explicit Deny in ANY policy overrides all allows instantly.",
+    "Effective permissions are the intersection of Identity Policy ∩ Permissions Boundary ∩ SCP.",
+    "In this scenario, both the Permissions Boundary and the SCP block the request."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. The 6-Step IAM Policy Evaluation Decision Tree\n1. **Default State:** Every request starts with an **Implicit Deny**.\n2. **Explicit Deny Check (The Ultimate Override):** If ANY applicable policy (Identity, Resource, Permissions Boundary, or SCP) contains an **Explicit Deny** that matches the request context, the request is **IMMEDIATELY DENIED**. No further evaluation occurs.\n3. **Organizations Service Control Policy (SCP) Check:** If an AWS Organization is enabled, the request must be permitted by the applicable SCPs.\n4. **Permissions Boundary Check:** If the identity has a Permissions Boundary attached, the action must be explicitly permitted by the boundary.\n5. **Session Policy Check:** If using temporary credentials from STS, session policies must permit the action.\n6. **Identity-Based & Resource-Based Policies:** At least one policy must contain an **Explicit Allow**. If allowed (and steps 2-5 passed), the request is **AUTHORIZED**; otherwise, the default **Implicit Deny** applies.\n\n### 2. Answering the Scenario\n- **Can the user delete the S3 bucket?** **ABSOLUTELY NOT.** The action is blocked on two separate independent layers:\n  1. **SCP Explicit Deny:** The SCP contains an Explicit Deny for `s3:DeleteBucket`. An explicit deny overrides any allow, even `AdministratorAccess`.\n  2. **Permissions Boundary Omission:** Even without the SCP, the Permissions Boundary sets the maximum allowable ceiling. Because S3 is omitted from the boundary, the effective permission is `Allow ∩ None = Deny`.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Evaluation Decision Tree",
+        "weight": 35,
+        "description": "Accurately details the 6-step flow starting from default deny to explicit deny check."
+      },
+      {
+        "name": "Override Rules",
+        "weight": 35,
+        "description": "Explains how Explicit Deny universally overrides all Explicit Allows."
+      },
+      {
+        "name": "Intersection Math",
+        "weight": 30,
+        "description": "Correctly evaluates the combined outcome of Identity Policy, Permissions Boundary, and SCP."
+      }
+    ]
+  },
+  "tags": [
+    "IAM",
+    "Security",
+    "Policy Evaluation",
+    "SCPs",
+    "Permissions Boundaries"
+  ]
+},
+  {
+  "id": "iq-iam-roles-sts-ec2",
+  "topicSlug": "iam-roles-sts-and-instance-profiles",
+  "moduleNumber": 2,
+  "topicTitle": "IAM Roles, STS & EC2 Instance Profiles",
+  "category": "IAM_SECURITY",
+  "categoryLabel": "IAM, Security & Governance",
+  "difficulty": "Intermediate",
+  "title": "Why are IAM Roles preferred over IAM Users for applications, and how does STS deliver credentials to EC2 instances?",
+  "prompt": "An interviewer asks: 'Why is it an anti-pattern to store IAM User access keys on an EC2 instance or in application config files? How does an IAM Role with an Instance Profile securely deliver temporary credentials via STS, and what role does IMDSv2 play?'",
+  "explanation": "Validates security architecture fundamentals, temporary credential rotation via STS, instance profiles, and IMDSv2 SSRF defenses.",
+  "hints": [
+    "Long-term access keys risk accidental git commits and lack automatic rotation.",
+    "IAM Roles use STS to issue short-lived credentials (valid 15 min to hours).",
+    "EC2 Instance Profiles deliver credentials through the Instance Metadata Service (169.254.169.254).",
+    "IMDSv2 requires token-based session headers (PUT) to block SSRF vulnerabilities."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. The Danger of Long-Term IAM User Access Keys\n- **High Leakage Risk:** Storing permanent `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in code or disk files frequently leads to credential exposure via public Git repositories or compromised snapshots.\n- **Maintenance Overhead:** Manual credential rotation requires coordinated restarts across fleets without causing application downtime.\n\n### 2. How IAM Roles & STS Work Together\n- An **IAM Role** has no permanent credentials. Instead, it defines a **Trust Policy** (e.g. `ec2.amazonaws.com`) and a **Permissions Policy**.\n- An **Instance Profile** attaches the role to the EC2 instance.\n- Behind the scenes, the AWS Security Token Service (**STS**) automatically issues temporary credentials valid for 1-6 hours.\n- The AWS SDK automatically queries the metadata endpoint and **silently refreshes the temporary credentials before expiration**, requiring zero application restart.\n\n### 3. Instance Metadata Service v2 (IMDSv2) Security\n- Metadata is accessed at `http://169.254.169.254/latest/meta-data/`.\n- **IMDSv2 Defense:** IMDSv2 enforces a token-based session flow: clients must first send an HTTP `PUT` request with `X-aws-ec2-metadata-token-ttl-seconds` to get a session token, and pass that token in `X-aws-ec2-metadata-token` on subsequent GET calls, completely blocking SSRF attacks.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Risk Analysis",
+        "weight": 25,
+        "description": "Contrasts long-term access key leakages with ephemeral STS credentials."
+      },
+      {
+        "name": "Role & Instance Profile Mechanics",
+        "weight": 35,
+        "description": "Explains trust policies, SDK automatic credential retrieval, and rotation."
+      },
+      {
+        "name": "IMDSv2 SSRF Defense",
+        "weight": 40,
+        "description": "Details token-based session headers (PUT) protecting the metadata endpoint."
+      }
+    ]
+  },
+  "tags": [
+    "IAM",
+    "STS",
+    "EC2",
+    "Instance Profile",
+    "IMDSv2",
+    "Security"
+  ]
+},
+  {
+  "id": "iq-s3-storage-classes-tiers",
+  "topicSlug": "s3-storage-classes-lifecycle-security",
+  "moduleNumber": 6,
+  "topicTitle": "S3 Storage Classes & Lifecycle Cost Engineering",
+  "category": "STORAGE",
+  "categoryLabel": "Storage (S3, EBS, EFS)",
+  "difficulty": "Intermediate",
+  "title": "Compare the 7 Amazon S3 storage classes. When is S3 Intelligent-Tiering more cost-effective than S3 Standard or Standard-IA?",
+  "prompt": "An interviewer asks: 'Walk me through the access latency, minimum storage duration, and cost profile across S3 Standard, S3 Intelligent-Tiering, Standard-IA, One Zone-IA, and the three Glacier classes. In what scenario would S3 Intelligent-Tiering actually cost MORE than S3 Standard?'",
+  "explanation": "Evaluates comprehensive object storage selection, understanding retrieval fees, minimum duration charges, and automation overhead.",
+  "hints": [
+    "S3 Intelligent-Tiering charges a small monthly monitoring fee per 1,000 objects.",
+    "Standard-IA requires 30 days minimum; Glacier Flexible requires 90 days; Glacier Deep Archive requires 180 days.",
+    "Glacier Instant Retrieval provides millisecond access; Deep Archive requires up to 12 hours.",
+    "Very small objects (<128 KB) or millions of tiny files make Intelligent-Tiering monitoring fees exceed storage savings."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. S3 Storage Class Comparison\n\n| Storage Class | Latency | Min Storage Duration | Retrieval Fee | Best Use Case |\n|---|---|---|---|---|\n| **S3 Standard** | Milliseconds | None | None | Active data, dynamic websites, big data analytics |\n| **S3 Intelligent-Tiering** | Milliseconds | None (frequent/IA) | **ZERO** | Unknown or unpredictable access patterns |\n| **S3 Standard-IA** | Milliseconds | **30 days** | Per GB fee | Infrequent access (e.g. monthly reports, disaster recovery) |\n| **S3 One Zone-IA** | Milliseconds | **30 days** | Per GB fee | Non-critical, reproducible data (resides in 1 AZ only) |\n| **Glacier Instant** | Milliseconds | **90 days** | Per GB fee | Rarely accessed archives requiring immediate millisecond retrieval |\n| **Glacier Flexible** | 1-5 min to hours | **90 days** | Per GB fee | Regulatory compliance archives, annual backups |\n| **Glacier Deep Archive** | **12 - 48 hours** | **180 days** | Per GB fee | Lowest cost storage in AWS ($0.00099/GB/mo), 7-10 yr retention |\n\n### 2. When Does S3 Intelligent-Tiering Cost MORE Than S3 Standard?\n- **Monitoring Fee Overhead:** S3 Intelligent-Tiering charges a monthly automation fee of **$0.0025 per 1,000 objects**.\n- **The Small Object Trap:** Objects smaller than **128 KB** are NOT eligible for auto-tiering; they remain in Frequent Access forever.\n- If a bucket contains **100 million tiny 10 KB files** (total 1 TB):\n  - Storage cost at S3 Standard = ~$23/month.\n  - Intelligent-Tiering monitoring fee = 100,000 × $0.0025 = **$250/month!**\n- **Verdict:** For large numbers of tiny files that never leave Frequent Access, Intelligent-Tiering is drastically more expensive. It is optimal for objects > 128 KB with changing or unknown access frequencies.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Storage Class Matrix",
+        "weight": 35,
+        "description": "Accurately covers latencies, minimum durations, and retrieval fees across all 7 tiers."
+      },
+      {
+        "name": "Glacier Deep Archive Profile",
+        "weight": 25,
+        "description": "Identifies 180-day min duration, 12h retrieval, and rock-bottom price point."
+      },
+      {
+        "name": "Small Object Monitoring Fee Caveat",
+        "weight": 40,
+        "description": "Explains the $0.0025/1k object monitoring fee and why small files make it cost more."
+      }
+    ]
+  },
+  "tags": [
+    "S3",
+    "Storage Classes",
+    "Lifecycle",
+    "Cost Engineering",
+    "Architecture"
+  ]
+},
+  {
+  "id": "iq-s3-security-bpa-encryption",
+  "topicSlug": "s3-encryption-access-control-and-bpa",
+  "moduleNumber": 6,
+  "topicTitle": "S3 Security: Block Public Access, Object Ownership & KMS",
+  "category": "STORAGE",
+  "categoryLabel": "Storage (S3, EBS, EFS)",
+  "difficulty": "Advanced",
+  "title": "How do S3 Block Public Access, Object Ownership (BucketOwnerEnforced), and SSE-KMS prevent enterprise data leaks?",
+  "prompt": "An interviewer asks: 'How do the 4 S3 Block Public Access guardrails protect against data leaks? Why did AWS introduce S3 Object Ownership to disable legacy XML ACLs, and what are the architectural trade-offs between SSE-S3 and SSE-KMS?'",
+  "explanation": "Deep dive into S3 enterprise defense-in-depth: centralized public access blocking, ACL phase-out, and envelope encryption key management.",
+  "hints": [
+    "BPA has 4 controls: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, and RestrictPublicBuckets.",
+    "BucketOwnerEnforced turns off ACLs so the bucket owner owns all uploaded objects automatically.",
+    "SSE-S3 uses AWS-managed AES-256 keys; SSE-KMS uses customer-managed keys with audit logging.",
+    "High request rates with SSE-KMS can hit KMS API throttling limits unless S3 Bucket Keys are enabled."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. S3 Block Public Access (BPA) - The 4 Guardrails\n1. **BlockPublicAcls:** Rejects any new PUT requests that attempt to include a public ACL.\n2. **IgnorePublicAcls:** Causes S3 to ignore all existing public ACLs on any object in the bucket.\n3. **BlockPublicPolicy:** Rejects any new bucket policies that grant public read or write access.\n4. **RestrictPublicBuckets:** Restricts access to existing buckets with public policies exclusively to authorized AWS service principals and account owners.\n\n### 2. S3 Object Ownership & Disabling Legacy ACLs\n- **Modern Solution (BucketOwnerEnforced):**\n  - Completely **disables legacy XML Access Control Lists (ACLs)**.\n  - The bucket owner automatically owns and has full control over every object uploaded to the bucket, regardless of who uploaded it.\n  - Consolidates 100% of authorization into **IAM Policies and S3 Bucket Policies**.\n\n### 3. Server-Side Encryption: SSE-S3 vs SSE-KMS Trade-Offs\n- **SSE-S3 (AES-256):** Fully managed by AWS; zero extra cost. Does not provide audit trails of which IAM identity decrypted which specific object.\n- **SSE-KMS (AWS Key Management Service):** Uses Customer Master Keys (CMKs) with envelope encryption. Every single decryption event is logged in **AWS CloudTrail** with caller identity and timestamp. Provides separation of duties. Incurs KMS API costs, which can be reduced by 99% using **S3 Bucket Keys**.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Block Public Access Controls",
+        "weight": 30,
+        "description": "Explains all 4 BPA controls at bucket and account levels."
+      },
+      {
+        "name": "BucketOwnerEnforced Rationale",
+        "weight": 35,
+        "description": "Details how it eliminates cross-account ownership issues and disables legacy ACLs."
+      },
+      {
+        "name": "SSE-S3 vs SSE-KMS Trade-Offs",
+        "weight": 35,
+        "description": "Compares cost, CloudTrail audit trails, separation of duties, and S3 Bucket Keys."
+      }
+    ]
+  },
+  "tags": [
+    "S3",
+    "Security",
+    "Encryption",
+    "KMS",
+    "Block Public Access",
+    "Compliance"
+  ]
+}
+,
+  {
+  "id": "iq-ec2-ebs-vs-instancestore",
+  "topicSlug": "ec2-storage-ebs-types-vs-instance-store",
+  "moduleNumber": 4,
+  "topicTitle": "Persistent EBS vs Ephemeral Instance Store",
+  "category": "EC2_COMPUTE",
+  "categoryLabel": "AWS EC2 & Compute",
+  "difficulty": "Intermediate",
+  "title": "What is the architectural and operational difference between Amazon EBS and EC2 Instance Store?",
+  "prompt": "An interviewer asks: 'Can you compare Amazon EBS with EC2 Instance Store in terms of persistence, performance, lifecycle, and failure modes? What happens to data stored on an Instance Store volume if you issue a Stop command from the AWS Management Console?'",
+  "explanation": "Evaluates fundamental storage architecture, distinguishing between network-attached persistent block storage and physical server-attached ephemeral disks.",
+  "hints": [
+    "EBS is a network-attached virtual block device; data persists independently of instance state.",
+    "Instance Store consists of physical NVMe or HDD drives directly attached to the host server.",
+    "Instance Store data is 100% ephemeral: it is permanently lost on Stop, Terminate, or hardware failure.",
+    "EBS-backed instances can be Stopped and Started; Instance-store backed instances can only be Rebooted or Terminated."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Architectural Comparison Matrix\n\n| Dimension | Amazon EBS (Elastic Block Store) | EC2 Instance Store |\n|---|---|---|\n| **Storage Architecture** | **Network-attached virtual block device** (communicates over private storage network) | **Physically attached local drives** (NVMe SSDs or HDDs inside the host rack) |\n| **Data Persistence** | **Persistent** (survives instance stop, reboot, and host failures) | **Ephemeral** (data is permanently wiped on instance stop, termination, or host failure) |\n| **I/O Performance** | High (gp3 up to 16,000 IOPS; io2 up to 64,000 IOPS) | **Ultra-High & Lowest Latency** (hundreds of thousands of native NVMe IOPS) |\n| **Backup & Snapshots** | Native incremental point-in-time snapshots stored in **Amazon S3** | **No native snapshots** (must be manually backed up by copying files to S3/EBS) |\n| **Lifecycle Actions** | Supports **Stop, Start, Reboot, Resize, and Reattach** | **Only Reboot and Terminate** (Stop is not supported or wipes all data) |\n| **Primary Use Cases** | Databases, boot volumes, persistent filesystems | Caching tiers, buffer pools, scratch space, distributed clusters (Cassandra/Kafka) |\n\n### 2. What Happens on Instance Stop?\n- **Instance Store-Backed AMI:** The AWS Console and CLI **will not allow you to Stop the instance**; only Reboot and Terminate are permissible actions.\n- **EBS-Backed Instance with Secondary Instance Store Disks:** You can stop the instance. However, **all data on the secondary Instance Store volume is permanently and irrevocably deleted** when the instance stops. Upon starting, the instance boots on a new physical server with a fresh, empty Instance Store volume.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Persistence & Architecture",
+        "weight": 35,
+        "description": "Contrasts network-attached persistent EBS with local physical ephemeral Instance Store."
+      },
+      {
+        "name": "Stop Lifecycle Mechanics",
+        "weight": 35,
+        "description": "Explains that stopping wipes Instance Store data permanently."
+      },
+      {
+        "name": "Performance & Use Cases",
+        "weight": 30,
+        "description": "Identifies ultra-low latency NVMe caching for Instance Store vs durable databases for EBS."
+      }
+    ]
+  },
+  "tags": [
+    "EC2",
+    "EBS",
+    "Instance Store",
+    "Storage",
+    "Compute"
+  ]
+},
+  {
+  "id": "iq-ec2-status-checks-troubleshooting",
+  "topicSlug": "ec2-concepts-purchasing-models-lifecycle",
+  "moduleNumber": 4,
+  "topicTitle": "EC2 Status Checks: System vs Instance Failure Remediation",
+  "category": "EC2_COMPUTE",
+  "categoryLabel": "AWS EC2 & Compute",
+  "difficulty": "Intermediate",
+  "title": "How do EC2 System Status Checks differ from Instance Status Checks, and what are their respective troubleshooting workflows?",
+  "prompt": "An interviewer asks: 'When an EC2 instance shows Status Checks: 1/2 checks passed, how do you determine whether the failure is a System Status Check or an Instance Status Check? What is the root cause of each, and how do you remediate both without losing data?'",
+  "explanation": "Tests hands-on operational troubleshooting, hypervisor/hardware fault isolation, and guest OS kernel remediation.",
+  "hints": [
+    "System Status Checks monitor AWS physical hardware, power, network, and hypervisors.",
+    "Instance Status Checks monitor guest operating system, memory exhaustion, filesystem corruption, or boot issues.",
+    "Fixing a System check requires a Stop/Start cycle to migrate to a new physical host.",
+    "Fixing an Instance check involves checking system logs, rebooting, or attaching the root volume to a rescue instance."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Root Cause & Scope Distinction\n- **System Status Check Failed (StatusCheckFailed_System):**\n  - **Scope:** The **AWS physical infrastructure** hosting your virtual machine.\n  - **Causes:** Loss of network connectivity to the physical rack, power loss on the host server, physical hardware degradation, or hypervisor software crashes.\n- **Instance Status Check Failed (StatusCheckFailed_Instance):**\n  - **Scope:** The **guest operating system and software** running inside your VM.\n  - **Causes:** Kernel panics, OS boot drive corruption, exhausted RAM causing out-of-memory (OOM) kernel freezes, misconfigured network interfaces (`ifcfg` / `netplan`), or corrupted `/etc/fstab` mount entries.\n\n### 2. Remediation Methodology\n- **Remediating System Status Check Failures:**\n  1. **Do NOT simply Reboot:** A reboot keeps the VM on the exact same failing physical host.\n  2. **Execute Stop and Start:** Stopping the instance releases the hypervisor allocation. Starting it forces AWS to launch your EBS-backed VM on a **completely different, healthy physical host machine** in the Availability Zone.\n  3. **Automation:** Configure a CloudWatch Alarm on `StatusCheckFailed_System` with an **EC2 Auto-Recovery** action to perform this migration automatically.\n- **Remediating Instance Status Check Failures:**\n  1. Inspect **EC2 System Log (Console Output)** and **EC2 Instance Screenshot** via the AWS Console to view kernel panic or bootloader messages.\n  2. Try an OS **Reboot** to resolve transient memory/deadlock locks.\n  3. **Rescue Instance Workflow:** If corrupted boot or bad `/etc/fstab`:\n     - Stop the damaged instance.\n     - Detach the root EBS volume (`/dev/xvda`).\n     - Attach it as a secondary data disk (`/dev/sdf`) to a temporary healthy 'Rescue' EC2 instance.\n     - Mount the volume, repair the configuration or filesystem (`fsck`), unmount, and reattach it back to the original instance as the root volume.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Scope & Cause Separation",
+        "weight": 35,
+        "description": "Clearly differentiates AWS hardware/hypervisor faults from guest OS/kernel faults."
+      },
+      {
+        "name": "System Check Fix (Stop/Start)",
+        "weight": 35,
+        "description": "Explains why stop/start is required to migrate off the broken physical host."
+      },
+      {
+        "name": "Instance Check Rescue Workflow",
+        "weight": 30,
+        "description": "Details system logs inspection and the volume reattachment rescue procedure."
+      }
+    ]
+  },
+  "tags": [
+    "EC2",
+    "Troubleshooting",
+    "Status Checks",
+    "SysOps",
+    "Incident Management"
+  ]
+},
+  {
+  "id": "iq-elb-alb-vs-nlb-vs-gwlb",
+  "topicSlug": "elb-types-routing-rules-auto-scaling",
+  "moduleNumber": 5,
+  "topicTitle": "ALB vs NLB vs Gateway Load Balancer (GWLB)",
+  "category": "ELB_AUTOSCALING",
+  "categoryLabel": "Load Balancing & Auto Scaling",
+  "difficulty": "Advanced",
+  "title": "How do Application Load Balancers, Network Load Balancers, and Gateway Load Balancers compare across OSI layers, performance, and use cases?",
+  "prompt": "An interviewer asks: 'Compare ALB, NLB, and GWLB across the OSI model, throughput capabilities, IP address behavior, and routing features. In what specific architecture would you combine all three in an enterprise cloud network?'",
+  "explanation": "Deep architectural evaluation of AWS Elastic Load Balancing products, protocol handling, static IP requirements, and centralized security appliance inspection.",
+  "hints": [
+    "ALB operates at Layer 7 (HTTP/HTTPS); NLB operates at Layer 4 (TCP/UDP); GWLB operates at Layer 3 (Network).",
+    "NLB handles millions of requests/second with microsecond latency and provides static/Elastic IPs per AZ.",
+    "GWLB transparently routes raw IP packets to third-party virtual appliances using GENEVE protocol encapsulation (port 6081).",
+    "Enterprise architecture: Traffic enters GWLB for firewall/IDS inspection, routes to ALB/NLB for application balancing."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Comparative Architecture Matrix\n\n| Dimension | Application Load Balancer (ALB) | Network Load Balancer (NLB) | Gateway Load Balancer (GLB) |\n|---|---|---|---|\n| **OSI Layer** | **Layer 7** (Application: HTTP, HTTPS, HTTP/2, gRPC) | **Layer 4** (Transport: TCP, UDP, TLS) | **Layer 3** (Network: IP packets) |\n| **Latency & Performance** | Milliseconds (parses HTTP headers & cookies) | **Microseconds** (wire-speed packet streaming, millions of req/sec) | Milliseconds (transparent inline packet routing) |\n| **IP Address Management** | **Dynamic IP addresses** (resolves exclusively via DNS name) | **Static IP / Elastic IP per Availability Zone** | Internal endpoint routing via **GWLB Endpoints** |\n| **Routing Criteria** | Content-based: Host, Path, Method, Query, Headers, Source CIDR | Port and IP listener rules | All IP traffic on all ports forwarded transparently |\n| **Encapsulation Protocol** | Native HTTP/HTTPS | Raw TCP/UDP pass-through (preserves client IP) | **GENEVE Protocol** (port 6081) encapsulation |\n| **Primary Use Case** | Web applications, microservices, container routing | High-frequency trading, IoT, gaming, static allowlisting | Centralized firewalls (Palo Alto), IDS/IPS, deep packet inspection |\n\n### 2. Enterprise Unified Architecture (Combining All Three)\n- **Ingress Traffic Flow:**\n  1. **Layer 3 (GWLB):** Incoming internet traffic hits an ingress VPC and is routed via a **Gateway Load Balancer Endpoint** through a fleet of third-party firewall appliances for Layer 3/4 deep packet inspection and intrusion prevention without altering source/destination IPs.\n  2. **Layer 4 (NLB):** Cleaned traffic destined for non-HTTP services (e.g. real-time gaming UDP servers or payment gateways requiring whitelisted static IPs) terminates on a **Network Load Balancer**.\n  3. **Layer 7 (ALB):** Cleaned web traffic terminates on an **Application Load Balancer** where SSL is offloaded (SNI), path-based routing directs requests to specific container microservices on ECS/EKS, and WAF inspects for SQL injection/XSS.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "OSI Layer & Protocol Mapping",
+        "weight": 30,
+        "description": "Accurately maps ALB to Layer 7, NLB to Layer 4, and GWLB to Layer 3."
+      },
+      {
+        "name": "IP & Throughput Characteristics",
+        "weight": 35,
+        "description": "Details NLB static/Elastic IPs and microsecond throughput vs ALB dynamic DNS."
+      },
+      {
+        "name": "GENEVE Protocol & Enterprise Synergy",
+        "weight": 35,
+        "description": "Explains GWLB GENEVE encapsulation and combines all 3 in a security pipeline."
+      }
+    ]
+  },
+  "tags": [
+    "ELB",
+    "ALB",
+    "NLB",
+    "GWLB",
+    "Networking",
+    "Architecture"
+  ]
+},
+  {
+  "id": "iq-elb-sni-multicert",
+  "topicSlug": "elb-advanced-features-target-groups-health-checks",
+  "moduleNumber": 5,
+  "topicTitle": "Server Name Indication (SNI) on Application Load Balancers",
+  "category": "ELB_AUTOSCALING",
+  "categoryLabel": "Load Balancing & Auto Scaling",
+  "difficulty": "Intermediate",
+  "title": "How does Server Name Indication (SNI) allow an Application Load Balancer to host multiple SSL certificates on a single listener?",
+  "prompt": "An interviewer asks: 'Your company hosts 15 distinct brands with different domain names (e.g. brandA.com, brandB.com) on a single shared microservices cluster. How does Server Name Indication (SNI) on an Application Load Balancer solve multi-certificate SSL termination on a single port 443 listener, and how does it differ from Classic Load Balancers?'",
+  "explanation": "Tests knowledge of TLS handshake extensions, multi-tenant certificate binding, and ALB vs CLB architectural evolution.",
+  "hints": [
+    "Traditional TLS required establishing the encrypted tunnel before the HTTP Host header was transmitted.",
+    "SNI sends the requested hostname in the initial TLS Client Hello handshake.",
+    "ALB matches the hostname to the corresponding ACM SSL certificate from its certificate list.",
+    "Classic Load Balancers do not support SNI and required 1 listener/IP per SSL certificate."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. The Historical SSL Challenge\n- In traditional TLS handshakes, the client negotiates encryption **before** sending the HTTP request headers (including the `Host:` header).\n- Therefore, the load balancer had to present its SSL certificate without knowing which domain the client wanted.\n- **Classic Load Balancer (CLB) Limitation:** A CLB could only bind **ONE SSL certificate per port 443 listener**. To host 15 distinct domains, you either had to purchase an expensive Multi-Domain (SAN) wildcard certificate or provision 15 separate load balancers.\n\n### 2. How Server Name Indication (SNI) Solves This\n- **SNI (RFC 6066)** is an extension to the TLS protocol where the client explicitly includes the target hostname (e.g. `api.brandA.com`) inside the initial **TLS Client Hello** packet.\n- **ALB Implementation:**\n  - An Application Load Balancer allows you to bind a **default SSL certificate** plus a list of **up to 25 additional SSL certificates** (from AWS Certificate Manager or IAM) to a single HTTPS listener on port 443.\n  - When the Client Hello arrives, the ALB reads the SNI hostname, matches it to the appropriate certificate from its certificate list, and returns that domain's certificate to complete the TLS handshake.\n  - If the client does not send an SNI extension or requests an unknown domain, the ALB falls back to serving the **default certificate**.\n\n### 3. Key Benefits for Production\n- **Cost Reduction:** Consolidates 15 load balancers into 1 ALB, saving hundreds of dollars monthly in hourly load balancer charges.\n- **Architectural Simplicity:** Centralizes traffic management and AWS WAF rules on a single load balancing tier while maintaining full isolation of domain certificates.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "TLS Handshake Extension",
+        "weight": 35,
+        "description": "Explains hostname inclusion in the TLS Client Hello before encryption is established."
+      },
+      {
+        "name": "ALB Multi-Certificate List",
+        "weight": 35,
+        "description": "Details default certificate fallback and binding up to 25 ACM certificates per listener."
+      },
+      {
+        "name": "CLB Comparison & Cost Savings",
+        "weight": 30,
+        "description": "Contrasts with CLB single-cert restriction and explains cost consolidation."
+      }
+    ]
+  },
+  "tags": [
+    "ELB",
+    "ALB",
+    "SNI",
+    "SSL",
+    "Security",
+    "TLS"
+  ]
+},
+  {
+  "id": "iq-asg-scaling-policies-comparison",
+  "topicSlug": "asg-scaling-policies-lifecycle-and-resilience",
+  "moduleNumber": 5,
+  "topicTitle": "Auto Scaling Policies: Target Tracking vs Step vs Simple Scaling",
+  "category": "ELB_AUTOSCALING",
+  "categoryLabel": "Load Balancing & Auto Scaling",
+  "difficulty": "Advanced",
+  "title": "Compare Target Tracking, Step Scaling, and Simple Scaling policies in an Auto Scaling Group. How do you prevent scaling thrashing?",
+  "prompt": "An interviewer asks: 'How do Target Tracking, Step Scaling, and Simple Scaling policies differ in AWS Auto Scaling? If an application experiences sudden 10x traffic spikes that cause instances to flap (rapidly scale out and scale in), which policy and cooldown configurations would you implement?'",
+  "explanation": "Evaluates elasticity engineering, metric tracking algorithms, dynamic capacity adjustments, and oscillation prevention.",
+  "hints": [
+    "Target Tracking acts like a thermostat maintaining a specific metric (e.g. 50% CPU).",
+    "Step Scaling adds capacity in proportional tiers based on breach size without cooldown blocks.",
+    "Simple Scaling waits for a cooldown period before evaluating further scaling actions.",
+    "Scaling thrashing is mitigated by adjusting cooldowns, using Step Scaling with warm-up periods, or asymmetric scale-in thresholds."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Scaling Policy Comparison\n1. **Target Tracking Scaling Policy (Modern Default):**\n   - **Mechanism:** Operates like a thermostat. You specify an ideal metric target (e.g. Average CPU Utilization = 50%, or ALB `RequestCountPerTarget` = 1,000).\n   - **Behavior:** The ASG automatically computes the proportional instance count needed to keep the metric at that target and creates scale-out/scale-in alarms behind the scenes.\n2. **Step Scaling Policy:**\n   - **Mechanism:** Adjusts capacity in customizable steps based on the magnitude of the CloudWatch metric alarm breach:\n     - If CPU is between 60% and 75%: Add 1 instance.\n     - If CPU is between 75% and 90%: Add 3 instances.\n     - If CPU is > 90%: Add 6 instances.\n   - **Key Advantage:** Responds rapidly to aggressive traffic surges and supports warm-up timers without waiting for default cooldowns.\n3. **Simple Scaling Policy (Legacy):**\n   - **Mechanism:** Increases or decreases instance count by a fixed amount when a single CloudWatch alarm triggers (e.g. CPU > 70% add 2 instances).\n   - **Limitation:** Enforces a rigid **Default Cooldown period** (e.g. 300s) during which all subsequent alarm triggers are ignored, slowing response to multi-stage surges.\n\n### 2. Solving Flapping & Scaling Thrashing during 10x Spikes\n- **Root Cause of Flapping:** Adding new instances causes average CPU to plummet suddenly, triggering an immediate scale-in, which terminates instances and causes remaining instances to spike again in a vicious cycle.\n- **Remediation Strategy:**\n  1. **Adopt Step Scaling for Rapid Scale-Out:** Configure aggressive step scaling to immediately add capacity in tiers during spikes.\n  2. **Implement Conservative Scale-In (Asymmetric Scaling):**\n     - Allow scale-out to react within 1 minute.\n     - Require scale-in alarms to evaluate over a longer window (e.g. 15 consecutive minutes of low traffic) before removing instances.\n  3. **Instance Warm-Up Time:** Configure `EstimatedInstanceWarmup` so the ASG does not count newly launched instances into metric averages until their application servers are fully warmed up.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Policy Taxonomy",
+        "weight": 35,
+        "description": "Accurately defines Target Tracking, Step Scaling, and Simple Scaling mechanics."
+      },
+      {
+        "name": "Flapping Diagnosis",
+        "weight": 35,
+        "description": "Explains metric oscillation caused by premature scale-in and un-warmed instances."
+      },
+      {
+        "name": "Asymmetric Scaling Remediation",
+        "weight": 30,
+        "description": "Recommends instance warm-up timers and delayed scale-in evaluation windows."
+      }
+    ]
+  },
+  "tags": [
+    "Auto Scaling",
+    "ASG",
+    "Scaling Policies",
+    "CloudWatch",
+    "Elasticity"
+  ]
+}
+,
+  {
+  "id": "iq-cloudwatch-vs-cloudtrail",
+  "topicSlug": "cloudwatch-cloudtrail-config-xray-observability",
+  "moduleNumber": 12,
+  "topicTitle": "CloudWatch vs CloudTrail: Operations vs Auditing",
+  "category": "MONITORING",
+  "categoryLabel": "Monitoring & Auditing",
+  "difficulty": "Intermediate",
+  "title": "What is the fundamental difference between Amazon CloudWatch and AWS CloudTrail, and how do they integrate together?",
+  "prompt": "An interviewer asks: 'Can you compare Amazon CloudWatch with AWS CloudTrail in terms of purpose, data collected, storage retention, and alerting capabilities? How do you use them together to automatically detect and alert on unauthorized root user console logins?'",
+  "explanation": "Tests the golden rule of AWS management: CloudWatch monitors performance and operations, while CloudTrail audits API actions and security events.",
+  "hints": [
+    "CloudWatch = Operations and Performance (metrics, CPU, logs, alarms, dashboards).",
+    "CloudTrail = Security and Governance (audits who made which API call from where and when).",
+    "CloudWatch retains alarm history for 14 days; CloudTrail logs are stored indefinitely in S3.",
+    "Integration: CloudTrail streams events to CloudWatch Logs, where a Metric Filter detects root logins and triggers a CloudWatch Alarm with SNS."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Comparative Architecture Matrix\n\n| Dimension | Amazon CloudWatch | AWS CloudTrail |\n|---|---|---|\n| **Primary Focus** | **Performance & Operational Health** ('Think Operations') | **Governance, Compliance & Auditing** ('Think Activities & Actions') |\n| **Data Collected** | Metrics (CPU, memory, latency, IOPS), System & Application Logs | API call history (identity, service, action, source IP, timestamp, parameters) |\n| **Question Answered** | *\"Is my application performing well? Is CPU or error rate spiking?\"* | *\"Who deleted that S3 bucket or modified the security group at 2:00 AM?\"* |\n| **Alerting Capabilities** | **Native Alarms** (triggers SNS, Auto Scaling, EC2 Auto-Recovery) | **No native alarming** (must stream logs to CloudWatch or EventBridge) |\n| **Retention Period** | Metrics up to 15 months; Alarms history **14 days** | Event history 90 days in console; **Indefinitely** when saved to Amazon S3 |\n\n### 2. The Golden Rule\n> **CloudWatch monitors PERFORMANCE, whereas CloudTrail monitors ACTIONS in your AWS environment.**\n\n### 3. Integration Architecture: Detecting Root User Logins\n1. **CloudTrail Capture:** CloudTrail records the `ConsoleLogin` API event containing `userIdentity.type = 'Root'`.\n2. **Stream to CloudWatch Logs:** Configure the CloudTrail trail to stream events directly to a CloudWatch Log Group (e.g. `/aws/cloudtrail/audit`).\n3. **Metric Filter:** Create a CloudWatch Metric Filter on the log group matching:\n   `{ ($.userIdentity.type = \"Root\") && ($.eventName = \"ConsoleLogin\") }`\n4. **CloudWatch Alarm & SNS:** Attach a CloudWatch Alarm to this filter metric (threshold >= 1). When triggered, the alarm state moves from **OK to ALARM** and publishes an urgent alert to an **Amazon SNS** topic, notifying the SecOps team within seconds.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Golden Rule Distinction",
+        "weight": 35,
+        "description": "Clearly states CloudWatch = Performance/Operations vs CloudTrail = Actions/Security/Auditing."
+      },
+      {
+        "name": "Retention & Alerting Capabilities",
+        "weight": 35,
+        "description": "Contrasts native CloudWatch alarms with CloudTrail's reliance on S3/CloudWatch for alerting."
+      },
+      {
+        "name": "Security Integration Pattern",
+        "weight": 30,
+        "description": "Details streaming CloudTrail to CloudWatch Logs with Metric Filters and SNS alerts."
+      }
+    ]
+  },
+  "tags": [
+    "CloudWatch",
+    "CloudTrail",
+    "Monitoring",
+    "Security",
+    "Auditing",
+    "Incident Response"
+  ]
+},
+  {
+  "id": "iq-cloudwatch-monitoring-levels-alarms",
+  "topicSlug": "cloudwatch-cloudtrail-config-xray-observability",
+  "moduleNumber": 12,
+  "topicTitle": "CloudWatch Monitoring Levels & 3 Alarm States",
+  "category": "MONITORING",
+  "categoryLabel": "Monitoring & Auditing",
+  "difficulty": "Beginner",
+  "title": "How do Basic and Detailed Monitoring differ in CloudWatch, and what are the 3 Alarm states and multi-action triggers?",
+  "prompt": "An interviewer asks: 'What is the operational difference between Basic Monitoring and Detailed Monitoring in Amazon CloudWatch? What are the 3 states of a CloudWatch Alarm, and what automated actions can an alarm execute when triggered?'",
+  "explanation": "Evaluates core CloudWatch operational knowledge, metric resolution intervals, alarm state evaluation, and automated remediation actions.",
+  "hints": [
+    "Basic Monitoring reports data points in 5-minute intervals at no charge.",
+    "Detailed Monitoring reports data points in 1-minute intervals for fine-grained scaling.",
+    "3 Alarm states: OK, INSUFFICIENT_DATA, and ALARM.",
+    "Alarm actions include SNS notifications, EC2 Auto-Recovery, and Auto Scaling policies."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Basic vs Detailed Monitoring\n- **Basic Monitoring (Default):**\n  - Metric data points are reported automatically in **5-minute intervals at zero cost**.\n  - Enabled by default for all EC2 instances, EBS volumes, and RDS databases.\n  - Suitable for steady-state workloads where a 5-minute lag before alarm triggering is acceptable.\n- **Detailed Monitoring:**\n  - Metric data points are reported in **1-minute intervals for an additional charge**.\n  - AWS Free Tier includes **10 detailed monitoring metrics**.\n  - **Why It Matters for Auto Scaling:** A sudden spike in customer traffic on a 5-minute metric might take up to 10-15 minutes to trigger a scale-out alarm (due to evaluation periods). Detailed 1-minute monitoring allows the Auto Scaling Group to detect the surge and launch replacement instances in under 2 minutes.\n\n### 2. The 3 CloudWatch Alarm States\n1. **OK:** The metric is within the defined threshold (e.g. CPU < 80%).\n2. **ALARM:** The metric has breached the defined threshold for the configured number of evaluation periods (e.g. CPU > 80% for two consecutive 1-minute periods).\n3. **INSUFFICIENT_DATA:** The alarm has just started, the metric is not available, or not enough data points have been collected to determine health status.\n\n### 3. Multi-Action Alarm Triggers\nA single CloudWatch Alarm can trigger multiple automated actions simultaneously:\n- **Notification Action:** Publish an alert message to an **Amazon SNS** topic (routing to Slack, PagerDuty, or email).\n- **Auto Scaling Action:** Execute a scale-out or scale-in policy on an **Auto Scaling Group**.\n- **EC2 Action:** Execute an **EC2 Auto-Recovery** action (`recover`), **Stop**, **Terminate**, or **Reboot** the instance automatically.\n- **Systems Manager Action:** Trigger an AWS Systems Manager Automation runbook to run automated remediation scripts.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Monitoring Levels (5-min vs 1-min)",
+        "weight": 35,
+        "description": "Contrasts 5-minute free basic monitoring with 1-minute paid detailed monitoring."
+      },
+      {
+        "name": "3 Alarm States",
+        "weight": 35,
+        "description": "Accurately defines OK, INSUFFICIENT_DATA, and ALARM states."
+      },
+      {
+        "name": "Multi-Action Capabilities",
+        "weight": 30,
+        "description": "Covers SNS, Auto Scaling, EC2 Auto-Recovery, and Systems Manager actions."
+      }
+    ]
+  },
+  "tags": [
+    "CloudWatch",
+    "Metrics",
+    "Alarms",
+    "Monitoring",
+    "Automation",
+    "SysOps"
+  ]
+},
+  {
+  "id": "iq-cloudwatch-events-cron-syntax",
+  "topicSlug": "cloudwatch-logs-insights-events-and-cron",
+  "moduleNumber": 12,
+  "topicTitle": "EventBridge / CloudWatch Events 6-Field Cron & Rate Syntax",
+  "category": "MONITORING",
+  "categoryLabel": "Monitoring & Auditing",
+  "difficulty": "Intermediate",
+  "title": "How does Amazon EventBridge (CloudWatch Events) handle scheduled rules, and what is the exact syntax for 6-field Cron expressions?",
+  "prompt": "An interviewer asks: 'How do you schedule automated tasks in AWS using EventBridge? How does AWS 6-field Cron syntax differ from standard Linux 5-field Cron, and what are the rules regarding the ? wildcard and Day-of-Month vs Day-of-Week?'",
+  "explanation": "Tests practical DevOps automation scripting, event-driven cron expressions, rate expressions, and AWS-specific scheduling rules.",
+  "hints": [
+    "Standard Linux cron uses 5 fields; AWS EventBridge requires SIX fields (Minutes, Hours, Day-of-month, Month, Day-of-week, Year).",
+    "You cannot specify both Day-of-month and Day-of-week simultaneously; one must be '?'.",
+    "Rate syntax: rate(value unit) where unit is minute, minutes, hour, hours, day, or days.",
+    "Supported wildcards include *, ?, L, W, #."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. AWS 6-Field Cron Syntax vs Standard Linux 5-Field Cron\n- Standard Linux crontab requires 5 fields: `minute hour day-of-month month day-of-week`.\n- **AWS EventBridge (CloudWatch Events) requires SIX fields separated by whitespace:**\n  `cron(Minutes Hours Day-of-month Month Day-of-week Year)`\n\n### 2. The 6 Fields and Values\n| Field | Permitted Values | Allowed Wildcards |\n|---|---|---|\n| **1. Minutes** | 0 - 59 | `, - * /` |\n| **2. Hours** | 0 - 23 (UTC) | `, - * /` |\n| **3. Day-of-month** | 1 - 31 | `, - * ? / L W` |\n| **4. Month** | 1 - 12 or JAN - DEC | `, - * /` |\n| **5. Day-of-week** | 1 - 7 (1=SUN) or SUN - SAT | `, - * ? L #` |\n| **6. Year** | 1970 - 2199 | `, - * /` |\n\n### 3. The Strict '?' Wildcard Rule\n- **The Golden Rule:** In AWS, **you cannot specify both Day-of-month and Day-of-week simultaneously**.\n- If you specify a value (or `*`) in one of these fields, you **MUST specify `?` (unspecified) in the other**.\n- **Examples:**\n  - Run every day at 10:00 AM UTC: `cron(0 10 * * ? *)` (Day-of-month is `*`, Day-of-week is `?`).\n  - Run every Monday at 08:00 AM UTC: `cron(0 8 ? * MON *)` (Day-of-month is `?`, Day-of-week is `MON`).\n  - Run on the last Friday of every month: `cron(0 18 ? * 6L *)`.\n\n### 4. Rate Expressions\n- Simpler alternative when recurring fixed-interval schedules are required:\n  `rate(value unit)`\n- Valid units: `minute | minutes | hour | hours | day | days` (e.g. `rate(1 minute)` or `rate(12 hours)`).",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "6-Field Cron Structure",
+        "weight": 35,
+        "description": "Accurately details all 6 fields including the mandatory Year field."
+      },
+      {
+        "name": "The '?' Wildcard Rule",
+        "weight": 35,
+        "description": "Explains why Day-of-month and Day-of-week are mutually exclusive with '?'."
+      },
+      {
+        "name": "Rate Syntax & Real Examples",
+        "weight": 30,
+        "description": "Provides valid cron and rate syntax examples with proper UTC timezone handling."
+      }
+    ]
+  },
+  "tags": [
+    "CloudWatch",
+    "EventBridge",
+    "Cron",
+    "Automation",
+    "DevOps",
+    "Lambda"
+  ]
+},
+  {
+  "id": "iq-cloudwatch-synthetics-servicelens",
+  "topicSlug": "cloudwatch-servicelens-synthetics-and-xray",
+  "moduleNumber": 12,
+  "topicTitle": "CloudWatch Synthetics Canaries & ServiceLens",
+  "category": "MONITORING",
+  "categoryLabel": "Monitoring & Auditing",
+  "difficulty": "Advanced",
+  "title": "How do CloudWatch Synthetics Canaries and ServiceLens provide end-to-end observability and security detection?",
+  "prompt": "An interviewer asks: 'What is the role of CloudWatch Synthetics in modern SRE practices, and how does ServiceLens tie together metrics, logs, and distributed traces from AWS X-Ray to debug complex microservices failures?'",
+  "explanation": "Evaluates modern distributed observability, synthetic transaction testing, proactive incident detection, and microservices service maps.",
+  "hints": [
+    "Synthetics runs 24x7 canaries (Node.js/Python headless scripts) every minute testing APIs, URLs, and UI flows.",
+    "Canaries detect unauthorized website changes, phishing, and XSS.",
+    "ServiceLens provides a visual service map combining infrastructure metrics, logs, and X-Ray traces.",
+    "Synthetics provides outside-in proactive detection before real users encounter failures."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. CloudWatch Synthetics Canaries (Outside-In Observability)\n- **What They Are:** Automated configurable scripts (powered by Node.js Puppeteer or Python Selenium) that run on a continuous schedule (e.g. every 1 minute, 24x7) to monitor application endpoints.\n- **Proactive Failure Detection:** Rather than waiting for real users to encounter HTTP 500 errors or report broken checkout buttons, canaries continuously simulate user traffic (clicking links, submitting forms, verifying JSON schemas). If response times spike or assertions fail, CloudWatch immediately alerts the on-call team.\n- **Security & Integrity Monitoring:** Canaries can inspect website content, HTML DOM structure, and network assets to detect **unauthorized website modifications, phishing links, code injection, and Cross-Site Scripting (XSS)**.\n\n### 2. CloudWatch ServiceLens (Correlated Observability)\n- **The Observability Gap:** In a microservices architecture spanning API Gateway, Lambda, ECS containers, and DynamoDB, troubleshooting an error typically requires jumping between CPU graphs (metrics), error stacks (logs), and latency waterfalls (X-Ray traces).\n- **How ServiceLens Solves It:**\n  1. **Visual Service Map:** Automatically renders a dependency map showing client requests flowing through all upstream and downstream services.\n  2. **Two Dimensions of Observability:**\n     - **Infrastructure Monitoring:** Node health, container CPU, memory pressure, and network dropped packets.\n     - **Transaction Monitoring:** Distributed request tracing using AWS X-Ray trace IDs.\n  3. **One-Click Triage:** When an API route degrades, clicking the red node in ServiceLens opens the exact matching X-Ray trace, identifies the slow database query or downstream microservice call, and highlights the corresponding CloudWatch Log error message side by side without switching consoles.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Synthetics Canary Mechanics",
+        "weight": 35,
+        "description": "Explains 24x7 headless browser testing, API validation, and XSS/phishing detection."
+      },
+      {
+        "name": "ServiceLens Correlation",
+        "weight": 35,
+        "description": "Details how ServiceLens combines metrics, logs, and X-Ray distributed traces in a visual service map."
+      },
+      {
+        "name": "SRE Incident Triage Workflow",
+        "weight": 30,
+        "description": "Describes the single-pane-of-glass debugging flow from service map node to specific trace and log."
+      }
+    ]
+  },
+  "tags": [
+    "CloudWatch",
+    "Synthetics",
+    "ServiceLens",
+    "X-Ray",
+    "Observability",
+    "SRE"
+  ]
+},
+  {
+  "id": "iq-asg-group-parameters-healthchecks",
+  "topicSlug": "asg-scaling-policies-lifecycle-and-resilience",
+  "moduleNumber": 5,
+  "topicTitle": "ASG Parameters, Triggers & Self-Healing Health Checks",
+  "category": "ELB_AUTOSCALING",
+  "categoryLabel": "Load Balancing & Auto Scaling",
+  "difficulty": "Intermediate",
+  "title": "How do Min, Max, and Desired capacity interact with CloudWatch Alarms, and how does ASG self-healing operate?",
+  "prompt": "An interviewer asks: 'In an Auto Scaling Group, what is the role of Min, Max, and Desired capacity? How do CloudWatch Alarms act as triggers for scaling policies, and what happens when an instance fails an EC2 or ELB health check?'",
+  "explanation": "Validates foundational auto-scaling group capacity management, CloudWatch metric integration, and automated self-healing replacement.",
+  "hints": [
+    "Min capacity is the lower floor; Max capacity is the upper ceiling; Desired capacity is the active target.",
+    "CloudWatch Alarms monitor server load (CPU, network, queue depth) and trigger scaling policies.",
+    "Self-healing: when an instance fails health checks, the ASG terminates it and launches a fresh replacement.",
+    "ASGs support Scheduled scaling, Dynamic condition scaling, and Predictive scaling."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. ASG Group Parameters\n- **Minimum Capacity (Min):** The lower bound of instances the ASG will ever maintain. Even if traffic drops to zero, the ASG will not scale below this floor, ensuring baseline availability.\n- **Maximum Capacity (Max):** The upper bound ceiling of instances. Protects the organization from runaway billing during DDoS attacks or infinite scaling loops.\n- **Desired Capacity:** The current target number of running instances. If changed manually or via scaling policies, the ASG immediately launches or terminates instances to match this number.\n\n### 2. How CloudWatch Alarms Trigger Scaling Policies\n- **The Closed-Loop Feedback Flow:**\n  1. **Monitor Server Load:** EC2 instances report metrics (e.g. CPUUtilization, NetworkIn, or ALB RequestCountPerTarget) to CloudWatch.\n  2. **Trigger:** A CloudWatch Alarm evaluates the aggregated metric against a threshold (e.g. Average CPU > 70% for two 1-minute periods).\n  3. **Execute Policy:** When the alarm enters the **ALARM** state, it triggers an Auto Scaling Policy:\n     - **Add Resource (Scale-Out):** The ASG updates Desired Capacity (e.g. from 2 to 4) and uses the Launch Template to launch new instances.\n     - **Remove Resource (Scale-In):** When traffic subsides and CPU < 30%, the scale-in policy reduces Desired Capacity, and the ASG gracefully terminates idle instances.\n\n### 3. Self-Healing Instance Replacement\n- **Health Check Types:** An ASG can use **EC2 Status Checks** (hardware/OS health) or **ELB Health Checks** (application-layer HTTP 200 responses).\n- **Automated Replacement Lifecycle:**\n  1. When an instance fails health checks, the ASG marks the instance **Unhealthy**.\n  2. The ASG immediately initiates termination of the unhealthy instance.\n  3. The ASG immediately launches a brand-new instance using the configured Launch Template (specifying the AMI, security groups, and key pairs) to restore Desired Capacity automatically without human intervention.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Capacity Parameter Hierarchy",
+        "weight": 35,
+        "description": "Accurately defines Min, Max, and Desired capacity constraints."
+      },
+      {
+        "name": "CloudWatch Alarm Trigger Loop",
+        "weight": 35,
+        "description": "Explains metric reporting, threshold breach, and dynamic scaling policy execution."
+      },
+      {
+        "name": "Self-Healing Replacement Flow",
+        "weight": 30,
+        "description": "Details automated termination of unhealthy instances and launch of fresh replacements."
+      }
+    ]
+  },
+  "tags": [
+    "Auto Scaling",
+    "ASG",
+    "CloudWatch",
+    "High Availability",
+    "Self-Healing"
+  ]
+},
+  {
+  "id": "iq-net-osi-vs-tcpip-encapsulation",
+  "topicSlug": "devops-networking-osi-tcpip-subnetting-cidr",
+  "moduleNumber": 3,
+  "topicTitle": "DevOps Networking Fundamentals: OSI vs TCP/IP Models, IPv4/IPv6, Classes & Subnetting Math",
+  "category": "DevOps Networking",
+  "categoryLabel": "DevOps Networking",
+  "difficulty": "Intermediate",
+  "title": "OSI 7-Layer vs TCP/IP 4-Layer Models & Data Encapsulation Lifecycle",
+  "prompt": "Compare the theoretical OSI 7-layer model with the practical TCP/IP 4-layer model. Explain how data encapsulation and decapsulation work as an HTTP request travels from Person X to Person Y across the network.",
+  "explanation": "The OSI model consists of 7 layers (Application, Presentation, Session, Transport, Network, Data Link, Physical), while TCP/IP condenses these into 4 functional layers (Application, Transport, Internet, Network Interface). During encapsulation, each layer prepends its respective header: Application message -> Transport Segment (TCP/UDP port) -> Internet Packet (Source/Dest IP) -> Data Link Frame (Source/Dest MAC + CRC) -> Physical Bits. The recipient decapsulates by verifying and stripping headers at each ascending layer.",
+  "hints": [
+    "Remember the mnemonic: Please Do Not Throw Sausage Pizza Away (L1 to L7).",
+    "Mention the Protocol Data Unit (PDU) at each layer: Data -> Segment -> Packet -> Frame -> Bits.",
+    "Highlight how switches operate at L2 (MAC) while routers operate at L3 (IP)."
+  ],
+  "recommendedSolution": "1. Model Comparison:\n- OSI (7 Layers): Application (L7), Presentation (L6), Session (L5), Transport (L4), Network (L3), Data Link (L2), Physical (L1).\n- TCP/IP (4 Layers): Application (combines OSI L5-L7), Transport (OSI L4), Internet (OSI L3), Network Interface/Access (combines OSI L1-L2).\n\n2. Encapsulation Flow (Sender):\n- Layer 7/6/5: Application generates HTTP payload.\n- Layer 4 (Transport): Adds TCP header with source/dest ports (e.g. source 54321, dest 80/443) -> Segment.\n- Layer 3 (Network): Adds IP header with Source IP (192.168.1.10) and Destination IP (93.184.216.34) -> Packet.\n- Layer 2 (Data Link): Adds Ethernet header with Source MAC, Next-Hop Gateway Destination MAC, and FCS trailer -> Frame.\n- Layer 1 (Physical): Converts frame into raw electrical, optical, or radio bits -> Transmission.\n\n3. Decapsulation Flow (Receiver):\n- Receiver reads bits into frames, verifies MAC and CRC trailer.\n- Strips Layer 2 header, inspects Layer 3 IP packet and routing.\n- Strips Layer 3 header, passes Layer 4 TCP segment to port socket.\n- Reassembles data stream and presents clean HTTP payload to application.",
+  "rubric": [
+    "Identifies all 7 layers of OSI and 4 layers of TCP/IP accurately.",
+    "Explains Protocol Data Units (PDUs): Segment, Packet, Frame, Bits.",
+    "Explains encapsulation and decapsulation flow between client and server."
+  ],
+  "tags": [
+    "DevOps",
+    "Networking",
+    "OSI Model",
+    "TCP/IP",
+    "Encapsulation",
+    "Interview Question"
+  ]
+},
+  {
+  "id": "iq-net-tcp-handshake-vs-udp",
+  "topicSlug": "devops-network-protocols-dns-troubleshooting-tools",
+  "moduleNumber": 3,
+  "topicTitle": "Protocols, DNS Architecture, HTTP Status Codes & DevOps Diagnostic Tools",
+  "category": "DevOps Networking",
+  "categoryLabel": "DevOps Networking",
+  "difficulty": "Intermediate",
+  "title": "TCP 3-Way Handshake vs UDP & Protocol Selection in Distributed Systems",
+  "prompt": "Explain the TCP 3-Way Handshake process (SYN, SYN-ACK, ACK). How does TCP guarantee reliability, and how does it compare to UDP? In what production scenarios would you intentionally choose UDP over TCP?",
+  "explanation": "TCP is a connection-oriented protocol that establishes a verified bi-directional connection before transmitting data using a 3-way handshake. It guarantees ordered delivery, flow control, and automatic retransmission of lost packets. UDP is connectionless and sends datagrams without establishing a handshake or waiting for acknowledgments. UDP is chosen for low-latency, real-time workloads where dropped packets are preferable to transmission delays (DNS queries, live video/audio streaming, gaming, metrics telemetry).",
+  "hints": [
+    "Diagram the SYN, SYN-ACK, ACK sequence.",
+    "Discuss sequence numbers and acknowledgment numbers.",
+    "Contrast connection overhead and head-of-line blocking."
+  ],
+  "recommendedSolution": "1. TCP 3-Way Handshake Mechanics:\n- Step 1 (SYN): Client sends a TCP packet with the SYN flag set and generates an Initial Sequence Number (ISN_c, e.g., Seq=1000) to initiate connection.\n- Step 2 (SYN-ACK): Server receives SYN, allocates socket buffers, generates its own ISN_s (e.g., Seq=5000), sets ACK flag with Ack=1001 (ISN_c + 1), and sends SYN-ACK back.\n- Step 3 (ACK): Client receives SYN-ACK, sends ACK with Seq=1001 and Ack=5001 (ISN_s + 1). The socket transition reaches ESTABLISHED state, and payload data can now flow.\n\n2. TCP Reliability Guarantees:\n- Sequence numbers detect out-of-order delivery.\n- Acknowledgments (ACKs) and retransmission timers handle packet loss.\n- Sliding window protocol manages receiver flow control and prevents buffer overflow.\n- Congestion control algorithms (CUBIC, BBR) prevent network saturation.\n\n3. TCP vs UDP Comparison:\n- TCP: Connection-oriented, heavyweight, reliable, ordered, retransmits lost packets.\n- UDP: Connectionless, lightweight (8-byte header vs 20-60 byte TCP header), no retransmission, no flow control.\n\n4. When to choose UDP in Production:\n- DNS queries (port 53): Fast single-packet query/response.\n- VoIP and Video Conferencing (WebRTC, Zoom): Dropping a frame is better than freezing audio.\n- Telemetry / High-Volume Metrics (StatsD, Prometheus push agents): System performance shouldn't block on metric collection.\n- Modern HTTP/3 (QUIC): Uses UDP with userspace reliability to avoid TCP head-of-line blocking.",
+  "rubric": [
+    "Accurately details SYN, SYN-ACK, ACK packet exchange and sequence numbers.",
+    "Explains TCP reliability mechanisms: ACKs, retransmissions, flow control.",
+    "Provides valid real-world use cases for UDP over TCP."
+  ],
+  "tags": [
+    "TCP",
+    "UDP",
+    "Handshake",
+    "Networking",
+    "DevOps",
+    "Interview Question"
+  ]
+},
+  {
+  "id": "iq-net-browser-url-packet-journey",
+  "topicSlug": "devops-network-protocols-dns-troubleshooting-tools",
+  "moduleNumber": 3,
+  "topicTitle": "Protocols, DNS Architecture, HTTP Status Codes & DevOps Diagnostic Tools",
+  "category": "DevOps Networking",
+  "categoryLabel": "DevOps Networking",
+  "difficulty": "Advanced",
+  "title": "Complete Packet Journey: What Happens When You Type a URL in a Browser?",
+  "prompt": "Walk through the complete end-to-end technical lifecycle of what happens when a user types 'https://www.example.com' into a web browser and hits Enter. Cover DNS resolution, transport handshakes, TLS negotiation, HTTP request/response, and reverse proxy routing.",
+  "explanation": "This classic interview question tests comprehensive understanding of networking layers: local browser/OS DNS cache check, recursive DNS resolution via Root, TLD, and Authoritative servers, ARP resolution, TCP 3-way handshake on port 443, TLS 1.3 cryptographic handshake, HTTP GET request encapsulation, reverse proxy/load balancer routing, backend server execution, status code generation, and browser DOM rendering.",
+  "hints": [
+    "Follow the order: DNS -> ARP -> TCP Handshake -> TLS Handshake -> HTTP Request -> Reverse Proxy -> Response -> Render.",
+    "Mention Root (.), TLD (.com), and Authoritative nameservers.",
+    "Differentiate TLS 1.2 (2-RTT) from TLS 1.3 (1-RTT)."
+  ],
+  "recommendedSolution": "1. URL Parsing & DNS Resolution:\n- Browser inspects URL, checks internal DNS cache, OS hosts file, and OS resolver cache.\n- If uncached, queries Local Recursive DNS Resolver (ISP or 8.8.8.8).\n- Resolver performs iterative query: asks Root DNS (.) -> gets .com TLD nameserver -> asks .com TLD -> gets Authoritative nameserver for example.com -> Authoritative returns 'A' record with IPv4 93.184.216.34 (and TTL).\n\n2. ARP & Gateway Routing:\n- OS checks if destination IP is on local subnet using subnet mask. Since it's remote, OS uses ARP to resolve the MAC address of the default gateway/router.\n\n3. TCP 3-Way Handshake (Port 443):\n- Client initiates TCP connection to 93.184.216.34:443 via SYN -> SYN-ACK -> ACK handshake.\n\n4. TLS 1.3 Cryptographic Handshake:\n- Client sends 'ClientHello' with supported cipher suites, TLS version, and SNI (Server Name Indication: www.example.com).\n- Server replies with 'ServerHello', digital certificate, public key share, and cipher selection.\n- Client verifies certificate authority (CA) chain and computes shared session keys (ECDHE). Secure encrypted symmetric tunnel is established.\n\n5. HTTP Request & Reverse Proxy Routing:\n- Browser sends encrypted HTTP/2 or HTTP/1.1 'GET / HTTP/1.1' with Host, User-Agent, Accept, and Cookie headers.\n- Request hits AWS ALB / Nginx reverse proxy. Proxy evaluates path routing, terminates TLS, and forwards to private backend microservice.\n\n6. Backend Processing & HTTP Response:\n- Node.js/Java application processes request, queries database, generates HTML/JSON, and returns 'HTTP/1.1 200 OK' with Content-Type and Cache-Control headers.\n- Response traverses reverse proxy back to client.\n\n7. Client Rendering:\n- Browser parses HTML, constructs DOM tree, parses CSS (CSSOM), executes JavaScript, and renders the webpage.",
+  "rubric": [
+    "Explains DNS resolution hierarchy (Browser -> OS -> Root -> TLD -> Authoritative).",
+    "Explains TCP handshake and TLS encryption handshake.",
+    "Covers HTTP request/response headers, reverse proxy role, and client rendering."
+  ],
+  "tags": [
+    "Networking",
+    "DNS",
+    "TLS",
+    "HTTP",
+    "DevOps",
+    "Interview Question"
+  ]
+},
+  {
+  "id": "iq-net-dns-records-cname-vs-alias",
+  "topicSlug": "devops-network-protocols-dns-troubleshooting-tools",
+  "moduleNumber": 3,
+  "topicTitle": "Protocols, DNS Architecture, HTTP Status Codes & DevOps Diagnostic Tools",
+  "category": "DevOps Networking",
+  "categoryLabel": "DevOps Networking",
+  "difficulty": "Intermediate",
+  "title": "DNS Architecture: CNAME vs ALIAS Records & The Zone Apex Problem",
+  "prompt": "Explain the difference between a DNS A record, CNAME record, and AWS Route 53 ALIAS record. Why does RFC 1034 prohibit a CNAME record at the zone apex (root domain), and how does AWS ALIAS solve this limitation?",
+  "explanation": "An 'A' record maps a hostname to an IPv4 address. A 'CNAME' (Canonical Name) maps an alias name to another hostname. According to RFC 1034 section 3.6.2, if a CNAME record exists for a node, no other data records (like SOA or NS) may exist for that same node. Because every zone apex (e.g., example.com) must have SOA and NS records, a CNAME cannot be placed at the apex. AWS Route 53 ALIAS records solve this by acting as a virtual pointer that directly resolves to the underlying AWS resource IP at the DNS server level, coexisting with SOA/NS records.",
+  "hints": [
+    "Define zone apex: the root of your domain (e.g., domain.com vs sub.domain.com).",
+    "Mention that CNAME requires two DNS lookups whereas ALIAS resolves internally in one query.",
+    "Route 53 ALIAS queries to AWS resources are free of charge."
+  ],
+  "recommendedSolution": "1. Core DNS Record Types:\n- 'A' Record: Directly maps a domain name to an IPv4 address (e.g., api.example.com -> 192.0.2.44).\n- 'AAAA' Record: Maps a domain name to an IPv6 address.\n- 'CNAME' Record: Maps an alias hostname to another canonical hostname (e.g., www.example.com -> lb-1234.us-east-1.elb.amazonaws.com).\n\n2. The Zone Apex RFC Restriction:\n- The 'Zone Apex' (also known as naked domain or root domain, e.g., 'example.com') is the top of a DNS zone.\n- By DNS standard RFC 1034 / 2181, if a name has a CNAME record, no other records (MX, NS, SOA, TXT) are permitted on that exact name.\n- However, a DNS zone CANNOT function without NS and SOA records at its apex. Therefore, creating a CNAME on 'example.com' violates RFC and is rejected by standard DNS servers.\n\n3. How AWS Route 53 ALIAS Solves This:\n- An ALIAS record is an AWS-specific virtual DNS extension.\n- To the public Internet, Route 53 presents the ALIAS as a standard 'A' or 'AAAA' record, resolving dynamically to the IP addresses of AWS resources (ALB, CloudFront, S3 website bucket).\n- Because Route 53 presents it as an 'A' record, it safely coexists with SOA and NS records at the zone apex.\n- Performance benefit: Client gets the IP in a single DNS query instead of recursive chained lookups.\n- Cost benefit: Queries to Route 53 ALIAS records mapped to AWS resources are 100% free.",
+  "rubric": [
+    "Clearly articulates A record vs CNAME record functionality.",
+    "Explains RFC 1034 zone apex restriction and why CNAME cannot coexist with SOA/NS.",
+    "Explains Route 53 ALIAS mechanics, how it returns A records dynamically, and its cost/latency benefits."
+  ],
+  "tags": [
+    "DNS",
+    "Route 53",
+    "CNAME",
+    "ALIAS",
+    "DevOps",
+    "AWS",
+    "Interview Question"
+  ]
+},
+  {
+  "id": "iq-net-devops-troubleshooting-toolkit",
+  "topicSlug": "devops-network-protocols-dns-troubleshooting-tools",
+  "moduleNumber": 3,
+  "topicTitle": "Protocols, DNS Architecture, HTTP Status Codes & DevOps Diagnostic Tools",
+  "category": "DevOps Networking",
+  "categoryLabel": "DevOps Networking",
+  "difficulty": "Advanced",
+  "title": "Linux Network Troubleshooting Command Suite for DevOps Engineers",
+  "prompt": "An application in a Linux production cluster cannot connect to an external payment API and a private database. Detail how you would systematically use ping, traceroute, telnet, curl, dig, netstat/ss, and nmap to isolate whether the failure is DNS, routing, firewall, or application-level.",
+  "explanation": "Mastering the systematic network triage methodology requires isolating issues by OSI layer. Start at Layer 7/DNS with dig to verify domain resolution. Test Layer 3 reachability with ping and traceroute. Verify Layer 4 TCP port listening locally with ss/netstat and socket connectivity remotely with telnet/nc. Audit firewall/port blocks with nmap. Test Layer 7 HTTP handshakes, headers, and payload with curl -Iv.",
+  "hints": [
+    "Follow OSI layers from bottom (L3/L4) to top (L7) or vice versa.",
+    "Highlight the specific flag options used in real production debugging.",
+    "Mention why ICMP ping might fail even when a web server is completely operational."
+  ],
+  "recommendedSolution": "Systematic Troubleshooting Runbook:\n\n1. Step 1: DNS Resolution Check (Layer 7):\n- Run 'dig +trace api.payment.com' or 'nslookup api.payment.com'.\n- Diagnosis: If dig times out or returns NXDOMAIN, the issue is DNS nameserver misconfiguration, /etc/resolv.conf error, or DNS cache poisoning. If an IP is returned, DNS is healthy.\n\n2. Step 2: Local Process & Socket Listening (Layer 4):\n- On the database host, run 'ss -tlpn | grep :5432' or 'netstat -tlpn'.\n- Diagnosis: Verifies if the DB service is actually running and bound to '0.0.0.0:5432' or incorrectly bound to '127.0.0.1:5432' (rejecting remote connections).\n\n3. Step 3: Layer 4 TCP Port Reachability:\n- From app server: 'telnet db-private.internal 5432' or 'nc -zv -w3 db-private.internal 5432'.\n- Diagnosis: If 'Connection refused', the server is reachable but no service is listening. If 'Connection timed out', a firewall (Security Group, iptables, or NACL) is dropping packets.\n\n4. Step 4: Layer 3 Path & Hop-by-Hop Trace:\n- Run 'traceroute -n -T -p 443 api.payment.com' (uses TCP SYN probes on port 443 to bypass firewalls blocking ICMP/UDP).\n- Diagnosis: Shows every router hop. If asterisks (***) appear at a specific gateway, that router or NAT gateway is failing to route packets.\n\n5. Step 5: Layer 7 HTTP & TLS Verification:\n- Run 'curl -Iv https://api.payment.com/v1/health'.\n- Diagnosis: Inspects TLS handshake, SSL certificate expiration, HTTP response codes (e.g., 401 Unauthorized vs 502/504), and exact timing breakdown via curl -w.\n\n6. Step 6: Network Scanning & Host Discovery:\n- Run 'nmap -sT -p 443,5432 -Pn 10.0.2.50'.\n- Diagnosis: Reports whether ports are 'open', 'closed' (service down), or 'filtered' (firewall silently dropping packets).",
+  "rubric": [
+    "Provides a structured, multi-layer triage methodology.",
+    "Names specific commands with appropriate flags: dig +trace, traceroute -T, telnet/nc, ss -tlpn, curl -Iv, nmap.",
+    "Accurately distinguishes between 'Connection refused' (service down) and 'Connection timed out' (firewall drop)."
+  ],
+  "tags": [
+    "DevOps",
+    "Linux",
+    "Troubleshooting",
+    "curl",
+    "dig",
+    "traceroute",
+    "netstat",
+    "Interview Question"
+  ]
+},
+];
 
 
 /**
@@ -2649,7 +3633,375 @@ export function getInterviewQuestionsByCategory(categoryKey) {
  * Retrieve interview questions mapped to a specific topic slug.
  */
 export function getInterviewQuestionsForTopic(topicSlug) {
-  if (!topicSlug) return [];
+  if (!topicSlug) return [,
+  {
+  "id": "iq-lambda-execution-scaling",
+  "topicSlug": "lambda-runtime-memory-scaling-and-concurrency",
+  "moduleNumber": 10,
+  "topicTitle": "Lambda Execution Environment, Memory Scaling & Limits",
+  "category": "SERVERLESS",
+  "categoryLabel": "Serverless & Messaging",
+  "difficulty": "Advanced",
+  "title": "How does AWS Lambda allocate compute resources (CPU/network) as memory scales, and what are its hard execution boundaries?",
+  "prompt": "An interviewer asks: 'In AWS Lambda, how does memory allocation impact CPU cores and network throughput? What are the maximum execution limits (timeout, /tmp, payload, and concurrency), and why might increasing memory actually LOWER your AWS bill?'",
+  "explanation": "Tests deep knowledge of Lambda microVM resource allocation (Firecracker), proportional scaling of CPU/network, billing math (GB-seconds), and execution limits.",
+  "hints": [
+    "Memory ranges from 128 MB to 10,240 MB in 64 MB increments.",
+    "At 1,769 MB of RAM, Lambda provides the equivalent of 1 full dedicated vCPU.",
+    "Maximum execution timeout is 15 minutes (900 seconds).",
+    "Billing is based on GB-seconds; doubling RAM cuts execution time in half for CPU-bound tasks, resulting in identical or lower cost."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Resource Allocation Mechanics (Memory, CPU & Network)\n- **Proportional Resource Coupling:** In AWS Lambda, you do not directly configure CPU cores or network throughput. Instead, **memory allocation (128 MB to 10,240 MB in 64 MB steps)** is the single knob that controls compute power:\n  - At **1,769 MB RAM**, a function receives exactly **1 full vCPU core**.\n  - Above 1,769 MB, Lambda allocates multiple CPU cores (up to 6 vCPUs at 10,240 MB) enabling multi-threaded execution.\n  - Memory allocation also proportionally scales **network bandwidth** and disk throughput.\n\n### 2. Hard Execution & Infrastructure Boundaries\n- **Maximum Execution Duration:** **15 minutes (900 seconds)**. Tasks exceeding 15 minutes must be decoupled using AWS Step Functions, ECS Fargate, or AWS Batch.\n- **Ephemeral Storage (/tmp):** Default is **512 MB**, scalable up to **10,240 MB (10 GB)** for scratch disk operations.\n- **Concurrency:** Default regional pool of **1,000 concurrent executions** (shared across all functions in the account/region).\n- **Synchronous Payload Limits:** 6 MB for synchronous invocations (API Gateway); 256 KB for asynchronous invocations (SQS/EventBridge).\n\n### 3. The \"Higher Memory = Lower Cost\" Paradox\n- AWS charges by **GB-seconds** (Allocated Memory × Execution Duration in milliseconds).\n- For CPU-bound operations (e.g. image manipulation, cryptographic hashing, JSON parsing):\n  - Running at 128 MB might take 10 seconds = 1.28 GB-seconds.\n  - Running at 1,024 MB provides 8x CPU power and completes in 1 second = 1.024 GB-seconds.\n  - **Result:** The 1,024 MB invocation executes 10x faster and is **20% cheaper** on your AWS invoice. AWS Lambda Power Tuning can be used to find this sweet spot automatically.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Proportional Scaling Mechanics",
+        "weight": 30,
+        "description": "Explains how RAM scales CPU and network, noting 1,769 MB = 1 vCPU."
+      },
+      {
+        "name": "Execution Limits",
+        "weight": 30,
+        "description": "Identifies 15-minute timeout, 10 GB /tmp, and 1,000 concurrency limit."
+      },
+      {
+        "name": "Cost Optimization Math",
+        "weight": 40,
+        "description": "Demonstrates how increased RAM can reduce execution time and lower total GB-second bill."
+      }
+    ]
+  },
+  "tags": [
+    "Lambda",
+    "Serverless",
+    "Limits",
+    "Compute",
+    "Cost Optimization"
+  ]
+},
+  {
+  "id": "iq-lambda-concurrency-throttling",
+  "topicSlug": "lambda-runtime-memory-scaling-and-concurrency",
+  "moduleNumber": 10,
+  "topicTitle": "Lambda Concurrency: Unreserved, Reserved & Provisioned",
+  "category": "SERVERLESS",
+  "categoryLabel": "Serverless & Messaging",
+  "difficulty": "Advanced",
+  "title": "How do Reserved and Provisioned Concurrency differ in AWS Lambda, and how do you prevent cold starts and 429 throttling?",
+  "prompt": "An interviewer asks: 'What is the operational difference between Reserved Concurrency and Provisioned Concurrency in AWS Lambda? How do you prevent a runaway background worker from exhausting your entire account concurrency and taking down your customer-facing checkout API?'",
+  "explanation": "Evaluates concurrency management, account-level blast radius containment, cold-start mitigation for latency-sensitive microservices, and throttling error remediation.",
+  "hints": [
+    "Reserved Concurrency sets a ceiling (max limit) AND guarantees a dedicated floor.",
+    "Provisioned Concurrency pre-initializes execution environments to eliminate cold-start latency.",
+    "Functions exceeding available concurrency receive HTTP 429 Too Many Requests.",
+    "Setting Reserved Concurrency to 0 acts as an emergency kill-switch."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Concurrency Models Explained\n1. **Unreserved Concurrency:**\n   - Functions draw from the shared regional account pool (default: 1,000).\n   - **Risk:** A sudden spike in background batch processing or an infinite loop can consume all 1,000 slots, starving other critical functions.\n2. **Reserved Concurrency:**\n   - Allocates a dedicated portion of the account concurrency to a specific function (e.g. 200).\n   - **Dual Action:** It guarantees the function can always scale to 200 (floor), but also **caps** it at 200 (ceiling).\n   - Any invocations beyond 200 are throttled with **HTTP 429 (Too Many Requests)**.\n   - Setting Reserved Concurrency to **0 acts as an instant emergency kill-switch** to stop a malfunctioning function without deleting code.\n3. **Provisioned Concurrency:**\n   - Pre-warms microVM execution environments (runs initialization code outside the handler).\n   - **Eliminates Cold Starts:** Incoming requests execute immediately with single-digit millisecond latency.\n   - Ideal for customer-facing REST APIs and checkout flows.\n\n### 2. Preventing Blast Radius Exhaustion\n- Apply **Reserved Concurrency** to non-critical background consumers (e.g., Kinesis/SQS processors capped at 100).\n- Assign **Provisioned Concurrency** to the checkout API function with Application Auto Scaling policies to handle anticipated traffic spikes without cold starts.\n- Always reserve at least 100 unreserved concurrency for functions without specific reservations.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Reserved vs Provisioned Distinction",
+        "weight": 35,
+        "description": "Explains ceiling/floor guarantees vs pre-warmed execution environments."
+      },
+      {
+        "name": "Blast Radius Isolation",
+        "weight": 35,
+        "description": "Shows how Reserved Concurrency prevents noisy neighbors from starving account pool."
+      },
+      {
+        "name": "Cold Start Elimination",
+        "weight": 30,
+        "description": "Details how Provisioned Concurrency executes runtime initialization in advance."
+      }
+    ]
+  },
+  "tags": [
+    "Lambda",
+    "Concurrency",
+    "Cold Starts",
+    "Provisioned Concurrency",
+    "Architecture"
+  ]
+},
+  {
+  "id": "iq-rds-multiaz-vs-readreplicas",
+  "topicSlug": "rds-high-availability-multi-az-and-read-replicas",
+  "moduleNumber": 9,
+  "topicTitle": "RDS Multi-AZ Failover vs Read Replicas",
+  "category": "DATABASES",
+  "categoryLabel": "Databases (RDS, DynamoDB, Redshift)",
+  "difficulty": "Intermediate",
+  "title": "What is the architectural and operational difference between RDS Multi-AZ deployments and Read Replicas?",
+  "prompt": "An interviewer asks: 'Can you compare Amazon RDS Multi-AZ deployments with Read Replicas across replication mode, read/write access, failover mechanics, and use cases? Can you read from a Multi-AZ standby instance?'",
+  "explanation": "Core enterprise database interview question testing high availability (synchronous DR) versus horizontal read scaling (asynchronous read copies).",
+  "hints": [
+    "Multi-AZ uses synchronous physical replication; Read Replicas use asynchronous logical replication.",
+    "Multi-AZ standby CANNOT accept read or write queries in standard RDS.",
+    "Failover in Multi-AZ automatically flips the DNS CNAME record (RTO < 60-120s, RPO = 0).",
+    "Up to 5 Read Replicas can be created; they can reside cross-region and be promoted to standalone DBs."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Comparative Architecture Matrix\n\n| Dimension | Multi-AZ Deployments | Read Replicas |\n|---|---|---|\n| **Primary Purpose** | **High Availability & Disaster Recovery** | **Read Performance & Scalability** |\n| **Replication Mode** | **Synchronous** (physical block-level storage replication) | **Asynchronous** (logical database binary logs) |\n| **Data Loss Risk (RPO)** | **RPO = 0** (Transactions committed synchronously to standby) | **RPO > 0** (Subject to replication lag) |\n| **Read / Write Access** | **Standby is PASSIVE** (Cannot accept connections or queries) | **ACTIVE for READ-ONLY** (Serves SELECT queries) |\n| **Failover Behavior** | **Automatic** (Flips DNS CNAME in 60-120s, no code change) | **Manual** (Must be promoted to standalone DB) |\n| **Geographic Scope** | Different Availability Zone within the **same region** | Same AZ, cross-AZ, or **Cross-Region** |\n| **Instance Limit** | 1 Standby instance per primary DB | Up to **5 Read Replicas** per primary DB |\n\n### 2. Key Clarifications for the Interviewer\n- **Can you read from a Multi-AZ standby?** **NO.** In standard Amazon RDS (MySQL, Postgres, Oracle, SQL Server), the standby instance is dedicated solely to synchronous replication and cannot accept client read queries. (Note: Multi-AZ DB Clusters with readable standbys are a distinct specialized feature).\n- **Failover Mechanism:** When the primary crashes or an AZ experiences power failure, RDS updates the DNS CNAME of your database endpoint to point to the standby instance's IP. Application connection strings remain 100% identical.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Replication Mechanism",
+        "weight": 30,
+        "description": "Contrasts synchronous physical block replication with asynchronous logical binlog replication."
+      },
+      {
+        "name": "Standby Readability",
+        "weight": 25,
+        "description": "Explicitly states that standard Multi-AZ standby cannot be queried."
+      },
+      {
+        "name": "Failover Mechanics",
+        "weight": 25,
+        "description": "Explains DNS CNAME switch and recovery time without code changes."
+      },
+      {
+        "name": "Read Replica Capabilities",
+        "weight": 20,
+        "description": "Notes 5 replica limit, cross-region capability, and promotion to standalone DB."
+      }
+    ]
+  },
+  "tags": [
+    "RDS",
+    "Multi-AZ",
+    "Read Replicas",
+    "High Availability",
+    "Disaster Recovery"
+  ]
+},
+  {
+  "id": "iq-rds-backup-pitr",
+  "topicSlug": "rds-backup-strategies-snapshots-and-point-in-time-recovery",
+  "moduleNumber": 9,
+  "topicTitle": "RDS Automated Backups vs Manual DB Snapshots & PITR",
+  "category": "DATABASES",
+  "categoryLabel": "Databases (RDS, DynamoDB, Redshift)",
+  "difficulty": "Intermediate",
+  "title": "How do RDS Automated Backups differ from manual DB Snapshots, and what happens to endpoints during a Point-in-Time Recovery?",
+  "prompt": "An interviewer asks: 'How does Amazon RDS handle automated backups versus manual snapshots? If a developer accidentally executes DROP TABLE at 10:14:22 AM, how does Point-in-Time Recovery work, and what happens to the existing database endpoint?'",
+  "explanation": "Validates understanding of database recovery procedures, transaction log replay, snapshot storage in S3, and restore endpoint provisioning.",
+  "hints": [
+    "Automated backups have a retention period of 1 to 35 days and combine daily snapshots with transaction logs in S3.",
+    "Manual snapshots persist indefinitely until explicitly deleted.",
+    "PITR restores the nearest daily snapshot and replays transaction logs up to the exact requested second.",
+    "A restore operation ALWAYS launches a brand-new DB instance with a NEW endpoint (it never overwrites the original)."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. Automated Backups vs Manual Snapshots\n- **Automated Backups:**\n  - Configurable retention period between **1 and 35 days** (setting retention to 0 disables automated backups and breaks read replica creation).\n  - Takes a full daily storage volume snapshot during the backup window and continuously streams **transaction logs to Amazon S3 every 5 minutes**.\n  - All automated backups are automatically purged when the DB instance is deleted (unless a final snapshot is requested).\n- **Manual Database Snapshots:**\n  - Initiated manually by the user or through automation scripts/AWS Backup.\n  - Stored in Amazon S3 and **persist indefinitely** until explicitly deleted by an administrator, even if the parent DB instance is deleted.\n  - Storage is billed incrementally for modified storage blocks.\n\n### 2. Point-in-Time Recovery (PITR) Execution\n- When `DROP TABLE` happens at **10:14:22 AM**:\n  1. The administrator initiates a Point-in-Time Recovery with target timestamp **10:14:00 AM** (22 seconds prior to corruption).\n  2. RDS provisions a new volume from the most recent storage snapshot prior to that time.\n  3. RDS automatically replays the database transaction logs stored in S3 up to 10:14:00 AM and stops.\n\n### 3. Critical Endpoint Behavior\n- **RDS NEVER overwrites the existing DB instance.**\n- Restoring always provisions a **brand-new DB Instance with a NEW DNS endpoint URL**.\n- To restore production traffic:\n  - Export the missing table data and import it into production, OR\n  - Rename the corrupted instance (e.g. `prod-db-corrupted`) and rename the restored instance to `prod-db` so existing connection strings resolve to the restored instance.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Backup Mechanism Comparison",
+        "weight": 35,
+        "description": "Contrasts 1-35 day automated retention + logs vs persistent manual snapshots."
+      },
+      {
+        "name": "PITR Mechanics",
+        "weight": 35,
+        "description": "Explains snapshot restoration combined with continuous transaction log replay."
+      },
+      {
+        "name": "New Endpoint Provisioning",
+        "weight": 30,
+        "description": "Explicitly clarifies that restores create a new instance with a new endpoint."
+      }
+    ]
+  },
+  "tags": [
+    "RDS",
+    "Backups",
+    "PITR",
+    "Disaster Recovery",
+    "Database Administration"
+  ]
+},
+  {
+  "id": "iq-iam-policy-evaluation",
+  "topicSlug": "iam-fundamentals-and-policy-evaluation",
+  "moduleNumber": 2,
+  "topicTitle": "IAM Policy Evaluation Logic & JSON Anatomy",
+  "category": "IAM_SECURITY",
+  "categoryLabel": "IAM, Security & Governance",
+  "difficulty": "Advanced",
+  "title": "Detail the step-by-step evaluation logic of AWS IAM policies. How do Explicit Deny, Permissions Boundaries, and SCPs interact?",
+  "prompt": "An interviewer asks: 'Walk me through the exact mathematical decision tree AWS uses when evaluating whether an API request is authorized. If an IAM user has AdministratorAccess in their identity policy, but their Permissions Boundary omits S3, and an SCP contains an Explicit Deny on s3:DeleteBucket, can they delete an S3 bucket?'",
+  "explanation": "Tests deep mastery of IAM authorization mechanics, policy combination precedence, and multi-layered organizational governance.",
+  "hints": [
+    "Evaluation starts with a Default Implicit Deny.",
+    "An Explicit Deny in ANY policy overrides all allows instantly.",
+    "Effective permissions are the intersection of Identity Policy ∩ Permissions Boundary ∩ SCP.",
+    "In this scenario, both the Permissions Boundary and the SCP block the request."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. The 6-Step IAM Policy Evaluation Decision Tree\n1. **Default State:** Every request starts with an **Implicit Deny**.\n2. **Explicit Deny Check (The Ultimate Override):** If ANY applicable policy (Identity, Resource, Permissions Boundary, or SCP) contains an **Explicit Deny** that matches the request context, the request is **IMMEDIATELY DENIED**. No further evaluation occurs.\n3. **Organizations Service Control Policy (SCP) Check:** If an AWS Organization is enabled, the request must be permitted by the applicable SCPs (at Root, OU, and Account levels).\n4. **Permissions Boundary Check:** If the identity has a Permissions Boundary attached, the action must be explicitly permitted by the boundary.\n5. **Session Policy Check:** If using temporary credentials from STS, session policies must permit the action.\n6. **Identity-Based & Resource-Based Policies:** At least one policy must contain an **Explicit Allow**. If allowed (and steps 2-5 passed), the request is **AUTHORIZED**; otherwise, the default **Implicit Deny** applies.\n\n### 2. Answering the Scenario\n- **Can the user delete the S3 bucket?** **ABSOLUTELY NOT.** The action is blocked on two separate independent layers:\n  1. **SCP Explicit Deny:** The SCP contains an Explicit Deny for `s3:DeleteBucket`. An explicit deny overrides any allow, even `AdministratorAccess`.\n  2. **Permissions Boundary Omission:** Even without the SCP, the Permissions Boundary sets the maximum allowable ceiling. Because S3 is omitted from the boundary, the effective permission is `Allow ∩ None = Deny`.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Evaluation Decision Tree",
+        "weight": 35,
+        "description": "Accurately details the 6-step flow starting from default deny to explicit deny check."
+      },
+      {
+        "name": "Override Rules",
+        "weight": 35,
+        "description": "Explains how Explicit Deny universally overrides all Explicit Allows."
+      },
+      {
+        "name": "Intersection Math",
+        "weight": 30,
+        "description": "Correctly evaluates the combined outcome of Identity Policy, Permissions Boundary, and SCP."
+      }
+    ]
+  },
+  "tags": [
+    "IAM",
+    "Security",
+    "Policy Evaluation",
+    "SCPs",
+    "Permissions Boundaries"
+  ]
+},
+  {
+  "id": "iq-iam-roles-sts-ec2",
+  "topicSlug": "iam-roles-sts-and-instance-profiles",
+  "moduleNumber": 2,
+  "topicTitle": "IAM Roles, STS & EC2 Instance Profiles",
+  "category": "IAM_SECURITY",
+  "categoryLabel": "IAM, Security & Governance",
+  "difficulty": "Intermediate",
+  "title": "Why are IAM Roles preferred over IAM Users for applications, and how does STS deliver credentials to EC2 instances?",
+  "prompt": "An interviewer asks: 'Why is it an anti-pattern to store IAM User access keys on an EC2 instance or in application config files? How does an IAM Role with an Instance Profile securely deliver temporary credentials via STS, and what role does IMDSv2 play?'",
+  "explanation": "Validates security architecture fundamentals, temporary credential rotation via STS, instance profiles, and IMDSv2 SSRF defenses.",
+  "hints": [
+    "Long-term access keys risk accidental git commits and lack automatic rotation.",
+    "IAM Roles use STS to issue short-lived credentials (valid 15 min to hours).",
+    "EC2 Instance Profiles deliver credentials through the Instance Metadata Service (169.254.169.254).",
+    "IMDSv2 requires token-based session headers (PUT) to block SSRF vulnerabilities."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. The Danger of Long-Term IAM User Access Keys\n- **High Leakage Risk:** Storing permanent `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` in code, configuration files, or environment variables frequently leads to credential exposure via public Git repositories, build logs, or compromised disk snapshots.\n- **Maintenance Nightmare:** Manual credential rotation requires coordinated restarts across fleets without causing application downtime.\n\n### 2. How IAM Roles & STS Work Together\n- An **IAM Role** has no permanent credentials. Instead, it defines:\n  - **Trust Policy:** Specifies that the EC2 service (`ec2.amazonaws.com`) is authorized to assume the role.\n  - **Permissions Policy:** Defines allowable API actions (e.g. `s3:GetObject`).\n- An **Instance Profile** is attached to the EC2 instance as a container for that single role.\n- Behind the scenes, the AWS Security Token Service (**STS**) automatically issues temporary credentials (AccessKeyId, SecretAccessKey, and SessionToken) valid for a short duration (typically 1-6 hours).\n- The AWS SDK automatically queries the metadata endpoint and **silently refreshes the temporary credentials before expiration**, requiring zero application restart.\n\n### 3. Instance Metadata Service v2 (IMDSv2) Security\n- Metadata is accessed at `http://169.254.169.254/latest/meta-data/iam/security-credentials/`.\n- **IMDSv2 Defense:** IMDSv1 allowed simple HTTP GET requests, making it vulnerable to Server-Side Request Forgery (SSRF). IMDSv2 enforces a **session-oriented flow**:\n  1. The client must first send an HTTP `PUT` request with header `X-aws-ec2-metadata-token-ttl-seconds` to obtain a temporary session token.\n  2. Subsequent GET requests must include that token in the header (`X-aws-ec2-metadata-token`). Web application reverse proxies and simple SSRF attacks cannot forge PUT requests with custom headers, completely mitigating metadata exfiltration.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Risk Analysis",
+        "weight": 25,
+        "description": "Contrasts long-term access key leakages with ephemeral STS credentials."
+      },
+      {
+        "name": "Role & Instance Profile Mechanics",
+        "weight": 35,
+        "description": "Explains trust policies, SDK automatic credential retrieval, and rotation."
+      },
+      {
+        "name": "IMDSv2 SSRF Defense",
+        "weight": 40,
+        "description": "Details token-based session headers (PUT) protecting the metadata endpoint."
+      }
+    ]
+  },
+  "tags": [
+    "IAM",
+    "STS",
+    "EC2",
+    "Instance Profile",
+    "IMDSv2",
+    "Security"
+  ]
+},
+  {
+  "id": "iq-s3-storage-classes-tiers",
+  "topicSlug": "s3-storage-classes-lifecycle-security",
+  "moduleNumber": 6,
+  "topicTitle": "S3 Storage Classes & Lifecycle Cost Engineering",
+  "category": "STORAGE",
+  "categoryLabel": "Storage (S3, EBS, EFS)",
+  "difficulty": "Intermediate",
+  "title": "Compare the 7 Amazon S3 storage classes. When is S3 Intelligent-Tiering more cost-effective than S3 Standard or Standard-IA?",
+  "prompt": "An interviewer asks: 'Walk me through the access latency, minimum storage duration, and cost profile across S3 Standard, S3 Intelligent-Tiering, Standard-IA, One Zone-IA, and the three Glacier classes. In what scenario would S3 Intelligent-Tiering actually cost MORE than S3 Standard?'",
+  "explanation": "Evaluates comprehensive object storage selection, understanding retrieval fees, minimum duration charges, and automation overhead.",
+  "hints": [
+    "S3 Intelligent-Tiering charges a small monthly monitoring fee per 1,000 objects.",
+    "Standard-IA requires 30 days minimum; Glacier Flexible requires 90 days; Glacier Deep Archive requires 180 days.",
+    "Glacier Instant Retrieval provides millisecond access; Deep Archive requires up to 12 hours.",
+    "Very small objects (<128 KB) or millions of tiny files make Intelligent-Tiering monitoring fees exceed storage savings."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. S3 Storage Class Comparison\n\n| Storage Class | Latency | Min Storage Duration | Retrieval Fee | Best Use Case |\n|---|---|---|---|---|\n| **S3 Standard** | Milliseconds | None | None | Active data, dynamic websites, big data analytics |\n| **S3 Intelligent-Tiering** | Milliseconds | None (for frequent/IA) | **ZERO** | Unknown or unpredictable access patterns |\n| **S3 Standard-IA** | Milliseconds | **30 days** | Per GB fee | Infrequent access (e.g. monthly reports, disaster recovery) |\n| **S3 One Zone-IA** | Milliseconds | **30 days** | Per GB fee | Non-critical, reproducible data (resides in 1 AZ only) |\n| **Glacier Instant** | Milliseconds | **90 days** | Per GB fee | Rarely accessed archives requiring immediate millisecond retrieval |\n| **Glacier Flexible** | 1-5 min to hours | **90 days** | Per GB fee | Regulatory compliance archives, annual backups |\n| **Glacier Deep Archive** | **12 - 48 hours** | **180 days** | Per GB fee | Lowest cost storage in AWS ($0.00099/GB/mo), 7-10 yr retention |\n\n### 2. When Does S3 Intelligent-Tiering Cost MORE Than S3 Standard?\n- **Monitoring Fee Overhead:** S3 Intelligent-Tiering charges a monthly automation/monitoring fee of **$0.0025 per 1,000 objects**.\n- **The Small Object Trap:**\n  - Objects smaller than **128 KB** are NOT eligible for auto-tiering; they remain in the Frequent Access tier forever.\n  - If a bucket contains **100 million tiny 10 KB files** (total 1 TB):\n    - Storage cost at S3 Standard = ~$23/month.\n    - Intelligent-Tiering monitoring fee = 100,000 × $0.0025 = **$250/month!**\n  - **Verdict:** For large numbers of tiny files that never leave Frequent Access, Intelligent-Tiering is drastically more expensive. It is optimal for objects > 128 KB with changing or unknown access frequencies.",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Storage Class Matrix",
+        "weight": 35,
+        "description": "Accurately covers latencies, minimum durations, and retrieval fees across all 7 tiers."
+      },
+      {
+        "name": "Glacier Deep Archive Profile",
+        "weight": 25,
+        "description": "Identifies 180-day min duration, 12h retrieval, and rock-bottom price point."
+      },
+      {
+        "name": "Small Object Monitoring Fee Caveat",
+        "weight": 40,
+        "description": "Explains the $0.0025/1k object monitoring fee and why small files make it cost more."
+      }
+    ]
+  },
+  "tags": [
+    "S3",
+    "Storage Classes",
+    "Lifecycle",
+    "Cost Engineering",
+    "Architecture"
+  ]
+},
+  {
+  "id": "iq-s3-security-bpa-encryption",
+  "topicSlug": "s3-encryption-access-control-and-bpa",
+  "moduleNumber": 6,
+  "topicTitle": "S3 Security: Block Public Access, Object Ownership & KMS",
+  "category": "STORAGE",
+  "categoryLabel": "Storage (S3, EBS, EFS)",
+  "difficulty": "Advanced",
+  "title": "How do S3 Block Public Access, Object Ownership (BucketOwnerEnforced), and SSE-KMS prevent enterprise data leaks?",
+  "prompt": "An interviewer asks: 'How do the 4 S3 Block Public Access guardrails protect against data leaks? Why did AWS introduce S3 Object Ownership to disable legacy XML ACLs, and what are the architectural trade-offs between SSE-S3 and SSE-KMS?'",
+  "explanation": "Deep dive into S3 enterprise defense-in-depth: centralized public access blocking, ACL phase-out, and envelope encryption key management.",
+  "hints": [
+    "BPA has 4 controls: BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, and RestrictPublicBuckets.",
+    "BucketOwnerEnforced turns off ACLs so the bucket owner owns all uploaded objects automatically.",
+    "SSE-S3 uses AWS-managed AES-256 keys; SSE-KMS uses customer-managed keys with audit logging.",
+    "High request rates with SSE-KMS can hit KMS API throttling limits unless S3 Bucket Keys are enabled."
+  ],
+  "recommendedSolution": "**Model Senior Architect Answer:**\n\n### 1. S3 Block Public Access (BPA) - The 4 Guardrails\nBPA can be enforced at the individual bucket level OR account-wide to override any permissive policy:\n1. **BlockPublicAcls:** Rejects any new PUT requests that attempt to include a public ACL.\n2. **IgnorePublicAcls:** Causes S3 to ignore all existing public ACLs on any object in the bucket.\n3. **BlockPublicPolicy:** Rejects any new bucket policies that grant public read or write access.\n4. **RestrictPublicBuckets:** Restricts access to existing buckets with public policies exclusively to authorized AWS service principals and account owners.\n\n### 2. S3 Object Ownership & Disabling Legacy ACLs\n- **The Historical Problem:** In multi-account architectures, if Account B uploaded an object to Account A's bucket, Account B owned the object. Account A could not read or delete the object without explicit ACL grants.\n- **The Modern Solution (BucketOwnerEnforced):**\n  - Completely **disables legacy XML Access Control Lists (ACLs)**.\n  - The bucket owner automatically owns and has full control over every object uploaded to the bucket, regardless of who uploaded it.\n  - Simplifies access management by consolidating 100% of authorization into **IAM Policies and S3 Bucket Policies**.\n\n### 3. Server-Side Encryption: SSE-S3 vs SSE-KMS Trade-Offs\n- **SSE-S3 (AES-256):**\n  - Fully managed by AWS; encryption keys rotate automatically.\n  - **Zero extra cost** beyond standard S3 storage and request charges.\n  - **Limitation:** Does not provide audit trails of which IAM identity decrypted which specific object.\n- **SSE-KMS (AWS Key Management Service):**\n  - Uses Customer Master Keys (CMKs) with envelope encryption.\n  - **Auditability:** Every single decryption event is logged in **AWS CloudTrail** with the caller identity, timestamp, and IP address.\n  - **Separation of Duties:** An attacker who compromises S3 bucket access still cannot read data without explicit `kms:Decrypt` permissions on the key.\n  - **Trade-off:** Incurs KMS API costs ($0.03 per 10,000 requests) and potential KMS quota throttling on high-throughput workloads (mitigated by enabling **S3 Bucket Keys** to reduce KMS traffic by 99%).",
+  "rubric": {
+    "criteria": [
+      {
+        "name": "Block Public Access Controls",
+        "weight": 30,
+        "description": "Explains all 4 BPA controls at bucket and account levels."
+      },
+      {
+        "name": "BucketOwnerEnforced Rationale",
+        "weight": 35,
+        "description": "Details how it eliminates cross-account ownership issues and disables legacy ACLs."
+      },
+      {
+        "name": "SSE-S3 vs SSE-KMS Trade-Offs",
+        "weight": 35,
+        "description": "Compares cost, CloudTrail audit trails, separation of duties, and S3 Bucket Keys."
+      }
+    ]
+  },
+  "tags": [
+    "S3",
+    "Security",
+    "Encryption",
+    "KMS",
+    "Block Public Access",
+    "Compliance"
+  ]
+}
+];
   return ALL_INTERVIEW_QUESTIONS.filter(q => q.topicSlug === topicSlug);
 }
 

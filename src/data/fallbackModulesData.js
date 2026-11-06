@@ -39,35 +39,71 @@ export const FALLBACK_MODULES = [
       }
     ]
   },
-  {
+    {
     "moduleNumber": 2,
     "title": "IAM, Identity & Access Management",
     "slug": "iam-identity-and-access-management",
-    "description": "Core and advanced identity controls: Users, Groups, Roles, Policies, Permission Boundaries, Federation, MFA, and Least Privilege access.",
+    "description": "Enterprise cloud security governance: IAM Users, Groups, Roles, JSON policy anatomy, Explicit Deny evaluation logic, Permissions Boundaries, Service Control Policies (SCPs), and Security Token Service (STS) temporary credentials.",
     "icon": "shield-check",
     "level": "Beginner",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "IAM Fundamentals & Policy Evaluation Flow",
+        "title": "IAM Fundamentals, JSON Policy Elements & Evaluation Logic",
         "slug": "iam-fundamentals-and-policy-evaluation",
-        "summary": "Master IAM Users, Groups, Roles, and the policy evaluation flow: Principal -> Policy -> Action -> Resource -> Condition.",
+        "summary": "Master IAM Users, IAM Groups, implicit vs explicit deny evaluation logic, and JSON policy syntax: Version (2012-10-17), Statement, Sid, Effect (Allow/Deny), Action, Resource (ARN), and Condition blocks.",
         "difficulty": "Beginner",
         "estimatedMinutes": 35,
-        "keyTakeaway": "Prefer IAM Roles over long-term access keys. Secure access starts with least privilege and temporary credentials."
+        "keyTakeaway": "All new IAM users are created with ZERO permissions (implicit deny). An Explicit Deny in any attached policy overrides any Explicit Allow."
+      },
+      {
+        "topicNumber": 2,
+        "title": "IAM Roles, AWS Security Token Service (STS) & EC2 Instance Profiles",
+        "slug": "iam-roles-sts-and-instance-profiles",
+        "summary": "Implement secure workload identity using IAM Roles and AWS STS: dynamic short-lived temporary security credentials, EC2 Instance Profiles without embedded credentials, and Role Trust Policies defining trusted principals.",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 40,
+        "keyTakeaway": "Never embed long-term IAM access keys in source code or EC2 instances. Attach an IAM Role via an Instance Profile so STS automatically provides and rotates temporary credentials."
+      },
+      {
+        "topicNumber": 3,
+        "title": "Advanced IAM Governance: Permissions Boundaries, SCPs & Cross-Account Access",
+        "slug": "iam-advanced-governance-scps-and-boundaries",
+        "summary": "Enforce multi-account guardrails: Permissions Boundaries to prevent privilege escalation by delegates, AWS Organizations Service Control Policies (SCPs), and cross-account access via STS AssumeRole delegation.",
+        "difficulty": "Advanced",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Permissions Boundaries define the maximum permissions an identity policy can grant; SCPs set the maximum permissions across an entire AWS Organization or OU."
       }
     ]
   },
   {
     "moduleNumber": 3,
-    "title": "Amazon VPC – Advanced Cloud Networking & Traffic Engineering",
+    "title": "Networking for DevOps & Amazon VPC – Cloud Infrastructure & Traffic Engineering",
     "slug": "amazon-vpc-advanced-networking",
-    "description": "Architect production-grade virtual private clouds: Default vs Custom VPCs, IPv4/IPv6 CIDR subnetting, Internet Gateways, Egress-Only IGWs, Stateful Security Groups vs Stateless NACLs, DNS Firewall, VPC Flow Logs, NAT Gateways, VPC Endpoints, Peering, Site-to-Site VPN, and Transit Gateway.",
+    "description": "Master end-to-end computer networking and cloud infrastructure: Network devices (Switches, Routers, Hubs, NICs), OSI 7-layer vs TCP/IP 4-layer models, IPv4/IPv6, RFC 1918 private ranges, Subnetting & CIDR calculations, TCP 3-way handshake vs UDP, HTTP status codes, DNS hierarchical resolution, Linux network troubleshooting tools (ping, traceroute, dig, curl, netstat, nmap), and production AWS VPC architecture with Subnets, Route Tables, Internet Gateways, NAT Gateways, Security Groups, NACLs, Peering, and Transit Gateway.",
     "icon": "network",
     "level": "Intermediate",
     "topics": [
       {
         "topicNumber": 1,
+        "title": "DevOps Networking Fundamentals: OSI vs TCP/IP Models, IPv4/IPv6, Classes & Subnetting Math",
+        "slug": "devops-networking-osi-tcpip-subnetting-cidr",
+        "summary": "Master core networking for DevOps: Switches vs Routers vs Hubs, OSI 7 Layers vs TCP/IP 4 Layers, Data Encapsulation/Decapsulation (Bits -> Frames -> Packets -> Segments -> Data), IPv4 32-bit dotted-decimal octets vs IPv6 128-bit, Public vs RFC 1918 Private IPs, Classes A-E, 0.0.0.0 and 127.0.0.1 localhost loopback, Network ID vs Host ID direct connection logic, and Subnetting Math dividing /24 networks into /25 subnets (126 usable hosts).",
+        "difficulty": "Beginner",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Devices with the same Network ID connect directly via Layer 2 switch; devices with different Network IDs require a Layer 3 router. Subnetting restricts broadcast domains and enhances security."
+      },
+      {
+        "topicNumber": 2,
+        "title": "Protocols, DNS Architecture, HTTP Status Codes & DevOps Diagnostic Tools",
+        "slug": "devops-network-protocols-dns-troubleshooting-tools",
+        "summary": "Master production protocol mechanics: TCP 3-way handshake (SYN, SYN-ACK, ACK) vs connectionless UDP, well-known ports (80, 443, 22, 53, 25, 110, 143), HTTP statelessness & cookies, HTTP status code families (2xx, 3xx, 4xx, 500/502/503/504), DNS hierarchical resolution (Root, TLD, Authoritative, Delegation via NS), DNS record types (A, AAAA, CNAME vs ALIAS at zone apex, MX, TXT, TTL), Longest Prefix Match routing tables, and the DevOps troubleshooting command suite: ping, traceroute, telnet, curl, dig, netstat/ss, nmap, ssh, and scp.",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 50,
+        "keyTakeaway": "Route tables evaluate the Longest Prefix Match (most specific CIDR mask wins). DNS CNAME cannot exist at the zone apex due to RFC standards, requiring ALIAS records in Route 53."
+      },
+      {
+        "topicNumber": 3,
         "title": "VPC Architecture, Subnetting (CIDR), Gateways & Route Tables",
         "slug": "vpc-subnetting-gateways-packet-flow",
         "summary": "Master Default vs Custom VPCs, CIDR block allocation (/16 and /24), 5 AWS reserved IPs per subnet, Public vs Private subnets, Route Tables (Destination & Target), Internet Gateways, Egress-Only IPv6 Gateways, Carrier Gateways, Elastic IPs, and Bastion Host jump servers.",
@@ -76,7 +112,7 @@ export const FALLBACK_MODULES = [
         "keyTakeaway": "A subnet resides strictly within one Availability Zone; public subnets have a route table targeting an Internet Gateway (0.0.0.0/0 -> igw), whereas private subnets route internet-bound traffic through a NAT Gateway."
       },
       {
-        "topicNumber": 2,
+        "topicNumber": 4,
         "title": "VPC Security Architecture: Stateful Security Groups, Stateless NACLs, DNS Firewall & Flow Logs",
         "slug": "vpc-security-groups-nacls-firewall-flow-logs",
         "summary": "Implement defense-in-depth network security: instance-level Stateful Security Groups (allow rules only) vs subnet-level Stateless NACLs (numbered evaluation, explicit allow/deny, ephemeral return ports 1024-65535), Route 53 DNS Firewall (fail-open vs fail-closed), and out-of-band VPC Flow Logs to CloudWatch Logs and S3.",
@@ -85,7 +121,7 @@ export const FALLBACK_MODULES = [
         "keyTakeaway": "Security Groups are stateful (inbound return traffic is automatically permitted), whereas NACLs are stateless and require explicit rules in both directions including ephemeral client return ports."
       },
       {
-        "topicNumber": 3,
+        "topicNumber": 5,
         "title": "Hybrid Connectivity & Advanced Routing: NAT Gateways, Endpoints, Peering, VPN & Transit Gateway",
         "slug": "vpc-peering-transit-gateway-endpoints-vpn",
         "summary": "Deploy managed NAT Gateways, private AWS service connectivity via Gateway Endpoints (S3/DynamoDB) and Interface Endpoints (PrivateLink), non-transitive VPC Peering, Site-to-Site IPsec VPN with dual tunnels, hub-and-spoke AWS Transit Gateway, Traffic Mirroring, and VPC Service Quotas.",
@@ -95,60 +131,114 @@ export const FALLBACK_MODULES = [
       }
     ]
   },
-  {
+    {
     "moduleNumber": 4,
     "title": "EC2 & Compute Architecture",
     "slug": "ec2-and-compute-architecture",
-    "description": "Compute deep dive: AMIs, Instance Types, EBS attachments, Elastic IPs, Placement Groups, User Data bootstrapping, and Purchasing Models.",
+    "description": "Enterprise compute engineering: 4 instance families (General Purpose, Compute, Memory, Storage Optimized), Purchasing models (On-Demand, Reserved, Savings Plans, Spot with 2-minute interruption warning), System vs Instance Status Checks, Persistent EBS (gp3, io1/io2, st1, sc1) vs Ephemeral Instance Store, ENIs, Security Groups, and Step-by-Step Console Launch Guide.",
     "icon": "cpu",
     "level": "Beginner",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "Amazon EC2 Concepts, Purchasing Models & Lifecycle",
+        "title": "EC2 Fundamentals, 4 Instance Families, Purchasing Models & Status Checks",
         "slug": "ec2-concepts-purchasing-models-lifecycle",
-        "summary": "Understand On-Demand, Reserved, Savings Plans, Spot, and Dedicated Hosts, plus instance metadata (IMDS) and Graviton ARM processors.",
+        "summary": "Master EC2 core architecture: scalable on-demand virtual servers, 4 instance families (General Purpose T/M, Compute Optimized C, Memory Optimized R/X/z, Storage Optimized I/D/H), purchasing models (On-Demand, Reserved, Savings Plans, Spot with 2-minute notice, Dedicated Hosts), and CloudWatch monitoring with System vs Instance Status Checks.",
         "difficulty": "Beginner",
-        "estimatedMinutes": 35,
-        "keyTakeaway": "Match instance family and purchasing model (Spot for stateless fault-tolerant, Reserved/Savings Plans for steady state, On-Demand for spikes)."
+        "estimatedMinutes": 40,
+        "keyTakeaway": "System status checks indicate physical host/hardware faults requiring AWS migration (stop/start); Instance status checks indicate OS/kernel/boot faults requiring administrative remediation."
+      },
+      {
+        "topicNumber": 2,
+        "title": "EC2 Storage Architecture: Persistent EBS (gp3, io1/io2, st1, sc1) vs Ephemeral Instance Store",
+        "slug": "ec2-storage-ebs-types-vs-instance-store",
+        "summary": "Differentiate persistent network block storage (EBS gp3 baseline 3000 IOPS/125 MB/s, io1/io2 Provisioned IOPS for transactional OLTP, st1 Throughput Optimized HDD, sc1 Cold HDD) from ultra-fast non-persistent Ephemeral Instance Store physically attached to the host hardware.",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Instance Store provides ultra-high IOPS and lowest latency but is 100% ephemeral (data is permanently lost on instance stop, terminate, or hardware failure); EBS persists independently."
+      },
+      {
+        "topicNumber": 3,
+        "title": "EC2 Networking, Security Groups, ENIs & Step-by-Step Instance Launch",
+        "slug": "ec2-networking-eni-security-groups-key-pairs",
+        "summary": "Understand Public vs Private IPs, Elastic Network Interfaces (ENIs for network separation and failover), stateful Security Groups (automatic return traffic), Key Pairs (.pem/.ppk for SSH/RDP), and follow the 10-step production launch guide from AMI selection to 2/2 status checks verification.",
+        "difficulty": "Beginner",
+        "estimatedMinutes": 40,
+        "keyTakeaway": "Security Groups are stateful virtual firewalls attached to ENIs; Key Pairs use asymmetric encryption where AWS holds the public key and the user safeguards the private key."
       }
     ]
   },
-  {
+    {
     "moduleNumber": 5,
     "title": "Elastic Load Balancing & Auto Scaling",
     "slug": "elastic-load-balancing-and-auto-scaling",
-    "description": "High Availability & Elasticity: Application Load Balancers (ALB), Network Load Balancers (NLB), Target Groups, and dynamic Auto Scaling Groups (ASG).",
+    "description": "High Availability, Traffic Engineering & Elasticity: 4 ELB products (ALB Layer 7, NLB Layer 4, GLB Layer 3, CLB legacy), Internet-facing vs Internal-facing topologies, content-based routing, SNI, Sticky Sessions, Target Groups, Health Checks, and Auto Scaling Groups (Target Tracking, Step, Simple Scaling, and Spot Fleets).",
     "icon": "activity",
     "level": "Intermediate",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "ELB Types, Routing Rules & Dynamic Auto Scaling",
+        "title": "Elastic Load Balancing: 4 ELB Types (ALB, NLB, GLB, CLB) & Internet vs Internal",
         "slug": "elb-types-routing-rules-auto-scaling",
-        "summary": "Deploy ALBs for Layer 7 path/host routing, NLBs for ultra-low latency Layer 4, and configure ASGs with Target Tracking and Health Checks.",
+        "summary": "Compare ELB products across the OSI model: Application Load Balancer (Layer 7 HTTP/HTTPS content routing), Network Load Balancer (Layer 4 TCP/UDP, millions of req/sec, ultra-low latency, static/Elastic IPs), Gateway Load Balancer (Layer 3 transparent GENEVE appliances), and architect multi-tier internet-facing vs internal-facing load balancing.",
         "difficulty": "Intermediate",
-        "estimatedMinutes": 40,
-        "keyTakeaway": "Goal: High Availability + Elasticity + Cost Optimization. Scale out when demand spikes, scale in when idle."
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Use ALB for Layer 7 microservices and HTTP routing; use NLB for Layer 4 extreme performance and static IP requirements; use GLB for transparent inline virtual security appliances."
+      },
+      {
+        "topicNumber": 2,
+        "title": "ALB Advanced Traffic Engineering: Target Groups, SNI, Sticky Sessions & Health Checks",
+        "slug": "elb-advanced-features-target-groups-health-checks",
+        "summary": "Deep dive into ALB capabilities: Target Groups (EC2, IP, Lambda), Server Name Indication (SNI for multi-cert SSL on 1 listener), Sticky Sessions (cookie-based affinity), HTTP/2, WebSockets, Request Tracing (X-Amzn-Trace-Id), WAF integration, Slow Start mode, HTTP-to-HTTPS redirects, and health check thresholds.",
+        "difficulty": "Advanced",
+        "estimatedMinutes": 50,
+        "keyTakeaway": "Server Name Indication (SNI) enables one ALB HTTPS listener to serve multiple distinct SSL certificates for different domains; Target Groups route traffic to EC2, containers, IPs, or Lambda."
+      },
+      {
+        "topicNumber": 3,
+        "title": "Auto Scaling Groups (ASG): Launch Templates, Scaling Policies & Resilience",
+        "slug": "asg-scaling-policies-lifecycle-and-resilience",
+        "summary": "Master automated elastic capacity: Launch Templates vs Launch Configurations, Target Tracking scaling policies (e.g. 50% CPU), Step scaling policies, Simple scaling policies, Health Check Grace Periods, default cooldowns, and cost-optimized Spot Fleet blending.",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Target tracking scaling dynamically adjusts instance counts to maintain a specific metric; Health Check Grace Periods prevent terminating instances that are still completing boot initialization."
       }
     ]
   },
-  {
+    {
     "moduleNumber": 6,
     "title": "Amazon S3 – Advanced Storage",
     "slug": "amazon-s3-advanced-storage",
-    "description": "Scalable object storage: Versioning, Lifecycle Policies, Cross-Region Replication, Object Lock (WORM), Server-Side Encryption, and 7 Storage Classes.",
+    "description": "Enterprise cloud object storage: 11 9s durability, global unique bucket namespaces, strong read-after-write consistency, 7 storage classes, lifecycle automation, encryption (SSE-S3, SSE-KMS, SSE-C), Block Public Access, Object Lock (WORM), and Cross-Region Replication (CRR).",
     "icon": "database",
     "level": "Beginner",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "S3 Storage Classes, Lifecycle Automation & Bucket Security",
+        "title": "S3 Architecture, 11 9s Durability, Storage Classes & Lifecycle Automation",
         "slug": "s3-storage-classes-lifecycle-security",
-        "summary": "Select optimal storage classes from Standard to Glacier Deep Archive, implement automated transitions, and lock down buckets with BPA.",
+        "summary": "Understand S3 object storage fundamentals: global unique bucket namespace, 0B-5TB object sizes, 11 9s durability across AZs, strong read-after-write consistency, 7 storage tiers (Standard, Intelligent-Tiering, Standard-IA, One Zone-IA, Glacier Instant/Flexible/Deep Archive), and automated lifecycle transition/expiration rules.",
         "difficulty": "Beginner",
-        "estimatedMinutes": 35,
-        "keyTakeaway": "Three-pillar security: IAM Policies + Bucket Policies + S3 Block Public Access (BPA)."
+        "estimatedMinutes": 40,
+        "keyTakeaway": "S3 provides 99.999999999% (11 9s) durability by redundantly storing objects across multiple AZs; Lifecycle rules automate cost optimization with minimum 30-day tier intervals."
+      },
+      {
+        "topicNumber": 2,
+        "title": "S3 Access Control, Block Public Access, Object Ownership & Encryption",
+        "slug": "s3-encryption-access-control-and-bpa",
+        "summary": "Master S3 security layers: Resource-based Bucket Policies (JSON up to 20KB) vs legacy XML ACLs, S3 Object Ownership (BucketOwnerEnforced to disable ACLs), S3 Block Public Access (4 controls), in-transit TLS, and server-side encryption (SSE-S3, SSE-KMS, SSE-C).",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Disable legacy ACLs using BucketOwnerEnforced. Protect data using S3 Block Public Access and SSE-KMS for automated key rotation and CloudTrail audit logging."
+      },
+      {
+        "topicNumber": 3,
+        "title": "Advanced S3: Versioning, Object Lock (WORM), Replication & Access Points",
+        "slug": "s3-advanced-versioning-replication-and-object-lock",
+        "summary": "Deep dive into compliance and performance features: S3 Versioning (accidental deletion protection), Object Lock WORM (Governance, Compliance, and Legal Hold modes), Cross-Region Replication (CRR), Transfer Acceleration via Edge Locations, Requester Pays, and S3 Access Points.",
+        "difficulty": "Advanced",
+        "estimatedMinutes": 50,
+        "keyTakeaway": "S3 Object Lock in Compliance Mode prevents object deletion or modification even by the root user; Replication rules require versioning enabled on both source and destination buckets."
       }
     ]
   },
@@ -190,41 +280,77 @@ export const FALLBACK_MODULES = [
       }
     ]
   },
-  {
+    {
     "moduleNumber": 9,
     "title": "RDS, Aurora & Database High Availability",
     "slug": "rds-aurora-and-database-ha",
-    "description": "Enterprise database resiliency: Automated Backups, Read Replicas for scale, Multi-AZ for failover, and Aurora distributed self-healing storage.",
+    "description": "Enterprise relational database engineering: Fully managed DB instances, 7 database engines, General Purpose vs Provisioned IOPS storage, Multi-AZ synchronous standby failover, asynchronous Read Replicas, automated backups, and point-in-time recovery.",
     "icon": "server",
     "level": "Intermediate",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "Multi-AZ Failover vs Read Replicas & Aurora Architecture",
+        "title": "Amazon RDS Architecture, Database Engines & Managed Storage",
         "slug": "multi-az-vs-read-replicas-aurora",
-        "summary": "Differentiate synchronous Multi-AZ standby disaster recovery from asynchronous Read Replicas used for offloading read traffic.",
+        "summary": "Master RDS core fundamentals: isolated DB Instances, automated OS patching and maintenance windows, 7 supported engines (MySQL, MariaDB, PostgreSQL, Oracle, SQL Server, Aurora, IBM DB2), General Purpose SSD (gp2/gp3) vs Provisioned IOPS (io1/io2) for transactional OLTP workloads, and 12-month Free Tier.",
         "difficulty": "Intermediate",
         "estimatedMinutes": 35,
-        "keyTakeaway": "Multi-AZ = High Availability / Disaster Recovery; Read Replica = Read Performance & Scalability."
+        "keyTakeaway": "RDS is a fully managed service that restricts OS access; Provisioned IOPS SSD delivers fast, consistent I/O performance optimized for transactional OLTP database workloads."
+      },
+      {
+        "topicNumber": 2,
+        "title": "RDS High Availability: Synchronous Multi-AZ Standby vs Asynchronous Read Replicas",
+        "slug": "rds-high-availability-multi-az-and-read-replicas",
+        "summary": "Compare disaster recovery and performance scaling: Multi-AZ synchronous physical replication with automatic DNS CNAME failover (zero IP changes, RTO < 60s) vs up to 5 asynchronous Read Replicas across AZs or regions for offloading read traffic.",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Multi-AZ is for High Availability and Disaster Recovery (synchronous, standby invisible to queries); Read Replicas are for Read Performance and Scalability (asynchronous, actively queried)."
+      },
+      {
+        "topicNumber": 3,
+        "title": "RDS Backup Strategies: Automated Backups, Point-in-Time Recovery & DB Snapshots",
+        "slug": "rds-backup-strategies-snapshots-and-point-in-time-recovery",
+        "summary": "Master database recovery mechanisms: Automated Backups with 1 to 35-day retention combining daily snapshots and transaction logs in S3 for point-in-time recovery down to the second, manual persistent DB Snapshots, and restoring to a new DB instance endpoint.",
+        "difficulty": "Intermediate",
+        "estimatedMinutes": 40,
+        "keyTakeaway": "Restoring an RDS backup always provisions a brand-new DB instance with a new endpoint URL, allowing parallel verification without impacting the original instance."
       }
     ]
   },
-  {
+    {
     "moduleNumber": 10,
-    "title": "Serverless Architecture",
+    "title": "Serverless Architecture (AWS Lambda & API Gateway)",
     "slug": "serverless-architecture",
-    "description": "Modern cloud-native apps with zero server management: AWS Lambda, API Gateway, DynamoDB, EventBridge event routing, and Step Functions workflows.",
+    "description": "Cloud-native event-driven compute: AWS Lambda serverless execution, stateless functions, event triggers (S3, Kinesis, DynamoDB, API Gateway), memory-to-CPU scaling, concurrency controls, VPC Hyperplane networking, and cold start mitigation.",
     "icon": "zap",
     "level": "Intermediate",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "AWS Lambda, API Gateway & Event-Driven Patterns",
+        "title": "AWS Lambda Serverless Compute, Event Triggers & Stateless Architecture",
         "slug": "lambda-api-gateway-event-driven-patterns",
-        "summary": "Build scalable event-driven architectures, handle cold starts, execute within duration limits, and orchestrate with Step Functions.",
+        "summary": "Run code without managing servers: event-driven compute model, pay only for execution time, automatic scaling from zero to thousands of concurrent requests, stateless design, native language runtimes (Node.js, Python, Java, Go, C#, Ruby) and Runtime API for custom languages.",
         "difficulty": "Intermediate",
         "estimatedMinutes": 40,
-        "keyTakeaway": "Serverless = fully managed, auto-scaling, event-driven compute with pure pay-per-use economics."
+        "keyTakeaway": "Lambda functions must be completely stateless with no affinity to underlying infrastructure; event triggers integrate seamlessly across the AWS stack (S3, Kinesis, API Gateway, SQS, IoT)."
+      },
+      {
+        "topicNumber": 2,
+        "title": "Lambda Execution Environment, Memory Scaling, Concurrency & VPC Hyperplane",
+        "slug": "lambda-runtime-memory-scaling-and-concurrency",
+        "summary": "Master execution parameters: memory allocation from 128 MB to 10,240 MB (RAM proportionally scales CPU and network), 15-minute maximum execution timeout, 512 MB to 10 GB /tmp storage, concurrency limits (1000 default), and VPC deployment with Hyperplane ENIs.",
+        "difficulty": "Advanced",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Allocating more memory to Lambda proportionally increases CPU cores and network bandwidth, often reducing execution duration and lowering total billable cost."
+      },
+      {
+        "topicNumber": 3,
+        "title": "Lambda Limits, Deployment Packages, Container Images & Cold Start Optimization",
+        "slug": "lambda-limits-deployment-and-cold-start-optimization",
+        "summary": "Architect for production reliability: 50 MB zipped deployment package limits, 250 MB uncompressed limits, container images up to 10 GB, 4 KB environment variables, cold start lifecycle (init vs invoke), and Provisioned Concurrency for zero-latency execution.",
+        "difficulty": "Advanced",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "Use Provisioned Concurrency to eliminate cold starts for latency-sensitive APIs; container images allow up to 10 GB deployment packages with complex machine learning dependencies."
       }
     ]
   },
@@ -247,22 +373,40 @@ export const FALLBACK_MODULES = [
       }
     ]
   },
-  {
+    {
     "moduleNumber": 12,
-    "title": "Monitoring, Logging & Observability",
+    "title": "Monitoring, Logging & Observability (CloudWatch, CloudTrail & X-Ray)",
     "slug": "monitoring-logging-and-observability",
-    "description": "Full-stack cloud observability: CloudWatch (Metrics, Logs, Alarms, Dashboards), CloudTrail API auditing, AWS Config compliance, and X-Ray tracing.",
-    "icon": "line-chart",
+    "description": "Full-stack cloud observability: Amazon CloudWatch (Metrics, Alarms, Logs Insights, Events/EventBridge with 6-field Cron), ServiceLens, Synthetics Canaries, AWS CloudTrail audit logs, and AWS X-Ray distributed tracing.",
+    "icon": "activity",
     "level": "Intermediate",
     "topics": [
       {
         "topicNumber": 1,
-        "title": "CloudWatch, CloudTrail, Config & X-Ray Distributed Tracing",
+        "title": "CloudWatch Metrics, Alarms (3 States) & CloudWatch vs CloudTrail Golden Rule",
         "slug": "cloudwatch-cloudtrail-config-xray-observability",
-        "summary": "Build an observability pipeline connecting application logs, metrics, distributed traces, and automated alarm triggers for incident response.",
+        "summary": "Master CloudWatch monitoring levels: Basic (5-min free) vs Detailed (1-min), Global Dashboards (3 free up to 50 metrics), CloudWatch Alarms with 3 states (OK, INSUFFICIENT_DATA, ALARM), multi-action triggers (SNS, Auto Scaling, EC2 Auto-Recovery), and the golden rule: CloudWatch monitors performance (operations) while CloudTrail audits actions (security/API calls).",
+        "difficulty": "Beginner",
+        "estimatedMinutes": 40,
+        "keyTakeaway": "CloudWatch monitors PERFORMANCE (metrics, CPU, latency, operations); CloudTrail monitors ACTIONS (who made which API call from where and when)."
+      },
+      {
+        "topicNumber": 2,
+        "title": "CloudWatch Logs, Logs Insights & EventBridge (Cron & Rate Schedules)",
+        "slug": "cloudwatch-logs-insights-events-and-cron",
+        "summary": "Centralize application and OS logs from EC2 and on-premises using the CloudWatch Agent, write interactive query syntax in CloudWatch Logs Insights, and automate event-driven workflows with EventBridge using 6-field Cron expressions: cron(Minutes Hours Day-of-month Month Day-of-week Year) and Rate expressions: rate(value unit).",
         "difficulty": "Intermediate",
-        "estimatedMinutes": 35,
-        "keyTakeaway": "Observability = visibility into system health, performance, and issues. CloudWatch monitors performance; CloudTrail audits API calls; Config tracks compliance."
+        "estimatedMinutes": 45,
+        "keyTakeaway": "CloudWatch Logs Insights queries terabytes of logs in seconds; EventBridge Cron expressions require 6 fields (Minutes, Hours, Day-of-month, Month, Day-of-week, Year)."
+      },
+      {
+        "topicNumber": 3,
+        "title": "Enterprise Observability: ServiceLens, Synthetics Canaries & X-Ray Distributed Tracing",
+        "slug": "cloudwatch-servicelens-synthetics-and-xray",
+        "summary": "Implement modern proactive observability: CloudWatch ServiceLens combining metrics, logs, and traces for infrastructure and transaction health; CloudWatch Synthetics running 24x7 canaries to verify REST APIs, web pages, and detect phishing/XSS; and AWS X-Ray distributed tracing for microservices bottlenecks.",
+        "difficulty": "Advanced",
+        "estimatedMinutes": 45,
+        "keyTakeaway": "CloudWatch Synthetics provides 24x7 outside-in verification of customer experience before real users are affected; ServiceLens provides an integrated service map linking metrics, logs, and X-Ray traces."
       }
     ]
   },

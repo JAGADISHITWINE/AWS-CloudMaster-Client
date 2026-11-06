@@ -2075,4 +2075,326 @@ export const FALLBACK_SCENARIOS = [
       "Node.js"
     ]
   }
+,
+  {
+  "id": "scen-iam-cross-account-denied",
+  "moduleNumber": 2,
+  "title": "Scenario: Cross-Account S3 Access Denied Despite IAM Allow Policy",
+  "difficulty": "Advanced",
+  "prompt": "A data science application running in AWS Account B needs to read parquet files from an Amazon S3 bucket located in AWS Account A. The DevOps engineer in Account B attached an IAM policy granting 's3:GetObject' and 's3:ListBucket' on 'arn:aws:s3:::analytics-data-lake-a/*'. However, when the application runs 'aws s3 ls s3://analytics-data-lake-a', it receives 'An error occurred (AccessDenied) when calling the ListObjectsV2 operation'. What is missing, and how do you resolve this cross-account access failure?",
+  "explanation": "Tests cross-account authorization principles: for same-account access, either an IAM policy OR a resource policy is sufficient. For cross-account access, BOTH the IAM policy in the caller account AND the resource-based bucket policy in the resource owner account must explicitly permit the access.",
+  "hintsJson": "[\"Hint 1: Does an IAM policy in Account B have the authority to grant access to a resource owned by Account A?\",\"Hint 2: What resource-based policy exists on the S3 bucket in Account A?\",\"Hint 3: Does the bucket policy in Account A include Account B's IAM Role ARN as a Principal?\",\"Hint 4: If the objects are encrypted with SSE-KMS, does Account B have kms:Decrypt permissions on the KMS key?\"]",
+  "recommendedSolution": "### Root Cause Analysis & Step-by-Step Resolution:\n\n1. **The Cross-Account Authorization Rule:**\n   - For same-account access: IAM Policy **OR** Resource Policy = Access Granted.\n   - For cross-account access: **IAM Policy in Account B AND Bucket Policy in Account A MUST BOTH grant access.**\n   - Account B cannot unilaterally grant its own identities permission to access Account A's resources.\n\n2. **Fix Step 1: Update the S3 Bucket Policy in Account A:**\n   - In Account A, add a Bucket Policy explicitly naming the Account B IAM Role ARN as the `Principal`:\n```json\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"AllowAccountBAccess\",\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::ACCOUNT_B_ID:role/DataScienceAppRole\"\n      },\n      \"Action\": [\n        \"s3:ListBucket\",\n        \"s3:GetObject\"\n      ],\n      \"Resource\": [\n        \"arn:aws:s3:::analytics-data-lake-a\",\n        \"arn:aws:s3:::analytics-data-lake-a/*\"\n      ]\n    }\n  ]\n}\n```\n\n3. **Fix Step 2: KMS Key Policy Permissions (If Encrypted with SSE-KMS):**\n   - If objects in `analytics-data-lake-a` are encrypted using an AWS KMS Customer Master Key (CMK), Account B will still fail with AccessDenied during `s3:GetObject` unless Account A's KMS Key Policy also grants `kms:Decrypt` to Account B's role.\n\n4. **Fix Step 3: Enforce S3 Object Ownership:**\n   - Set S3 Object Ownership to **BucketOwnerEnforced** on Account A's bucket so that all future writes from Account B automatically belong to Account A, preventing permission mismatches.",
+  "tagsJson": "[\"IAM\",\"S3\",\"Cross-Account\",\"Security\",\"Troubleshooting\"]",
+  "hints": [
+    "Hint 1: Does an IAM policy in Account B have the authority to grant access to a resource owned by Account A?",
+    "Hint 2: What resource-based policy exists on the S3 bucket in Account A?",
+    "Hint 3: Does the bucket policy in Account A include Account B's IAM Role ARN as a Principal?",
+    "Hint 4: If the objects are encrypted with SSE-KMS, does Account B have kms:Decrypt permissions on the KMS key?"
+  ],
+  "tags": [
+    "IAM",
+    "S3",
+    "Cross-Account",
+    "Security",
+    "Troubleshooting"
+  ]
+},
+  {
+  "id": "scen-rds-multiaz-failover-remediation",
+  "moduleNumber": 9,
+  "title": "Scenario: Investigating Production Database Downtime During Availability Zone Outage",
+  "difficulty": "Advanced",
+  "prompt": "During a major regional storm, AWS us-east-1a experiences a facility power disruption. Your company's primary MySQL RDS instance is located in us-east-1a configured as Multi-AZ with a standby in us-east-1b. The web application reports HTTP 500 database connection errors for approximately 75 seconds, after which traffic automatically recovers with zero data loss. The VP of Engineering asks you: (1) Why did the 75-second outage occur? (2) Why did no one have to manually update application database endpoints? (3) How do you verify the standby is now the primary?",
+  "explanation": "Validates real-world understanding of Multi-AZ automatic failover mechanics, DNS TTL caching behaviors, and operational monitoring.",
+  "hintsJson": "[\"Hint 1: What synchronous replication guarantees zero data loss (RPO = 0) in RDS Multi-AZ?\",\"Hint 2: How does RDS redirect database traffic from the failed host to the standby host?\",\"Hint 3: Why do applications experience a 60-120 second pause before reconnecting?\",\"Hint 4: Which AWS CloudWatch events and RDS Console views confirm failover completion?\"]",
+  "recommendedSolution": "### Executive Incident Post-Mortem & Architecture Explanation:\n\n1. **Why the 75-Second Disruption Occurred:**\n   - **Automated Failover Steps:**\n     1. **Failure Detection (~20-30s):** RDS health monitors detect that the primary DB host in us-east-1a is unresponsive.\n     2. **Standby Promotion (~20s):** RDS promotes the standby instance in us-east-1b to become the active read/write master.\n     3. **DNS Propagation (~30s):** RDS flips the DNS CNAME record of the DB endpoint (`mydb.c7xxxx.us-east-1.rds.amazonaws.com`) to the IP address of the newly promoted instance in us-east-1b.\n   - **Application JVM/Node.js DNS Caching:** If backend application instances cache DNS indefinitely instead of respecting low TTLs (typically 5 seconds), reconnection is delayed until existing TCP sockets error out and re-resolve DNS.\n\n2. **Why Endpoints Did NOT Need Manual Updating:**\n   - RDS Multi-AZ uses a **dynamic DNS CNAME record** for the database endpoint.\n   - The connection string configured in application environment variables (`DATABASE_URL = mydb.c7xxxx.us-east-1.rds.amazonaws.com`) never changes.\n   - When the failover completes, the DNS record resolves to the new IP address automatically.\n\n3. **Zero Data Loss Guarantee (RPO = 0):**\n   - Because Multi-AZ uses **synchronous physical block-level replication**, every transaction committed on the primary was already written to disk on the standby before the client received an acknowledgement. Therefore, zero committed transactions were lost.\n\n4. **Verification & Post-Failover Actions:**\n   - Inspect **RDS Events**: Look for event `RDS-EVENT-0049: A failure occurred on the primary host. Multi-AZ failover initiated` followed by `RDS-EVENT-0047: Multi-AZ failover completed`.\n   - In the AWS Console, observe that the DB instance's **Availability Zone** is now `us-east-1b`.\n   - RDS will automatically provision a new standby in another healthy AZ to restore high-availability redundancy once capacity is available.",
+  "tagsJson": "[\"RDS\",\"Multi-AZ\",\"High Availability\",\"Incident Response\",\"Post-Mortem\"]",
+  "hints": [
+    "Hint 1: What synchronous replication guarantees zero data loss (RPO = 0) in RDS Multi-AZ?",
+    "Hint 2: How does RDS redirect database traffic from the failed host to the standby host?",
+    "Hint 3: Why do applications experience a 60-120 second pause before reconnecting?",
+    "Hint 4: Which AWS CloudWatch events and RDS Console views confirm failover completion?"
+  ],
+  "tags": [
+    "RDS",
+    "Multi-AZ",
+    "High Availability",
+    "Incident Response",
+    "Post-Mortem"
+  ]
+},
+  {
+  "id": "scen-lambda-rds-exhaustion",
+  "moduleNumber": 10,
+  "title": "Scenario: Serverless Lambda Functions Crashing Relational Database with Max Connections Error",
+  "difficulty": "Advanced",
+  "prompt": "A food delivery startup launches a mobile marketing campaign. Traffic surges from 50 orders/minute to 4,000 orders/minute. The backend architecture consists of API Gateway invoking an AWS Lambda function that queries a db.t3.medium Amazon RDS PostgreSQL database. Within 2 minutes of the launch, Lambda functions begin timing out, and CloudWatch logs show 'FATAL: remaining connection slots are reserved for non-replicated superuser connections'. How do you resolve this connection pooling crisis?",
+  "explanation": "Classic serverless-to-relational bottleneck: Lambda scales out horizontally by spinning up new concurrent containers, each opening independent database connections that quickly overwhelm relational database connection limits.",
+  "hintsJson": "[\"Hint 1: How many concurrent connections can a db.t3.medium PostgreSQL instance support?\",\"Hint 2: What happens when 1,000 Lambda microVMs all execute database pool creation inside their handlers?\",\"Hint 3: Which managed AWS proxy service pools and multiplexes database connections for serverless applications?\",\"Hint 4: How can Lambda reserved concurrency throttle traffic to safe database limits?\"]",
+  "recommendedSolution": "### Architectural Root Cause & Production Remediation:\n\n1. **Root Cause Analysis:**\n   - A `db.t3.medium` PostgreSQL instance supports a maximum of approximately **150-200 concurrent connections**.\n   - As incoming HTTP traffic surged, AWS Lambda rapidly scaled out to **1,000 concurrent execution environments**.\n   - Each Lambda container opened its own database connection (or pool of 5-10 connections). Total requested connections exceeded 3,000, immediately crashing PostgreSQL with `max_connections` exhaustion.\n   - When database connections failed, Lambda invocations hung until their 30-second timeout expired, keeping connection slots locked in a deadly spiral.\n\n2. **Immediate Production Mitigation:**\n   - Apply **Reserved Concurrency** on the Lambda function (e.g. `aws lambda put-function-concurrency --reserved-concurrent-executions 80`). This immediately stops new Lambda instances from flooding the database beyond its capacity.\n\n3. **Permanent Architectural Solution: Deploy Amazon RDS Proxy:**\n   - Deploy **Amazon RDS Proxy** between Lambda and the PostgreSQL database.\n   - **How RDS Proxy Solves the Problem:**\n     1. **Connection Pooling & Multiplexing:** Thousands of concurrent Lambda microVMs connect to the RDS Proxy. The proxy multiplexes these thousands of short-lived client connections across a small, persistent pool of ~50-80 connections to PostgreSQL.\n     2. **Connection Reuse:** Warm Lambda containers reuse proxy connections without connection handshakes.\n     3. **Failover Acceleration:** If RDS performs a Multi-AZ failover, RDS Proxy automatically redirects traffic to the new standby, reducing failover connection drop time by up to 66%.\n\n4. **Lambda Code Optimization:**\n   - Ensure the database client or ORM connection pool is instantiated **outside the Lambda handler function (in the global execution scope)** so that warm microVMs reuse existing database connections across multiple invocations rather than opening a new connection on every single request.",
+  "tagsJson": "[\"Lambda\",\"RDS\",\"RDS Proxy\",\"Connection Pooling\",\"Serverless Architecture\"]",
+  "hints": [
+    "Hint 1: How many concurrent connections can a db.t3.medium PostgreSQL instance support?",
+    "Hint 2: What happens when 1,000 Lambda microVMs all execute database pool creation inside their handlers?",
+    "Hint 3: Which managed AWS proxy service pools and multiplexes database connections for serverless applications?",
+    "Hint 4: How can Lambda reserved concurrency throttle traffic to safe database limits?"
+  ],
+  "tags": [
+    "Lambda",
+    "RDS",
+    "RDS Proxy",
+    "Connection Pooling",
+    "Serverless Architecture"
+  ]
+},
+  {
+  "id": "scen-s3-ransomware-object-lock",
+  "moduleNumber": 6,
+  "title": "Scenario: Architecting SEC Rule 17a-4 Regulatory Compliance & Ransomware Defense on Amazon S3",
+  "difficulty": "Advanced",
+  "prompt": "An investment bank requires that all trade confirmation records and customer wire receipts are retained for exactly 7 years. Regulatory compliance (SEC Rule 17a-4 and FINRA) mandates that: (1) Once written, records cannot be modified, deleted, or renamed by ANY user, including the AWS Account Root User or cloud administrators, (2) If a ransomware attacker compromises administrator credentials, they must be unable to wipe or encrypt the bucket, (3) After 7 years, files must automatically expire to minimize storage liability. How do you design this on AWS?",
+  "explanation": "Tests enterprise compliance architecture: WORM storage, S3 Object Lock in Compliance Mode, S3 Versioning, KMS Customer Master Keys, and lifecycle expiration.",
+  "hintsJson": "[\"Hint 1: What S3 feature provides Write Once Read Many (WORM) storage?\",\"Hint 2: What is the crucial difference between Governance Mode and Compliance Mode in Object Lock?\",\"Hint 3: Can Object Lock be enabled on an existing unversioned bucket without AWS Support?\",\"Hint 4: How do lifecycle rules safely delete objects after their retention period expires?\"]",
+  "recommendedSolution": "### Production Enterprise Architecture Design:\n\n1. **Storage Foundation with S3 Object Lock (WORM Storage):**\n   - Create a dedicated Amazon S3 bucket with **S3 Object Lock** enabled at creation time (this automatically enables **S3 Versioning**).\n   - Configure **Default Retention Mode: COMPLIANCE MODE** with a duration of **7 years (2,555 days)**.\n   - **Why Compliance Mode is Essential:**\n     - In **Governance Mode**, users with the `s3:BypassGovernanceRetention` permission can still delete objects.\n     - In **Compliance Mode**, **NO ONE—not even the AWS account root user, IAM administrators, or AWS Support engineers—can delete, overwrite, or shorten the retention period of an object** until the 7-year clock expires. This provides 100% defense against rogue insider attacks and ransomware wipers.\n\n2. **Server-Side Encryption with Multi-Account KMS Key:**\n   - Encrypt all objects using **SSE-KMS** with an AWS KMS Customer Master Key (CMK) configured with annual automatic key rotation.\n   - Store the KMS CMK in a **separate dedicated Security Account** governed by AWS Organizations SCPs preventing key deletion (`kms:ScheduleKeyDeletion` denied).\n\n3. **Bucket Access Hardening:**\n   - Enable **S3 Block Public Access** with all 4 settings active.\n   - Set **S3 Object Ownership to BucketOwnerEnforced** to eliminate legacy ACL vulnerabilities.\n   - Enforce in-transit encryption by adding a Bucket Policy denying `aws:SecureTransport: false`.\n\n4. **Automated Lifecycle Expiration:**\n   - Create an **S3 Lifecycle Rule**:\n     - Action: Expire objects after **2,556 days (7 years + 1 day)**.\n     - Action: Permanently delete noncurrent object versions after 30 days.\n   - When the 7-year retention period expires, S3 lifecycle automation safely deletes the files, freeing the bank from perpetual storage costs and legal discovery exposure.",
+  "tagsJson": "[\"S3\",\"Object Lock\",\"WORM\",\"Compliance\",\"Ransomware\",\"Security\"]",
+  "hints": [
+    "Hint 1: What S3 feature provides Write Once Read Many (WORM) storage?",
+    "Hint 2: What is the crucial difference between Governance Mode and Compliance Mode in Object Lock?",
+    "Hint 3: Can Object Lock be enabled on an existing unversioned bucket without AWS Support?",
+    "Hint 4: How do lifecycle rules safely delete objects after their retention period expires?"
+  ],
+  "tags": [
+    "S3",
+    "Object Lock",
+    "WORM",
+    "Compliance",
+    "Ransomware",
+    "Security"
+  ]
+}
+,
+  {
+  "id": "scen-ec2-system-status-remediation",
+  "moduleNumber": 4,
+  "title": "Scenario: Production Web Server Failing System Status Check (1/2 Checks Passed)",
+  "difficulty": "Intermediate",
+  "prompt": "At 03:00 AM, CloudWatch triggers an alarm for your primary production EC2 instance running on us-east-1. The AWS Management Console shows the instance status as '1/2 checks passed' with 'System Status Check: Failed' and 'Instance Status Check: Passed'. Users cannot reach the hosted web portal. The on-call engineer attempts an OS reboot from the console, but the system check remains 'Failed' after 10 minutes. How do you resolve this incident and restore production traffic?",
+  "explanation": "Tests understanding of physical host virtualization failure remediation. System status check failures stem from AWS underlying hardware and cannot be solved with an OS reboot.",
+  "hintsJson": "[\"Hint 1: What is the underlying cause of a System Status Check failure?\",\"Hint 2: Why does rebooting an EC2 instance keep it on the exact same physical host hardware?\",\"Hint 3: What command or console action forces AWS to migrate the instance to a new physical host?\",\"Hint 4: What happens to the public IP address if an Elastic IP is not attached?\"]",
+  "recommendedSolution": "### Step-by-Step Incident Resolution:\n\n1. **Root Cause Identification:**\n   - **StatusCheckFailed_System** indicates a fault in the **underlying physical server hardware, rack power supply, top-of-rack network switch, or hypervisor software**.\n   - An OS reboot (`aws ec2 reboot-instances`) only restarts the virtual operating system inside the existing hypervisor container—it keeps the instance bound to the exact same degraded physical hardware.\n\n2. **Immediate Remediation Workflow (Host Migration):**\n   - To force AWS to relocate the VM to a healthy physical host machine:\n     1. **Stop the Instance:** Run `aws ec2 stop-instances --instance-ids <instance-id>` (or click Instance State → Stop in the Console). This deallocates the hypervisor slot on the damaged hardware host.\n     2. **Start the Instance:** Run `aws ec2 start-instances --instance-ids <instance-id>`. AWS EC2 fleet scheduler selects a completely new, healthy physical server within the same Availability Zone and attaches the persistent EBS root volume.\n     3. **Verify:** Wait 2 minutes and confirm the instance state reaches **'2/2 status checks passed'**.\n\n3. **Critical Networking Caveat (Public IP Address):**\n   - If the instance relied on an auto-assigned public IPv4 address, stopping and starting the instance **releases that public IP back to AWS's public pool**, assigning a new public IP.\n   - Ensure an **Elastic IP (EIP)** was attached, or immediately update your domain's DNS A/CNAME record in Route 53 to point to the newly assigned public IPv4 address.\n\n4. **Preventative Automation:**\n   - Create a CloudWatch Alarm monitoring metric `StatusCheckFailed_System`.\n   - Add an **EC2 Auto-Recovery action** (`arn:aws:automate:REGION:ec2:recover`) so that if a physical hardware failure reoccurs, AWS automatically migrates the instance to healthy hardware without human intervention.",
+  "tagsJson": "[\"EC2\",\"Status Checks\",\"Troubleshooting\",\"High Availability\",\"SysOps\"]",
+  "hints": [
+    "Hint 1: What is the underlying cause of a System Status Check failure?",
+    "Hint 2: Why does rebooting an EC2 instance keep it on the exact same physical host hardware?",
+    "Hint 3: What command or console action forces AWS to migrate the instance to a new physical host?",
+    "Hint 4: What happens to the public IP address if an Elastic IP is not attached?"
+  ],
+  "tags": [
+    "EC2",
+    "Status Checks",
+    "Troubleshooting",
+    "High Availability",
+    "SysOps"
+  ]
+},
+  {
+  "id": "scen-elb-alb-path-routing-microservices",
+  "moduleNumber": 5,
+  "title": "Scenario: Consolidating 4 Independent Web Services into an Application Load Balancer with Path-Based Routing and SNI",
+  "difficulty": "Advanced",
+  "prompt": "An enterprise currently operates 4 independent Classic Load Balancers running 4 separate web services: (1) Main Storefront (www.company.com), (2) REST API (api.company.com), (3) Checkout (/checkout/*), and (4) Legacy App (portal.company.com). The infrastructure bill is bloated with ELB hourly costs, and developers want to enable HTTP/2 and modern SSL with centralized AWS WAF. How would you re-architect this onto a single Application Load Balancer?",
+  "explanation": "Architectural consolidation exercise leveraging ALB Layer 7 content routing, Server Name Indication (SNI), target groups, and HTTP/2 performance.",
+  "hintsJson": "[\"Hint 1: How can an ALB route based on hostnames vs URL paths?\",\"Hint 2: Which feature allows multiple SSL certificates to coexist on port 443?\",\"Hint 3: How are backend compute instances grouped for independent routing?\",\"Hint 4: How do you enforce HTTP-to-HTTPS redirection at the ALB tier?\"]",
+  "recommendedSolution": "### Production Modernization Architecture:\n\n1. **Target Group Segregation:**\n   - Create 4 independent **Target Groups**:\n     - `tg-storefront`: EC2 instances running frontend web application.\n     - `tg-api`: ECS container tasks running backend Node.js APIs.\n     - `tg-checkout`: Auto Scaling Group dedicated to checkout microservice.\n     - `tg-legacy`: Legacy EC2 instances.\n\n2. **Single HTTPS Listener (Port 443) with Server Name Indication (SNI):**\n   - Bind an ACM SSL certificate for `www.company.com` as the default certificate.\n   - Attach additional ACM SSL certificates for `api.company.com` and `portal.company.com` using **Server Name Indication (SNI)** on the same port 443 listener.\n\n3. **Content-Based Routing Rules Configuration:**\n   - **Rule 1 (Host-Based):** If `Host is portal.company.com` → Forward to `tg-legacy`.\n   - **Rule 2 (Host-Based):** If `Host is api.company.com` → Forward to `tg-api`.\n   - **Rule 3 (Path-Based):** If `Path is /checkout/*` → Forward to `tg-checkout`.\n   - **Default Rule:** Forward all other traffic to `tg-storefront`.\n\n4. **Security & Performance Enhancements:**\n   - **HTTP-to-HTTPS Redirection:** Create an HTTP listener on port 80 with a default action of **Redirect to HTTPS port 443 (301 Permanent)**.\n   - **Protocol Upgrade:** Enable **HTTP/2** on the ALB for multiplexed parallel asset streaming.\n   - **Centralized Security:** Attach **AWS WAF** to the single ALB to enforce rate limiting and OWASP Top 10 threat protection across all 4 services simultaneously.",
+  "tagsJson": "[\"ALB\",\"ELB\",\"SNI\",\"Microservices\",\"Path Routing\",\"Architecture\"]",
+  "hints": [
+    "Hint 1: How can an ALB route based on hostnames vs URL paths?",
+    "Hint 2: Which feature allows multiple SSL certificates to coexist on port 443?",
+    "Hint 3: How are backend compute instances grouped for independent routing?",
+    "Hint 4: How do you enforce HTTP-to-HTTPS redirection at the ALB tier?"
+  ],
+  "tags": [
+    "ALB",
+    "ELB",
+    "SNI",
+    "Microservices",
+    "Path Routing",
+    "Architecture"
+  ]
+},
+  {
+  "id": "scen-asg-boot-grace-period-thrashing",
+  "moduleNumber": 5,
+  "title": "Scenario: Auto Scaling Group Terminating Booting Instances in Infinite Loop (Flapping)",
+  "difficulty": "Advanced",
+  "prompt": "A fintech engineering team deploys a new Java Spring Boot microservice to an Auto Scaling Group behind an Application Load Balancer. The application requires 4 minutes to download dependencies, run database schema validations, and start the JVM. However, during scale-out, newly launched instances enter an infinite cycle: the ASG launches an instance, marks it 'Unhealthy' after 30 seconds, terminates it, and launches another one continuously. What is the root cause, and how do you resolve it?",
+  "explanation": "Classic production failure caused by mismatched ELB health checks and ASG Health Check Grace Periods, where the autoscaler kills healthy instances before their software completes startup.",
+  "hintsJson": "[\"Hint 1: How long does the ASG wait before checking an instance's health after launch?\",\"Hint 2: What is the default Health Check Grace Period on an ASG?\",\"Hint 3: What happens when an ALB health check receives connection refused on a booting app?\",\"Hint 4: How do you configure the grace period to accommodate a 4-minute boot time?\"]",
+  "recommendedSolution": "### Root Cause Analysis & Production Remediation:\n\n1. **Root Cause Analysis:**\n   - The Java application requires **4 minutes (240 seconds)** to complete initialization and begin listening on port 8080.\n   - The Auto Scaling Group's **Health Check Grace Period** was set to only **30 seconds** (or left at default with an aggressive ALB health check interval).\n   - At the 31-second mark, the ALB probes `GET /health` on the instance. Because the Spring Boot container is still starting up, the TCP connection is refused.\n   - The ALB immediately marks the instance **Unhealthy**.\n   - Because the ASG's health check type is configured to `ELB`, the ASG detects the unhealthy status, immediately terminates the instance, and launches a replacement. The replacement suffers the exact same fate, creating an **infinite boot-kill loop (instance thrashing/flapping)**.\n\n2. **Step-by-Step Production Fix:**\n   1. **Increase Health Check Grace Period:**\n      - Update the Auto Scaling Group's **Health Check Grace Period to 360 seconds (6 minutes)**:\n        ```bash\n        aws autoscaling update-auto-scaling-group --auto-scaling-group-name api-asg --health-check-grace-period 360\n        ```\n      - This guarantees the ASG ignores all failed ALB health check reports for the first 6 minutes, allowing the JVM to finish booting and pass warm-up checks.\n   2. **Optimize Health Check Parameters on Target Group:**\n      - Set `HealthCheckIntervalSeconds: 15`.\n      - Set `HealthyThresholdCount: 2` (requires 2 consecutive successes to mark healthy).\n      - Set `UnhealthyThresholdCount: 5` (requires 5 consecutive failures before evicting).\n   3. **Accelerate Startup via Golden AMI (Packer):**\n      - Pre-bake dependencies, JVM runtimes, and application binaries directly into a custom AMI so instance boot time drops from 4 minutes to under 30 seconds.",
+  "tagsJson": "[\"Auto Scaling\",\"ASG\",\"Health Checks\",\"Grace Period\",\"Troubleshooting\"]",
+  "hints": [
+    "Hint 1: How long does the ASG wait before checking an instance's health after launch?",
+    "Hint 2: What is the default Health Check Grace Period on an ASG?",
+    "Hint 3: What happens when an ALB health check receives connection refused on a booting app?",
+    "Hint 4: How do you configure the grace period to accommodate a 4-minute boot time?"
+  ],
+  "tags": [
+    "Auto Scaling",
+    "ASG",
+    "Health Checks",
+    "Grace Period",
+    "Troubleshooting"
+  ]
+}
+,
+  {
+  "id": "scen-cloudwatch-alarm-auto-recovery",
+  "moduleNumber": 12,
+  "title": "Scenario: Automating Mission-Critical Database Host Self-Healing via CloudWatch Auto-Recovery",
+  "difficulty": "Intermediate",
+  "prompt": "You manage an EC2-hosted self-managed PostgreSQL database in us-east-1. Due to physical hardware degradation in the AWS data center, the underlying host server occasionally suffers power or hardware faults, triggering StatusCheckFailed_System. When this occurs, manual intervention takes 30 minutes to wake an on-call engineer, stop the instance, and start it on healthy hardware. How can you configure AWS CloudWatch to automatically detect this hardware failure and migrate the instance to a new physical host without human intervention?",
+  "explanation": "Tests hands-on SRE automation using CloudWatch Alarms combined with native EC2 Auto-Recovery actions to achieve self-healing infrastructure.",
+  "hintsJson": "[\"Hint 1: Which CloudWatch metric monitors physical AWS hardware and hypervisor health?\",\"Hint 2: What EC2-specific action can be attached directly to a CloudWatch Alarm?\",\"Hint 3: Does an EC2 auto-recovery action preserve the instance ID, private IP, and Elastic IP?\",\"Hint 4: What prerequisites must the EC2 instance meet to support auto-recovery (EBS-backed, instance type)?\"]",
+  "recommendedSolution": "### Step-by-Step Self-Healing Automation:\n\n1. **Understand EC2 Auto-Recovery Action:**\n   - Amazon CloudWatch supports an automated action: `arn:aws:automate:REGION:ec2:recover`.\n   - When attached to an alarm monitoring physical hardware degradation, AWS automatically recovers the instance onto a **new physical host server** within the same Availability Zone.\n   - **What Is Preserved:** The recovered instance retains its **Instance ID, Private IPv4 address, Elastic IP, attached EBS volumes, and metadata**.\n\n2. **Prerequisites for Auto-Recovery:**\n   - The instance must be **EBS-backed** (Instance Store-backed root volumes cannot be recovered).\n   - The instance must use modern virtualization families (C3, C4, C5, C6i, M4, M5, M6i, R4, R5, T2, T3, etc.).\n\n3. **CLI / Terraform Implementation:**\n   - Create a CloudWatch Alarm monitoring metric `StatusCheckFailed_System`:\n```bash\naws cloudwatch put-metric-alarm \\\n  --alarm-name \"AutoRecover-Postgres-Host-Fault\" \\\n  --namespace \"AWS/EC2\" \\\n  --metric-name \"StatusCheckFailed_System\" \\\n  --dimensions Name=InstanceId,Value=i-0e54d474bc8e85f27 \\\n  --statistic \"Maximum\" \\\n  --period 60 \\\n  --evaluation-periods 2 \\\n  --threshold 1 \\\n  --comparison-operator \"GreaterThanOrEqualToThreshold\" \\\n  --alarm-actions \\\n    \"arn:aws:automate:us-east-1:ec2:recover\" \\\n    \"arn:aws:sns:us-east-1:123456789012:SRE-Critical-Alerts\"\n```\n\n4. **Outcome:**\n   - If physical hardware fails, the alarm enters the **ALARM** state after two consecutive 1-minute checks.\n   - AWS automatically moves the VM to a healthy physical host, boots the operating system, and sends an SNS notification. Total downtime drops from 30 minutes to **under 3 minutes** with zero human paging.",
+  "tagsJson": "[\"CloudWatch\",\"EC2\",\"Auto-Recovery\",\"Self-Healing\",\"SRE\",\"Automation\"]",
+  "hints": [
+    "Hint 1: Which CloudWatch metric monitors physical AWS hardware and hypervisor health?",
+    "Hint 2: What EC2-specific action can be attached directly to a CloudWatch Alarm?",
+    "Hint 3: Does an EC2 auto-recovery action preserve the instance ID, private IP, and Elastic IP?",
+    "Hint 4: What prerequisites must the EC2 instance meet to support auto-recovery (EBS-backed, instance type)?"
+  ],
+  "tags": [
+    "CloudWatch",
+    "EC2",
+    "Auto-Recovery",
+    "Self-Healing",
+    "SRE",
+    "Automation"
+  ]
+},
+  {
+  "id": "scen-cloudwatch-synthetics-api-canary",
+  "moduleNumber": 12,
+  "title": "Scenario: Proactive Incident Detection: Implementing 24x7 CloudWatch Synthetics Canaries for Payments API",
+  "difficulty": "Advanced",
+  "prompt": "An e-commerce company experiences a silent outage: third-party payment gateway certificates expire at midnight, causing 100% of checkout attempts to fail with SSL handshake errors. Because backend EC2 instances have normal CPU (20%) and zero traffic arrives, standard CloudWatch CPU alarms never fire, and the engineering team only discovers the outage 6 hours later when customer support is flooded with complaints. How do you design an active 24x7 synthetic monitoring pipeline using CloudWatch Synthetics Canaries to detect this within 60 seconds?",
+  "explanation": "Contrasts passive resource monitoring with proactive synthetic user transaction testing to eliminate silent customer-facing outages.",
+  "hintsJson": "[\"Hint 1: Why did passive metrics like CPU and memory fail to detect the expired SSL certificate?\",\"Hint 2: What is a CloudWatch Synthetics Canary, and how often can it execute?\",\"Hint 3: What does a canary script emulate (HTTP requests, headless browser interactions)?\",\"Hint 4: How does a canary trigger an immediate PagerDuty or SNS alarm upon failure?\"]",
+  "recommendedSolution": "### Active Observability Architecture Design:\n\n1. **The Root Flaw in Passive Monitoring:**\n   - Passive metrics (CPU, Memory, Disk) only report **resource utilization of your instances**. If traffic stops flowing due to an expired external certificate or bad DNS, CPU utilization actually drops, leaving passive alarms completely blind to the catastrophe.\n\n2. **Deploying CloudWatch Synthetics Canaries:**\n   - Create a **CloudWatch Synthetics Canary** running a headless Node.js Puppeteer or Python script configured with schedule `rate(1 minute)`.\n   - **Canary Execution Flow (Every 60 Seconds):**\n     1. The canary sends a simulated payment payload to `https://api.company.com/v1/payments/health-check`.\n     2. It establishes a real TLS/SSL handshake, validating that certificates are valid, unexpired, and trusted.\n     3. It asserts that the HTTP response code is `200 OK` and the response payload contains `{\"gateway_status\": \"connected\"}`.\n     4. It captures HTTP timings (DNS resolution, SSL connect, time-to-first-byte) and stores execution artifacts (screenshots, HAR logs) in Amazon S3.\n\n3. **Alarm & Incident Notification:**\n   - CloudWatch Synthetics automatically creates metrics: `SuccessPercent` and `Duration`.\n   - Create a CloudWatch Alarm:\n     - Metric: `SuccessPercent < 100` for **1 evaluation period (1 minute)**.\n     - Action: Dispatch immediate high-priority alert via Amazon SNS to **PagerDuty / Opsgenie**.\n   - **Result:** Within **60 seconds** of any certificate expiration, DNS failure, or API code regression, the on-call engineer is paged with complete screenshot evidence before customers notice.",
+  "tagsJson": "[\"CloudWatch\",\"Synthetics\",\"Canaries\",\"Observability\",\"API Monitoring\",\"SRE\"]",
+  "hints": [
+    "Hint 1: Why did passive metrics like CPU and memory fail to detect the expired SSL certificate?",
+    "Hint 2: What is a CloudWatch Synthetics Canary, and how often can it execute?",
+    "Hint 3: What does a canary script emulate (HTTP requests, headless browser interactions)?",
+    "Hint 4: How does a canary trigger an immediate PagerDuty or SNS alarm upon failure?"
+  ],
+  "tags": [
+    "CloudWatch",
+    "Synthetics",
+    "Canaries",
+    "Observability",
+    "API Monitoring",
+    "SRE"
+  ]
+},
+  {
+  "id": "scen-asg-scheduled-and-dynamic-scaling",
+  "moduleNumber": 5,
+  "title": "Scenario: Black Friday Capacity Planning: Combining Scheduled Scaling with Dynamic Target Tracking",
+  "difficulty": "Advanced",
+  "prompt": "An online retailer is preparing for Black Friday. Historical data shows traffic spikes 20x at exactly 00:00:01 AM on Friday when promotional doorbusters go live. If relying solely on dynamic scaling policies, instances take 4 minutes to launch and warm up, resulting in 504 Gateway Timeouts for the first 10,000 shoppers. How do you combine Scheduled Scaling with Dynamic Target Tracking to guarantee zero downtime while still optimizing costs throughout the weekend?",
+  "explanation": "Mastery of hybrid auto-scaling strategies: pre-provisioning capacity for anticipated step-function traffic spikes while keeping dynamic elastic policies active for unpredictable fluctuations.",
+  "hintsJson": "[\"Hint 1: Why is reactive dynamic scaling insufficient for instantaneous 20x traffic spikes?\",\"Hint 2: What ASG feature allows setting Min, Max, and Desired capacity at a specific calendar date and time?\",\"Hint 3: What time should the scheduled scaling action trigger relative to midnight?\",\"Hint 4: How does Target Tracking take over after the scheduled scaling baseline is established?\"]",
+  "recommendedSolution": "### Production Scaling Architecture & Execution Plan:\n\n1. **Why Reactive Scaling Fails for Flash Events:**\n   - Target Tracking and Step Scaling are **reactive**: they require metric thresholds to breach for 1-3 minutes, followed by 3-5 minutes for EC2 instances to launch, download code, and pass ELB health checks.\n   - For an instantaneous 20x surge at midnight, shoppers overwhelm the existing instances before the ASG can finish booting replacements, causing cascading 502/504 timeouts.\n\n2. **Step 1: Scheduled Scaling (Proactive Warm Capacity):**\n   - Configure an **ASG Scheduled Action** to pre-provision capacity **30 minutes prior to the event (11:30 PM Thursday)**:\n```bash\naws autoscaling put-scheduled-update-group-action \\\n  --auto-scaling-group-name ecommerce-web-asg \\\n  --scheduled-action-name PreWarmBlackFriday \\\n  --start-time \"2026-11-26T23:30:00Z\" \\\n  --min-size 20 \\\n  --max-size 100 \\\n  --desired-capacity 40\n```\n   - By 11:35 PM, all 40 instances are fully booted, warmed up, and passing ALB health checks. When midnight strikes, the infrastructure absorbs the 20x surge effortlessly with 0% dropped connections.\n\n3. **Step 2: Dynamic Target Tracking (Handling Ongoing Weekend Waves):**\n   - Maintain an active **Target Tracking Scaling Policy** on the ASG:\n     - Metric: **ALBRequestCountPerTarget = 1,000**.\n   - If Black Friday traffic exceeds expectations and requires 60 instances, Target Tracking seamlessly scales out beyond the 40 pre-warmed instances up to the new `max-size: 100`.\n\n4. **Step 3: Scheduled Ramp-Down:**\n   - Configure a second scheduled action for Monday morning (e.g. 06:00 AM) to reset `min-size: 2` and `desired-capacity: 4`, allowing dynamic scaling to take over for normal operations and avoiding excess post-holiday spending.",
+  "tagsJson": "[\"Auto Scaling\",\"ASG\",\"Scheduled Scaling\",\"Target Tracking\",\"Capacity Planning\"]",
+  "hints": [
+    "Hint 1: Why is reactive dynamic scaling insufficient for instantaneous 20x traffic spikes?",
+    "Hint 2: What ASG feature allows setting Min, Max, and Desired capacity at a specific calendar date and time?",
+    "Hint 3: What time should the scheduled scaling action trigger relative to midnight?",
+    "Hint 4: How does Target Tracking take over after the scheduled scaling baseline is established?"
+  ],
+  "tags": [
+    "Auto Scaling",
+    "ASG",
+    "Scheduled Scaling",
+    "Target Tracking",
+    "Capacity Planning"
+  ]
+},
+  {
+  "id": "scen-net-01",
+  "moduleNumber": 3,
+  "topicSlug": "devops-network-protocols-dns-troubleshooting-tools",
+  "title": "Production Incident: Diagnosing 502 Bad Gateway vs 504 Gateway Timeout Outages",
+  "difficulty": "Advanced",
+  "prompt": "During an e-commerce flash sale, customer checkout requests through an Application Load Balancer (ALB) suddenly spike with HTTP 502 Bad Gateway and HTTP 504 Gateway Timeout errors. The operations team is unsure whether the root cause is ALB misconfiguration, Nginx reverse proxy worker exhaustion, or backend Node.js microservice crashes. How do you systematically differentiate 502 from 504, pinpoint the failing layer, and resolve the outage under high traffic?",
+  "explanation": "HTTP 502 and 504 represent fundamentally different failure modes in reverse proxy architectures. A 502 Bad Gateway indicates that the reverse proxy received an invalid response, an immediate TCP RST (reset), or an unexpected connection termination from the upstream backend (typically due to application crashes, uncaught exceptions, or out-of-memory OOM kills). A 504 Gateway Timeout indicates that the reverse proxy established a connection or waited for a response, but the upstream backend took longer than the configured timeout threshold (e.g. 60 seconds) to respond (typically due to database thread pool exhaustion, unindexed queries, or deadlocks).",
+  "hintsJson": "[\"Check ALB Access Logs: compare elb_status_code with target_status_code.\",\"Check backend target response time and memory metrics in CloudWatch.\",\"Differentiate connection reset (502) from connection timeout (504).\"]",
+  "recommendedSolution": "### Systematic Root-Cause Analysis & Remediation:\n\n1. **Diagnostic Differentiation:**\n   - **502 Bad Gateway:** Upstream backend answered immediately with an error or closed the connection prematurely (TCP RST). Caused by Node.js process crashing, container OOM-killed, or keep-alive timeout mismatch between ALB (60s) and backend (Node.js default 5s).\n   - **504 Gateway Timeout:** Upstream backend accepted the request but failed to complete processing within ALB idle timeout (default 60s). Caused by blocking I/O, database connection pool exhaustion, or downstream API deadlocks.\n\n2. **Metric & Log Investigation:**\n   - Query CloudWatch metrics for ALB: HTTPCode_Target_5XX vs HTTPCode_ELB_5XX. If Target_5XX is zero but ELB_502 is high, the target dropped connection before sending headers.\n   - Inspect ALB access logs: examine `request_processing_time`, `target_processing_time`, and `response_processing_time`. If `target_processing_time` = -1, the target did not respond in time (504).\n   - Inspect Node.js backend container logs via `kubectl logs` or CloudWatch Logs: look for `JavaScript heap out of memory` or unhandled promise rejections.\n\n3. **Immediate Remediation:**\n   - **Fix Keep-Alive Mismatch:** Configure backend Node.js server keep-alive timeout to 65 seconds (higher than ALB 60s idle timeout) to prevent backend from closing connections before ALB: `server.keepAliveTimeout = 65000; server.headersTimeout = 66000;`\n   - **Scale Backend Replicas:** Increase ECS/Kubernetes target replicas immediately to drain pending request backlog.\n   - **Increase Database Connection Pool & Add Read Replicas:** Resolve 504 database thread starvation by offloading search queries to read replicas and caching session data in Redis.",
+  "tagsJson": "[\"HTTP Status Codes\",\"502 Bad Gateway\",\"504 Gateway Timeout\",\"Reverse Proxy\",\"ALB\",\"DevOps Scenario\"]",
+  "hints": [
+    "Check ALB Access Logs: compare elb_status_code with target_status_code.",
+    "Check backend target response time and memory metrics in CloudWatch.",
+    "Differentiate connection reset (502) from connection timeout (504)."
+  ],
+  "tags": [
+    "HTTP Status Codes",
+    "502 Bad Gateway",
+    "504 Gateway Timeout",
+    "Reverse Proxy",
+    "ALB",
+    "DevOps Scenario"
+  ]
+},
+  {
+  "id": "scen-net-02",
+  "moduleNumber": 3,
+  "topicSlug": "devops-networking-osi-tcpip-subnetting-cidr",
+  "title": "Enterprise IPAM: Designing Subnets for a /24 Network & Handling AWS 5-IP Reservation",
+  "difficulty": "Intermediate",
+  "prompt": "You are allocated the Class C network block 192.168.10.0/24 to host a production web application and a staging environment. You must divide this /24 block into two equal subnets. Calculate the subnet mask, network address, broadcast address, and usable IP range for each subnet. Furthermore, explain why deploying this design inside an AWS VPC provides 3 fewer usable host IPs per subnet than deploying on physical on-premises servers.",
+  "explanation": "Dividing a /24 network (256 addresses, mask 255.255.255.0) into two equal subnets requires borrowing 1 host bit, yielding a /25 prefix (mask 255.255.255.128) with 128 total IPs per subnet. On-premises networking reserves 2 IP addresses per subnet (Network ID and Broadcast), yielding 126 usable hosts (2^7 - 2). AWS VPC reserves 5 IP addresses per subnet (.0 Network, .1 VPC Router, .2 Amazon DNS Resolver, .3 Future AWS reservation, .255 Broadcast), yielding only 123 usable host IPs.",
+  "hintsJson": "[\"Subnetting formula: Usable hosts = 2^H - 2 on-premises, and 2^H - 5 in AWS VPC.\",\"/25 borrows 1 bit from host portion: 32 - 25 = 7 host bits (2^7 = 128 IPs).\",\"List the exact 5 reserved IP addresses in AWS VPC.\"]",
+  "recommendedSolution": "### Subnetting Architecture & AWS VPC Comparison:\n\n1. **Subnetting Calculations for 192.168.10.0/24:**\n   - Original Network: 192.168.10.0/24 (Subnet Mask: 255.255.255.0, 256 total IPs).\n   - Subnetting into 2 Equal Subnets (/25, Subnet Mask: 255.255.255.128, 128 total IPs each).\n\n   **Subnet 1 (Production Subnet - 192.168.10.0/25):**\n   - Network Address: `192.168.10.0`\n   - Broadcast Address: `192.168.10.127`\n   - Netmask: `255.255.255.128`\n   - On-Premises Usable IP Range: `192.168.10.1` to `192.168.10.126` (126 usable host IPs).\n\n   **Subnet 2 (Staging Subnet - 192.168.10.128/25):**\n   - Network Address: `192.168.10.128`\n   - Broadcast Address: `192.168.10.255`\n   - Netmask: `255.255.255.128`\n   - On-Premises Usable IP Range: `192.168.10.129` to `192.168.10.254` (126 usable host IPs).\n\n2. **Why AWS VPC Provides 3 Fewer Usable IPs (123 vs 126):**\n   In an AWS VPC, AWS reserves 5 IP addresses in every subnet for cloud infrastructure services:\n   - **1st IP (.0 / .128):** Network address.\n   - **2nd IP (.1 / .129):** Reserved by AWS for the default VPC virtual router.\n   - **3rd IP (.2 / .130):** Reserved by AWS for the Amazon Route 53 DNS server (VPC base IP + 2).\n   - **4th IP (.3 / .131):** Reserved by AWS for future internal use.\n   - **5th IP (.127 / .255):** Network broadcast address (AWS VPC does not support broadcast, but reserves the address per standard).\n\n   **Result in AWS VPC:** 128 - 5 = **123 usable IP addresses** for EC2 instances, ENIs, and container pods per subnet.",
+  "tagsJson": "[\"Subnetting\",\"CIDR\",\"IPAM\",\"AWS VPC Reserved IPs\",\"DevOps Scenario\"]",
+  "hints": [
+    "Subnetting formula: Usable hosts = 2^H - 2 on-premises, and 2^H - 5 in AWS VPC.",
+    "/25 borrows 1 bit from host portion: 32 - 25 = 7 host bits (2^7 = 128 IPs).",
+    "List the exact 5 reserved IP addresses in AWS VPC."
+  ],
+  "tags": [
+    "Subnetting",
+    "CIDR",
+    "IPAM",
+    "AWS VPC Reserved IPs",
+    "DevOps Scenario"
+  ]
+},
+  {
+  "id": "scen-net-03",
+  "moduleNumber": 3,
+  "topicSlug": "devops-network-protocols-dns-troubleshooting-tools",
+  "title": "DevOps Linux Incident: Step-by-Step Triage of a Failing Payment Webhook",
+  "difficulty": "Advanced",
+  "prompt": "An automated billing worker running inside an isolated Linux container in an AWS private subnet fails to send outgoing webhook notifications to a partner's HTTPS API ('https://hooks.partner.com/notify'). Curl commands hang indefinitely with 'Connection timed out'. Provide a comprehensive step-by-step diagnostic triage procedure using Linux command-line tools and AWS VPC routing analysis to identify the root cause and restore webhook delivery.",
+  "explanation": "When an outbound HTTPS connection hangs with 'Connection timed out', the root cause is almost always Layer 3 routing or Layer 4 firewall packet filtering. A systematic triage checks DNS resolution (dig), outbound route table rules (NAT Gateway vs local), firewall egress rules (Security Groups and NACLs), and TCP SYN reachability (traceroute and telnet/nc).",
+  "hintsJson": "[\"Differentiate 'Connection refused' (service rejected) from 'Connection timed out' (packets dropped).\",\"Verify if the private subnet has an outbound route 0.0.0.0/0 pointing to a healthy NAT Gateway.\",\"Check if ephemeral return ports (1024-65535) are allowed on the Network ACL (NACL).\"]",
+  "recommendedSolution": "### Step-by-Step Diagnostic Runbook:\n\n1. **Step 1: Verify DNS Resolution:**\n   - Execute `dig +short hooks.partner.com`.\n   - If it returns an IP (e.g. 203.0.113.80), DNS is functioning properly. If it hangs or returns empty, check `/etc/resolv.conf` and Route 53 VPC DNS resolution attributes (`enableDnsSupport`, `enableDnsHostnames`).\n\n2. **Step 2: Test TCP Layer 4 Reachability:**\n   - Execute `nc -zv -w 5 hooks.partner.com 443` or `curl -Iv --connect-timeout 5 https://hooks.partner.com/notify`.\n   - **Observation:** Hangs until timeout -> Packets are being silently dropped by an egress firewall or blackhole route.\n\n3. **Step 3: Analyze Route Table (Longest Prefix Match):**\n   - Check the AWS Route Table associated with the private subnet via AWS CLI:\n     `aws ec2 describe-route-tables --filter Name=association.subnet-id,Values=subnet-private123`\n   - Verify destination `0.0.0.0/0`:\n     - If `0.0.0.0/0` is missing or points to an Internet Gateway (`igw-xxx`) instead of a NAT Gateway (`nat-xxx`), instances without public IPs cannot reach the Internet.\n     - If it points to a NAT Gateway, verify the NAT Gateway state is `available` and resides in a Public Subnet with a route to an IGW.\n\n4. **Step 4: Audit Security Groups & Stateless NACLs:**\n   - **Security Group:** Outbound rules must allow HTTPS (port 443) to `0.0.0.0/0`.\n   - **Stateless NACL Check:** Even if outbound rule allows port 443, NACLs are stateless. The inbound NACL rule on the private subnet must explicitly allow return traffic on ephemeral client ports (TCP 1024-65535) from `0.0.0.0/0`. If missing, the return TCP SYN-ACK packet is dropped by the NACL, causing curl to hang.\n\n5. **Step 5: Execute Hop-by-Hop Trace:**\n   - Run `traceroute -n -T -p 443 hooks.partner.com`.\n   - If trace stops at the VPC virtual router (.1), the route table is dropping the packet. If it traverses the NAT Gateway but stops upstream, verify partner firewall IP whitelisting for the NAT Gateway Elastic IP.",
+  "tagsJson": "[\"Linux Troubleshooting\",\"NAT Gateway\",\"Route Table\",\"curl\",\"dig\",\"NACL\",\"DevOps Scenario\"]",
+  "hints": [
+    "Differentiate 'Connection refused' (service rejected) from 'Connection timed out' (packets dropped).",
+    "Verify if the private subnet has an outbound route 0.0.0.0/0 pointing to a healthy NAT Gateway.",
+    "Check if ephemeral return ports (1024-65535) are allowed on the Network ACL (NACL)."
+  ],
+  "tags": [
+    "Linux Troubleshooting",
+    "NAT Gateway",
+    "Route Table",
+    "curl",
+    "dig",
+    "NACL",
+    "DevOps Scenario"
+  ]
+},
 ];
