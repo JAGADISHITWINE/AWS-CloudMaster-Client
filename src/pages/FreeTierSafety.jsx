@@ -15,9 +15,29 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
+const DEFAULT_SAFETY_DATA = {
+  settings: {
+    monthlyBudgetLimit: 5.0,
+    isFreeTierOnlyMode: true,
+    alertEmail: 'architect@enterprise.local'
+  },
+  cleanupRecords: [],
+  commonCostPitfalls: [
+    { service: 'NAT Gateway', cost: '$0.045/hr (~$32/mo)', tip: 'Delete NAT Gateways immediately after completing private subnet testing.' },
+    { service: 'Elastic IP (Unattached)', cost: '$0.005/hr (~$3.60/mo)', tip: 'Release unattached Elastic IPs when stopping EC2 instances.' },
+    { service: 'Provisioned IOPS (io1/io2)', cost: 'High storage tier', tip: 'Always select General Purpose gp3 for learning workloads.' },
+    { service: 'Idle Application Load Balancers', cost: '$0.0225/hr (~$16/mo)', tip: 'Delete ALBs when testing concludes.' }
+  ],
+  officialLinks: [
+    { title: 'AWS Free Tier Limits Official Documentation', url: 'https://aws.amazon.com/free/' },
+    { title: 'AWS Cost Explorer Console', url: 'https://console.aws.amazon.com/cost-management/' },
+    { title: 'AWS Budgets & Alarms Setup', url: 'https://console.aws.amazon.com/billing/' }
+  ]
+};
+
 export default function FreeTierSafety() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(DEFAULT_SAFETY_DATA);
+  const [loading, setLoading] = useState(false);
   const [budgetLimit, setBudgetLimit] = useState(5.0);
   const [freeTierOnly, setFreeTierOnly] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -28,15 +48,15 @@ export default function FreeTierSafety() {
   }, []);
 
   const loadSafetyData = () => {
-    setLoading(true);
     api.getSafetyCenter()
       .then(res => {
-        setData(res);
-        setBudgetLimit(res.settings?.monthlyBudgetLimit || 5.0);
-        setFreeTierOnly(res.settings?.isFreeTierOnlyMode ?? true);
+        if (res) {
+          setData(res);
+          setBudgetLimit(res.settings?.monthlyBudgetLimit || 5.0);
+          setFreeTierOnly(res.settings?.isFreeTierOnlyMode ?? true);
+        }
       })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+      .catch(err => console.log('Offline safety center in use:', err.message));
   };
 
   const handleSaveSettings = async () => {

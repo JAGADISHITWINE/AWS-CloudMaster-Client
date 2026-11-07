@@ -22,9 +22,11 @@ import {
   Image as ImageIcon,
   Maximize2,
   X,
-  Briefcase
+  Briefcase,
+  CheckSquare
 } from 'lucide-react';
 import DiagramViewer from '../components/DiagramViewer';
+import FocusStudyTimer from '../components/FocusStudyTimer';
 import { api } from '../services/api';
 import { YOUTUBE_TOPIC_VIDEOS } from '../data/youtubeData';
 import { getArchitectureForTopic } from '../data/architectureData';
@@ -34,17 +36,35 @@ import { FALLBACK_NOTES } from '../data/fallbackNotesData';
 import { getFallbackTopic } from '../data/fallbackModulesData';
 
 export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    if (topicSlug && FALLBACK_NOTES[topicSlug]) {
+      return {
+        notes: FALLBACK_NOTES[topicSlug],
+        topic: getFallbackTopic(topicSlug)
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
   const [isRead, setIsRead] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [selectedModalImage, setSelectedModalImage] = useState(null);
   const [expandedInterviewQuestion, setExpandedInterviewQuestion] = useState(null);
+  const [isDistractionFree, setIsDistractionFree] = useState(false);
 
   useEffect(() => {
     if (!topicSlug) return;
-    setLoading(true);
+    if (FALLBACK_NOTES[topicSlug]) {
+      setData({
+        notes: FALLBACK_NOTES[topicSlug],
+        topic: getFallbackTopic(topicSlug)
+      });
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     Promise.all([
       api.getNotes(topicSlug),
       api.getTopic(topicSlug)
@@ -158,6 +178,11 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           <span className="text-xs text-slate-300 font-semibold">{topic.module?.title}</span>
           <span className="text-slate-600">•</span>
           <span className="text-xs text-amber-400 font-bold uppercase tracking-wider">{topic.difficulty}</span>
+          <span className="text-slate-600">•</span>
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm">
+            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            Concentration Target: {topic.estimatedMinutes || 35} mins
+          </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
           {topic.title}
@@ -176,34 +201,61 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         </div>
       </div>
 
+      {/* ⏱ Interactive Concentration & Focus Study Interval Station */}
+      <FocusStudyTimer
+        topic={topic}
+        isDistractionFree={isDistractionFree}
+        onToggleDistractionFree={() => setIsDistractionFree(!isDistractionFree)}
+      />
+
+      {/* Distraction-Free Sticky Focus Mode Banner */}
+      {isDistractionFree && (
+        <div className="sticky top-16 z-30 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-xl flex items-center justify-between shadow-xl animate-in fade-in">
+          <div className="flex items-center gap-2 text-xs font-bold text-indigo-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
+            <span>Distraction-Free Concentration Mode Active</span>
+            <span className="text-slate-400 hidden sm:inline">• Full focus on notes, diagrams &amp; interview walkthroughs</span>
+          </div>
+          <button
+            onClick={() => setIsDistractionFree(false)}
+            className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span>Exit Focus Mode</span>
+          </button>
+        </div>
+      )}
+
       {/* 📺 Curated YouTube Masterclass & Video Tutorial */}
       {(() => {
         const video = YOUTUBE_TOPIC_VIDEOS[topic.slug] || YOUTUBE_TOPIC_VIDEOS[topicSlug];
         if (!video) return null;
         return (
           <section className="p-6 rounded-3xl neo-card border-rose-500/30 bg-gradient-to-br from-rose-950/20 via-slate-950 to-slate-900/90 space-y-4 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+              <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                <div className="p-2.5 rounded-2xl bg-rose-600/20 text-rose-400 border border-rose-500/30 flex-shrink-0">
                   <Youtube className="w-5 h-5 text-rose-500 fill-rose-500/20" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/25">
                       Curated Masterclass
                     </span>
                     <span className="text-slate-600 text-xs">•</span>
                     <span className="text-xs font-semibold text-slate-300">{video.channel}</span>
                     <span className="text-slate-600 text-xs">•</span>
-                    <span className="text-xs text-amber-400 font-bold">{video.duration}</span>
+                    <span className="text-xs text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      ⏱ {video.duration}
+                    </span>
                   </div>
-                  <h2 className="text-base sm:text-lg font-black text-white mt-0.5">
+                  <h2 className="text-base sm:text-lg font-black text-white truncate">
                     {video.title}
                   </h2>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                 <a
                   href={video.youtubeUrl}
                   target="_blank"
@@ -217,7 +269,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
                 {onNavigate && (
                   <button
                     onClick={() => onNavigate('ai-trainer')}
-                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-indigo-300 border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                   >
                     <Bot className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Ask AI About Video</span>
@@ -614,7 +666,14 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onSelectTopic(topic.slug, 'quiz-center')}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 hover:opacity-95 text-white text-xs font-black transition flex items-center gap-2 shadow-glow-indigo"
+          >
+            <CheckSquare className="w-4 h-4" />
+            Take Topic Quiz →
+          </button>
           <button
             onClick={() => onSelectTopic(topic.slug, 'practice-lab')}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:opacity-95 text-white text-xs font-black transition flex items-center gap-2 shadow-glow-gold"

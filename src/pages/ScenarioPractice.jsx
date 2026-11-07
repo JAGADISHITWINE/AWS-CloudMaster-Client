@@ -17,17 +17,16 @@ import { api } from '../services/api';
 import { FALLBACK_SCENARIOS } from '../data/fallbackScenariosData';
 
 export default function ScenarioPractice({ onNavigate }) {
-  const [scenarios, setScenarios] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
-  const [activeScenario, setActiveScenario] = useState(null);
+  const [scenarios, setScenarios] = useState(FALLBACK_SCENARIOS);
+  const [selectedId, setSelectedId] = useState(FALLBACK_SCENARIOS[0]?.id || null);
+  const [activeScenario, setActiveScenario] = useState(FALLBACK_SCENARIOS[0] || null);
   const [userAnswer, setUserAnswer] = useState('');
   const [revealedHints, setRevealedHints] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     api.getScenarios()
       .then(res => {
         if (res.scenarios && res.scenarios.length > 0) {
