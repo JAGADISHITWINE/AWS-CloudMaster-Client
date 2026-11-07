@@ -54,20 +54,20 @@ const CATEGORY_ICONS = {
 };
 
 export default function InterviewPrep({ onNavigate }) {
-  const [questions, setQuestions] = useState([]);
+  const initialQuestions = getAllInterviewQuestions();
+  const [questions, setQuestions] = useState(initialQuestions);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [filterDifficulty, setFilterDifficulty] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeQuestion, setActiveQuestion] = useState(null);
+  const [activeQuestion, setActiveQuestion] = useState(initialQuestions[0] || null);
   const [isMockMode, setIsMockMode] = useState(false);
   const [answerInput, setAnswerInput] = useState('');
   const [evaluating, setEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Initialize data from API with client fallback
   useEffect(() => {
-    setLoading(true);
     api.getInterviewQuestions()
       .then(res => {
         if (res.questions && res.questions.length > 0) {

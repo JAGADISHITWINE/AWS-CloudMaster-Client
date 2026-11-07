@@ -18,6 +18,7 @@ import {
 import CostRiskBadge from '../components/CostRiskBadge';
 import DiagramViewer from '../components/DiagramViewer';
 import { getArchitectureForTopic } from '../data/architectureData';
+import { FALLBACK_MODULES } from '../data/fallbackModulesData';
 
 export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule }) {
   const [filterLevel, setFilterLevel] = useState('ALL');
@@ -27,20 +28,13 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
   const [expandedModules, setExpandedModules] = useState({});
 
-  if (!modules || modules.length === 0) {
-    return (
-      <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm font-medium">Loading learning roadmap...</p>
-      </div>
-    );
-  }
+  const activeModules = (modules && modules.length > 0) ? modules : FALLBACK_MODULES;
 
   const toggleModuleExpanded = (modNum) => {
     setExpandedModules(prev => ({ ...prev, [modNum]: !prev[modNum] }));
   };
 
-  const filteredModules = modules.filter(m => {
+  const filteredModules = activeModules.filter(m => {
     const matchesLevel = filterLevel === 'ALL' || m.level.toUpperCase() === filterLevel;
     const isDevOps = m.moduleNumber >= 16 && m.moduleNumber <= 20;
     const isFullStack = m.moduleNumber >= 21;
@@ -75,7 +69,7 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
         <div>
           <div className="flex items-center gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-300 border border-amber-500/35 flex items-center gap-1.5 shadow-sm">
-              <Sparkles className="w-3 h-3 text-amber-400" /> {modules.length} Structured Modules
+              <Sparkles className="w-3 h-3 text-amber-400" /> {activeModules.length} Structured Modules
             </span>
             <span className="text-xs text-slate-400 font-medium hidden sm:inline">
               AWS Cloud + DevOps Pipelines + Full-Stack (Angular &amp; Node.js)
@@ -155,7 +149,7 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
           }`}
         >
           <span>All Modules</span>
-          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold">{modules.length}</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-800 text-slate-300 font-bold">{activeModules.length}</span>
         </button>
 
         <button
@@ -307,6 +301,10 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
                             <span className="text-xs font-bold text-slate-200 hover:text-cyan-300 transition cursor-pointer" onClick={() => onSelectTopic(t.slug, 'topic-detail')}>
                               {t.title}
                             </span>
+                            <span className="flex items-center gap-1 text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 font-bold">
+                              <Clock className="w-2.5 h-2.5" />
+                              {t.estimatedMinutes || 35}m focus
+                            </span>
                             <CostRiskBadge level={t.costRisk} />
                           </div>
                           <p className="text-[11px] text-slate-400 line-clamp-1">{t.summary}</p>
@@ -334,10 +332,18 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
                         <button
                           onClick={() => onSelectTopic(t.slug, 'topic-detail')}
                           className="px-2 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-500/30 text-[10px] font-bold transition flex items-center gap-1"
-                          title="Read Notes"
+                          title="Read Notes & Focus Timer"
                         >
                           <BookOpen className="w-3 h-3" />
                           <span>Notes</span>
+                        </button>
+                        <button
+                          onClick={() => onSelectTopic(t.slug, 'topic-detail')}
+                          className="px-2 py-1 rounded-lg bg-amber-400/20 hover:bg-amber-500 text-amber-300 hover:text-white border border-amber-400/40 text-[10px] font-black transition flex items-center gap-1"
+                          title={`Concentrate & Study (${t.estimatedMinutes || 35} mins Focus)`}
+                        >
+                          <Clock className="w-3 h-3 text-amber-400" />
+                          <span>{t.estimatedMinutes || 35}m Focus</span>
                         </button>
                         <button
                           onClick={() => onSelectTopic(t.slug, 'practice-lab')}

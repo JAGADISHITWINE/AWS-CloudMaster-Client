@@ -25,8 +25,8 @@ import { getLabStepScreenshot } from '../data/topicRealImagesData';
 import { FALLBACK_LABS } from '../data/fallbackLabsData';
 
 export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
-  const [lab, setLab] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [lab, setLab] = useState(() => (topicSlug && FALLBACK_LABS[topicSlug]) ? FALLBACK_LABS[topicSlug] : null);
+  const [loading, setLoading] = useState(() => !(topicSlug && FALLBACK_LABS[topicSlug]));
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isCleanedUp, setIsCleanedUp] = useState(false);
   const [activeStepTab, setActiveStepTab] = useState(1);
@@ -34,7 +34,12 @@ export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
 
   useEffect(() => {
     if (!topicSlug) return;
-    setLoading(true);
+    if (FALLBACK_LABS[topicSlug]) {
+      setLab(FALLBACK_LABS[topicSlug]);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     api.getLab(topicSlug)
       .then(res => {
         if (res && res.lab) {
