@@ -16,6 +16,7 @@ import LoginModal from './pages/LoginModal';
 import AiTrainer from './pages/AiTrainer';
 import CommandHub from './pages/CommandHub';
 import DefinitionsGlossary from './pages/DefinitionsGlossary';
+import PortsReferenceHub from './pages/PortsReferenceHub';
 import HandsOnProjects from './pages/HandsOnProjects';
 import AiAssistantDrawer from './components/AiAssistantDrawer';
 import { api } from './services/api';
@@ -200,6 +201,15 @@ export default function App() {
 
           {activeTab === 'definitions-glossary' && (
             <DefinitionsGlossary
+              onNavigate={(tab) => setActiveTab(tab)}
+              onAskAi={(prompt) => {
+                setActiveTab('ai-trainer');
+              }}
+            />
+          )}
+
+          {activeTab === 'ports-reference' && (
+            <PortsReferenceHub
               onNavigate={(tab) => setActiveTab(tab)}
               onAskAi={(prompt) => {
                 setActiveTab('ai-trainer');

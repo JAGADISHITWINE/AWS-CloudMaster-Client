@@ -18,6 +18,7 @@ import {
   Code,
   FolderGit2,
   BookMarked,
+  Network,
   Layers,
   Server,
   Cpu,
@@ -25,6 +26,7 @@ import {
   Shield
 } from 'lucide-react';
 import CostRiskBadge from '../components/CostRiskBadge';
+import PortsLogo from '../components/PortsLogo';
 
 const DEFAULT_STATS = {
   streakDays: 3,
@@ -356,6 +358,20 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
                 <Code className="w-5 h-5 text-amber-400 group-hover:scale-110 transition duration-200" />
                 <p className="text-xs font-extrabold text-white">Commands Hub</p>
                 <p className="text-[11px] text-slate-400 leading-tight">CLI Cheatsheet</p>
+              </button>
+
+              <button
+                onClick={() => onNavigate('ports-reference')}
+                className="p-3.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-cyan-500/40 text-left transition space-y-1.5 group"
+              >
+                <div className="flex items-center justify-between">
+                  <PortsLogo size="xs" animated={true} />
+                  <span className="text-[9px] font-black uppercase text-cyan-400 bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.2 rounded-full">
+                    50+
+                  </span>
+                </div>
+                <p className="text-xs font-extrabold text-white group-hover:text-cyan-300 transition">Important Ports</p>
+                <p className="text-[11px] text-slate-400 leading-tight">Security Groups &amp; K8s</p>
               </button>
 
               <button

@@ -835,7 +835,7 @@ export default function FocusStudyTimer({
 
       {/* 🚀 FLOATING MINI-DOCK (Appears bottom-center when scrolling through notes, leaving Ask AI Trainer completely unobstructed) */}
       {isMiniDockVisible && (
-        <div className="fixed bottom-20 left-1/3 -translate-x-1/2 sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 z-40 animate-in slide-in-from-bottom duration-300 max-w-[calc(100vw-2rem)] select-none">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2 z-40 animate-in slide-in-from-bottom duration-300 max-w-[calc(100vw-2rem)] select-none">
           <div className={`neo-card rounded-2xl sm:rounded-full border shadow-2xl p-2.5 sm:px-4 sm:py-2.5 bg-slate-950/95 backdrop-blur-2xl flex items-center gap-3 transition-all duration-300 ${
             phase === 'focus'
               ? 'border-amber-500/40 shadow-amber-950/40'

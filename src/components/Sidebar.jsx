@@ -15,9 +15,11 @@ import {
   Code,
   FolderGit2,
   BookMarked,
+  Network,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import PortsLogo from './PortsLogo';
 
 export default function Sidebar({
   activeTab,
@@ -33,6 +35,7 @@ export default function Sidebar({
     { id: 'hands-on-projects', label: 'Hands-on Projects', icon: FolderGit2, badgeText: '7 Projects' },
     { id: 'definitions-glossary', label: 'Definitions Glossary', icon: BookMarked, badgeText: 'A-Z Terms' },
     { id: 'command-hub', label: 'Commands Hub', icon: Code, badgeText: 'Cheatsheet' },
+    { id: 'ports-reference', label: 'Important Ports Guide', icon: Network, badgeText: '50+ Ports' },
     { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: '24 Modules' },
     { id: 'topic-detail', label: 'Topic Notes', icon: BookOpen },
     { id: 'practice-lab', label: 'Practice Lab', icon: Terminal },
@@ -67,7 +70,11 @@ export default function Sidebar({
             }`}
             title={item.label}
           >
-            <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]' : 'text-slate-400'}`} />
+            {item.id === 'ports-reference' ? (
+              <PortsLogo size="xs" glow={false} animated={false} />
+            ) : (
+              <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]' : 'text-slate-400'}`} />
+            )}
             {item.badge && (
               <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-black rounded-full bg-purple-500 text-white flex items-center justify-center border border-slate-900">
                 {item.badge}
@@ -96,7 +103,11 @@ export default function Sidebar({
         }`}
       >
         <div className="flex items-center gap-3">
-          <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'text-slate-400'}`} />
+          {item.id === 'ports-reference' ? (
+            <PortsLogo size="xs" glow={false} animated={false} />
+          ) : (
+            <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${isActive ? 'text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'text-slate-400'}`} />
+          )}
           <span className="truncate">{item.label}</span>
         </div>
         {item.badgeText && (

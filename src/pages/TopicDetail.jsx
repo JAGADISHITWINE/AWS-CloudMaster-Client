@@ -516,9 +516,20 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Security Considerations */}
         <div className="p-5 sm:p-6 rounded-3xl neo-card space-y-2">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-cyan-400">
-            <ShieldAlert className="w-4 h-4" />
-            <span>Security Best Practices</span>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-cyan-400">
+              <ShieldAlert className="w-4 h-4" />
+              <span>Security Best Practices</span>
+            </div>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('ports-reference')}
+                className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition"
+                title="Open Important Ports & Security Groups Guide"
+              >
+                Ports &amp; SG Rules →
+              </button>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.securityNotes}</p>
         </div>
