@@ -32,6 +32,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Load user from storage or fetch /auth/me
   useEffect(() => {
@@ -80,6 +81,10 @@ export default function App() {
   useEffect(() => {
     refreshDashboard();
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab !== 'topic-detail') setIsFocusMode(false);
+  }, [activeTab]);
 
   const refreshDashboard = () => {
     api.getDashboardSummary()
@@ -134,8 +139,9 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary,#0b101b)] text-[var(--text-primary,#f8fafc)] flex flex-col font-sans transition-colors duration-300 w-full">
       {/* Full-Screen Edge-to-Edge Navigation Bar */}
-      <Navbar
+      {!isFocusMode && <Navbar
         user={user}
+        moduleCount={modules.length}
         onLogout={handleLogout}
         onOpenLogin={() => setIsLoginOpen(true)}
         onOpenSafety={() => setActiveTab('free-tier-safety')}
@@ -145,12 +151,12 @@ export default function App() {
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
         onOpenSearch={() => setActiveTab('roadmap')}
-      />
+      />}
 
       {/* Main Full-Screen Layout */}
       <div className="flex-1 flex flex-col md:flex-row w-full min-w-0">
         {/* Collapsible / Expanding Sidebar */}
-        <Sidebar
+        {!isFocusMode && <Sidebar
           activeTab={activeTab}
           onSelectTab={(tab) => {
             setActiveTab(tab);
@@ -158,17 +164,19 @@ export default function App() {
           }}
           pendingCleanups={dashboardStats?.stats?.pendingCleanups || 0}
           dueRevisions={dashboardStats?.stats?.dueRevisions || 0}
+          moduleCount={modules.length}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
-        />
+        />}
 
         {/* Expansive Full-Screen Main Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full min-w-0 overflow-x-hidden transition-all duration-300">
+        <main className={`min-w-0 overflow-x-hidden transition-all duration-300 ${isFocusMode ? 'mx-auto w-full max-w-5xl px-4 py-8 sm:px-8' : 'flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full'}`}>
           {activeTab === 'dashboard' && (
             <Dashboard
               stats={dashboardStats?.stats}
               recentQuizzes={dashboardStats?.recentQuizzes}
               recentActivities={dashboardStats?.recentActivities}
+              moduleCount={modules.length}
               onNavigate={(tab) => setActiveTab(tab)}
               onSelectTopic={handleSelectTopic}
             />
@@ -230,6 +238,7 @@ export default function App() {
               topicSlug={selectedTopicSlug}
               onSelectTopic={handleSelectTopic}
               onNavigate={(tab) => setActiveTab(tab)}
+              onFocusModeChange={setIsFocusMode}
             />
           )}
 
@@ -298,7 +307,7 @@ export default function App() {
       />
 
       {/* Floating Live AI DevOps Trainer Drawer */}
-      <AiAssistantDrawer activeTab={activeTab} selectedTopicSlug={selectedTopicSlug} />
+      {!isFocusMode && <AiAssistantDrawer activeTab={activeTab} selectedTopicSlug={selectedTopicSlug} />}
     </div>
   );
 }

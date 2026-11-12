@@ -37,13 +37,15 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
   const filteredModules = activeModules.filter(m => {
     const matchesLevel = filterLevel === 'ALL' || m.level.toUpperCase() === filterLevel;
     const isDevOps = m.moduleNumber >= 16 && m.moduleNumber <= 20;
-    const isFullStack = m.moduleNumber >= 21;
+    const isFullStack = m.moduleNumber >= 21 && m.moduleNumber <= 24;
+    const isPython = m.moduleNumber === 25;
     const isAWS = m.moduleNumber <= 15;
 
     let matchesCategory = true;
     if (categoryFilter === 'AWS') matchesCategory = isAWS;
     else if (categoryFilter === 'DEVOPS') matchesCategory = isDevOps;
     else if (categoryFilter === 'FULLSTACK') matchesCategory = isFullStack;
+    else if (categoryFilter === 'PYTHON') matchesCategory = isPython;
     else if (categoryFilter === 'ANGULAR') matchesCategory = m.moduleNumber === 21;
     else if (categoryFilter === 'NODEJS') matchesCategory = m.moduleNumber === 22;
     else if (categoryFilter === 'APIS') matchesCategory = m.moduleNumber === 23;
@@ -72,14 +74,14 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
               <Sparkles className="w-3 h-3 text-amber-400" /> {activeModules.length} Structured Modules
             </span>
             <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-              AWS Cloud + DevOps Pipelines + Full-Stack (Angular &amp; Node.js)
+              AWS Cloud + DevOps + Full-Stack + Python
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white mt-1.5 tracking-tight font-display bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
-            Enterprise Cloud, DevOps &amp; Full-Stack Roadmap
+            Cloud, DevOps, Full-Stack &amp; Python Roadmap
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 max-w-3xl leading-relaxed mt-1">
-            Visual curriculum spanning AWS Cloud infrastructure, IAM, and GitOps CI/CD pipelines to Angular standalone frontend architecture, Node.js asynchronous backends, RESTful APIs, and system design.
+            Follow AWS Cloud and DevOps foundations, build full-stack applications, then learn Python automation and deploy a tested Python service to AWS.
           </p>
         </div>
 
@@ -165,6 +167,18 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
         </button>
 
         <button
+          onClick={() => setCategoryFilter('PYTHON')}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+            categoryFilter === 'PYTHON'
+              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+              : 'bg-slate-900/60 text-slate-400 hover:text-white border border-slate-800'
+          }`}
+        >
+          <span>Python for Cloud &amp; DevOps</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/30 text-emerald-300 font-bold">Module 25</span>
+        </button>
+
+        <button
           onClick={() => setCategoryFilter('ANGULAR')}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
             categoryFilter === 'ANGULAR'
@@ -241,10 +255,13 @@ export default function LearningRoadmap({ modules, onSelectTopic, onSelectModule
       <div className={viewMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6" : "space-y-4"}>
         {filteredModules.map(m => {
           const isDevOps = m.moduleNumber >= 16 && m.moduleNumber <= 20;
-          const isFullStack = m.moduleNumber >= 21;
+          const isFullStack = m.moduleNumber >= 21 && m.moduleNumber <= 24;
+          const isPython = m.moduleNumber === 25;
           const isExpanded = expandedModules[m.moduleNumber] !== undefined ? expandedModules[m.moduleNumber] : true;
 
-          const badgeColor = isFullStack
+          const badgeColor = isPython
+            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            : isFullStack
             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
             : isDevOps
             ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'

@@ -1,3 +1,5 @@
+import { PYTHON_LABS } from './pythonLearningData.js';
+
 export const FALLBACK_LABS = {
   "1": {
     "title": "Lab 1: Global Infrastructure Inspection & Latency Probing",
@@ -2864,3 +2866,5 @@ export const FALLBACK_LABS = {
     ]
   }
 };
+
+Object.assign(FALLBACK_LABS, PYTHON_LABS);

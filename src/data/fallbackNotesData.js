@@ -1,3 +1,5 @@
+import { PYTHON_NOTES } from './pythonLearningData.js';
+
 export const FALLBACK_NOTES = {
   "12": {
   "simpleExplanation": "Amazon CloudWatch is the central monitoring and observability service for DevOps engineers and SREs on AWS. It collects operational performance metrics, monitors log files, visualizes dashboards, and triggers automated alarms across services like EC2, RDS, S3, and ELB. The golden rule of AWS management is: CloudWatch monitors PERFORMANCE (operations, CPU, latency), whereas CloudTrail monitors ACTIONS (who called which API, from where, and when).",
@@ -5678,3 +5680,5 @@ export const FALLBACK_NOTES = {
   "costImplications": "AWS Route 53 queries to internal ALIAS records pointing to AWS resources (ALBs, CloudFront distributions, S3 website endpoints) are completely free, whereas external standard DNS queries incur $0.40 per million queries."
 },
 };
+
+Object.assign(FALLBACK_NOTES, PYTHON_NOTES);

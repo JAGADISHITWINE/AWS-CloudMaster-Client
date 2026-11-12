@@ -1,5 +1,7 @@
+import { PYTHON_MODULES } from './pythonLearningData.js';
+
 /**
- * Universal Fallback Modules Dataset (24 Modules: AWS, DevOps, Full-Stack)
+ * Universal Fallback Modules Dataset (AWS, DevOps, Full-Stack, and Python)
  */
 export const FALLBACK_MODULES = [
   {
@@ -783,6 +785,8 @@ export const FALLBACK_MODULES = [
     ]
   }
 ];
+
+FALLBACK_MODULES.push(...PYTHON_MODULES);
 
 export function getFallbackTopic(slug) {
   for (const mod of FALLBACK_MODULES) {

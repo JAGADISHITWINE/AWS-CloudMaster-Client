@@ -20,23 +20,25 @@ import {
   ChevronRight
 } from 'lucide-react';
 import PortsLogo from './PortsLogo';
+import { HANDS_ON_PROJECTS } from '../data/projectsData';
 
 export default function Sidebar({
   activeTab,
   onSelectTab,
   pendingCleanups = 0,
   dueRevisions = 0,
+  moduleCount = 25,
   isCollapsed = false,
   onToggleCollapse
 }) {
   const mainNav = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'ai-trainer', label: 'AI DevOps Trainer', icon: Bot, badgeText: 'Ollama AI', highlight: true },
-    { id: 'hands-on-projects', label: 'Hands-on Projects', icon: FolderGit2, badgeText: '7 Projects' },
+    { id: 'hands-on-projects', label: 'Hands-on Projects', icon: FolderGit2, badgeText: `${HANDS_ON_PROJECTS.length} Projects` },
     { id: 'definitions-glossary', label: 'Definitions Glossary', icon: BookMarked, badgeText: 'A-Z Terms' },
     { id: 'command-hub', label: 'Commands Hub', icon: Code, badgeText: 'Cheatsheet' },
     { id: 'ports-reference', label: 'Important Ports Guide', icon: Network, badgeText: '50+ Ports' },
-    { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: '24 Modules' },
+    { id: 'roadmap', label: 'Learning Roadmap', icon: Compass, badgeText: `${moduleCount} Modules` },
     { id: 'topic-detail', label: 'Topic Notes', icon: BookOpen },
     { id: 'practice-lab', label: 'Practice Lab', icon: Terminal },
   ];

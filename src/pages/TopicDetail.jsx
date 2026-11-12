@@ -21,6 +21,7 @@ import {
   Bot,
   Image as ImageIcon,
   Maximize2,
+  Minimize2,
   X,
   Briefcase,
   CheckSquare
@@ -35,7 +36,7 @@ import { getInterviewQuestionsForTopic } from '../data/interviewQuestionsData';
 import { FALLBACK_NOTES } from '../data/fallbackNotesData';
 import { getFallbackTopic } from '../data/fallbackModulesData';
 
-export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
+export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate, onFocusModeChange }) {
   const [data, setData] = useState(() => {
     if (topicSlug && FALLBACK_NOTES[topicSlug]) {
       return {
@@ -52,6 +53,12 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   const [selectedModalImage, setSelectedModalImage] = useState(null);
   const [expandedInterviewQuestion, setExpandedInterviewQuestion] = useState(null);
   const [isDistractionFree, setIsDistractionFree] = useState(false);
+  const [showSelfCheck, setShowSelfCheck] = useState(false);
+
+  const toggleFocusMode = (enabled) => {
+    setIsDistractionFree(enabled);
+    onFocusModeChange?.(enabled);
+  };
 
   useEffect(() => {
     if (!topicSlug) return;
@@ -127,6 +134,12 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   }
 
   const { notes, topic } = data;
+  const coreConcepts = (notes.coreConcepts || [])
+    .map((concept) => ({
+      term: concept.term || concept.title || concept.name || concept.label,
+      definition: concept.definition || concept.description || concept.meaning || concept.explanation
+    }))
+    .filter((concept) => concept.term || concept.definition);
 
   return (
     <div className="space-y-6 w-full pb-16">
@@ -205,19 +218,41 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       <FocusStudyTimer
         topic={topic}
         isDistractionFree={isDistractionFree}
-        onToggleDistractionFree={() => setIsDistractionFree(!isDistractionFree)}
+        onToggleDistractionFree={() => toggleFocusMode(!isDistractionFree)}
       />
+
+      {!isDistractionFree && (
+        <nav aria-label="Topic learning steps" className="p-4 sm:px-5 rounded-2xl border border-white/[0.08] bg-slate-950/60">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">A clear path through this topic</p>
+          <ol className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {[
+              ['01', 'Understand', '#lesson-explanation'],
+              ['02', 'Learn key terms', '#lesson-concepts'],
+              ['03', 'Trace the diagram', '#lesson-architecture'],
+              ['04', 'Apply it', '#lesson-practice'],
+              ['05', 'Recall and explain', '#lesson-recall']
+            ].map(([number, label, href]) => (
+              <li key={number}>
+                <a href={href} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.05] hover:text-white transition">
+                  <span className="text-[10px] font-black text-amber-400">{number}</span>
+                  <span>{label}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
 
       {/* Distraction-Free Sticky Focus Mode Banner */}
       {isDistractionFree && (
-        <div className="sticky top-16 z-30 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-xl flex items-center justify-between shadow-xl animate-in fade-in">
+        <div className="sticky top-4 z-30 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-xl flex items-center justify-between shadow-xl animate-in fade-in">
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-200">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
-            <span>Distraction-Free Concentration Mode Active</span>
-            <span className="text-slate-400 hidden sm:inline">• Full focus on notes, diagrams &amp; interview walkthroughs</span>
+            <span>Focused lesson path</span>
+            <span className="text-slate-400 hidden sm:inline">Explanation → Concepts → Architecture → Teach-back</span>
           </div>
           <button
-            onClick={() => setIsDistractionFree(false)}
+            onClick={() => toggleFocusMode(false)}
             className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1"
           >
             <Minimize2 className="w-3.5 h-3.5" />
@@ -229,7 +264,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       {/* 📺 Curated YouTube Masterclass & Video Tutorial */}
       {(() => {
         const video = YOUTUBE_TOPIC_VIDEOS[topic.slug] || YOUTUBE_TOPIC_VIDEOS[topicSlug];
-        if (!video) return null;
+        if (!video || isDistractionFree) return null;
         return (
           <section className="p-6 rounded-3xl neo-card border-rose-500/30 bg-gradient-to-br from-rose-950/20 via-slate-950 to-slate-900/90 space-y-4 shadow-xl relative overflow-hidden">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
@@ -320,7 +355,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       })()}
 
       {/* 1. Beginner-Friendly Explanation */}
-      <section className="p-6 rounded-3xl neo-card space-y-3">
+      <section id="lesson-explanation" className="p-6 rounded-3xl neo-card space-y-3 scroll-mt-6">
         <h2 className="text-base font-extrabold text-white flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-amber-400" />
           1. Intuitive Explanation (Beginner Friendly)
@@ -331,29 +366,35 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       </section>
 
       {/* 2. Core Concepts & Definitions */}
-      <section className="p-6 rounded-3xl neo-card space-y-4">
+      <section id="lesson-concepts" className="p-6 rounded-3xl neo-card space-y-4 scroll-mt-6">
         <h2 className="text-base font-extrabold text-white flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           2. Core Concepts, Terminology &amp; Definitions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {notes.coreConcepts?.map((c, i) => (
+          {coreConcepts.length > 0 ? coreConcepts.map((c, i) => (
             <div key={i} className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-amber-500/30 transition space-y-1">
-              <span className="font-extrabold text-amber-300 text-xs sm:text-sm">{c.term}</span>
-              <p className="text-xs text-slate-300 leading-snug">{c.definition}</p>
+              <span className="font-extrabold text-amber-300 text-xs sm:text-sm">{c.term || 'Key idea'}</span>
+              {c.definition && <p className="text-xs text-slate-300 leading-relaxed">{c.definition}</p>}
             </div>
-          ))}
+          )) : (
+            <p className="md:col-span-2 text-sm text-slate-400">Key terms are not available for this topic yet. Use the explanation and diagram to identify the main ideas.</p>
+          )}
         </div>
       </section>
 
       {/* 3. Architecture Diagram & Visual Explanation */}
       {(() => {
-        const arch = getArchitectureForTopic(topic.slug, topic.moduleId, topic.title);
+        const moduleNumber = topic.module?.moduleNumber || topic.moduleNumber;
+        const arch = getArchitectureForTopic(topic.slug, moduleNumber, topic.title);
         const svgContent = notes.architectureSvg || arch.svg;
         const realVisuals = getRealVisualsForTopic(topic.slug);
+        const diagramImage = realVisuals?.primaryArchitectureImage || arch.realDiagramUrl;
+        const diagramImageTitle = realVisuals?.primaryArchitectureTitle || arch.realDiagramTitle;
+        const diagramImageCaption = realVisuals?.primaryArchitectureCaption || arch.realDiagramCaption;
         return (
           <>
-            <section className="p-6 rounded-3xl neo-card space-y-3">
+            <section id="lesson-architecture" className="p-6 rounded-3xl neo-card space-y-3 scroll-mt-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-extrabold text-white flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -365,6 +406,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
               </div>
               <p className="text-xs text-slate-300 leading-relaxed">{arch.description}</p>
               <DiagramViewer
+                key={topic.slug}
                 svgString={svgContent}
                 title={arch.title}
                 category={arch.category}
@@ -373,28 +415,28 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
                 interRelationships={arch.interRelationships}
                 endToEndFlow={arch.endToEndFlow}
                 moduleContext={arch.moduleContext}
-                realDiagramUrl={realVisuals?.primaryArchitectureImage}
-                realDiagramTitle={realVisuals?.primaryArchitectureTitle}
-                realDiagramCaption={realVisuals?.primaryArchitectureCaption}
+                realDiagramUrl={diagramImage}
+                realDiagramTitle={diagramImageTitle}
+                realDiagramCaption={diagramImageCaption}
               />
             </section>
 
             {/* Real AWS Management Console & Actual Course Architecture Walkthrough */}
-            {realVisuals && realVisuals.gallery && realVisuals.gallery.length > 0 && (
+            {!isDistractionFree && realVisuals && realVisuals.gallery && realVisuals.gallery.length > 0 && (
               <section className="p-6 sm:p-8 rounded-3xl neo-card space-y-5 border-amber-500/30">
                 <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/[0.08]">
                   <div>
                     <h2 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
                       <ImageIcon className="w-5 h-5 text-amber-400" />
-                      Real AWS Console Screenshots &amp; Step-by-Step Architecture Walkthrough
+                      Reference Images &amp; Step-by-Step Walkthrough
                     </h2>
                     <p className="text-xs text-slate-300 mt-1">
-                      Authentic screenshots and diagrams extracted directly from the official course guide and AWS Management Console.
+                      Console screenshots and diagrams that illustrate selected steps. The architecture map above explains the system flow.
                     </p>
                   </div>
                   <span className="text-xs font-bold text-amber-300 bg-amber-500/15 border border-amber-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    {realVisuals.gallery.length} Verified Real Visuals
+                    {realVisuals.gallery.length} Reference Images
                   </span>
                 </div>
 
@@ -461,16 +503,18 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       })()}
 
       {/* 4. How it Works Internally */}
-      <section className="p-6 rounded-3xl neo-card space-y-3">
-        <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-orange-400" />
-          4. How It Works Under The Hood
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.internalsExplanation}</p>
-      </section>
+      {!isDistractionFree && (
+        <section className="p-6 rounded-3xl neo-card space-y-3">
+          <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+            <Terminal className="w-4 h-4 text-orange-400" />
+            4. How It Works Under The Hood
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.internalsExplanation}</p>
+        </section>
+      )}
 
       {/* 5. Essential CLI Commands */}
-      {notes.cliExamples && notes.cliExamples.length > 0 && (
+      {!isDistractionFree && notes.cliExamples && notes.cliExamples.length > 0 && (
         <section className="p-6 rounded-3xl neo-card space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-base font-extrabold text-white flex items-center gap-2">
@@ -513,7 +557,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       )}
 
       {/* 6. Best Practices, Security & Cost Considerations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!isDistractionFree && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Security Considerations */}
         <div className="p-5 sm:p-6 rounded-3xl neo-card space-y-2">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -542,10 +586,10 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.costImplications}</p>
         </div>
-      </div>
+      </div>}
 
       {/* 7. Common Pitfalls & Mistakes */}
-      {notes.commonMistakes && notes.commonMistakes.length > 0 && (
+      {!isDistractionFree && notes.commonMistakes && notes.commonMistakes.length > 0 && (
         <section className="p-6 rounded-3xl neo-card space-y-3 border-rose-500/30">
           <h2 className="text-base font-extrabold text-rose-400 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-400" />
@@ -578,8 +622,36 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         </div>
       </section>
 
+      <section id="lesson-recall" className="p-6 rounded-3xl neo-card space-y-4 border-emerald-500/25 scroll-mt-6" aria-labelledby="teach-back-title">
+        <div>
+          <h2 id="teach-back-title" className="text-base font-extrabold text-white flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-emerald-400" />
+            Teach it back
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            In your own words, explain {topic.title} as if a teammate were new to it. Try to describe what it does, how the main pieces connect, and one important trade-off.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowSelfCheck(!showSelfCheck)}
+          aria-expanded={showSelfCheck}
+          className="text-xs font-bold text-emerald-300 hover:text-emerald-200 transition"
+        >
+          {showSelfCheck ? 'Hide self-check prompts' : 'Show self-check prompts'}
+        </button>
+        {showSelfCheck && (
+          <ul className="space-y-2 border-t border-white/[0.08] pt-3 text-xs sm:text-sm text-slate-300">
+            <li>What problem does this service or concept solve?</li>
+            <li>Can you trace the main request or data flow without looking at the diagram?</li>
+            <li>What security, reliability, or cost decision would you call out?</li>
+          </ul>
+        )}
+      </section>
+
       {/* 9. Real-Time Technical Interview Questions & Model Solutions */}
       {(() => {
+        if (isDistractionFree) return null;
         const topicInterviews = getInterviewQuestionsForTopic(topic.slug);
         if (!topicInterviews || topicInterviews.length === 0) return null;
         return (
@@ -661,7 +733,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       })()}
 
       {/* Bottom Action Footer */}
-      <div className="p-5 rounded-3xl neo-card flex items-center justify-between">
+      <div id="lesson-practice" className="p-5 rounded-3xl neo-card flex items-center justify-between scroll-mt-6">
         <div className="flex items-center gap-2">
           <button
             onClick={handleMarkAsRead}

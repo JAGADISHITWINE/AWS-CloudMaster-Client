@@ -29,9 +29,10 @@ export default function DiagramViewer({
   realDiagramTitle,
   realDiagramCaption
 }) {
-  const [activeTab, setActiveTab] = useState(realDiagramUrl ? 'realDiagram' : 'canvas'); // 'realDiagram' | 'canvas' | 'stepByStep' | 'relations' | 'flow' | 'context'
+  const [activeTab, setActiveTab] = useState('canvas'); // 'realDiagram' | 'canvas' | 'stepByStep' | 'relations' | 'flow' | 'context'
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [referenceImageUnavailable, setReferenceImageUnavailable] = useState(false);
 
   if (!svgString) return null;
 
@@ -92,7 +93,7 @@ export default function DiagramViewer({
               }`}
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Real Architecture Diagram</span>
+              <span>Reference Image</span>
             </button>
           )}
 
@@ -164,7 +165,7 @@ export default function DiagramViewer({
           )}
         </div>
 
-        {/* Tab 0: Real Architecture Diagram (Actual Extracted PDF Graphic) */}
+        {/* Tab 0: Related reference image */}
         {activeTab === 'realDiagram' && realDiagramUrl && (
           <div className="space-y-4 p-4 sm:p-6 bg-[#070b14]">
             <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-white/[0.08]">
@@ -182,12 +183,17 @@ export default function DiagramViewer({
               </span>
             </div>
 
-            <div className="flex justify-center items-center rounded-2xl overflow-hidden border border-white/[0.1] bg-slate-950/80 p-3 sm:p-5 shadow-2xl">
-              <img
-                src={realDiagramUrl}
-                alt={realDiagramTitle || 'Real Architecture Diagram'}
-                className="max-h-[520px] w-auto max-w-full object-contain rounded-xl shadow-2xl transition hover:scale-[1.01]"
-              />
+            <div className="flex justify-center items-center rounded-2xl overflow-hidden border border-white/[0.1] bg-slate-950/80 p-3 sm:p-5 shadow-2xl min-h-32">
+              {referenceImageUnavailable ? (
+                <p className="text-sm text-slate-400">This reference image is unavailable. The vector map and step-by-step explanation are still available.</p>
+              ) : (
+                <img
+                  src={realDiagramUrl}
+                  alt={realDiagramTitle || 'Related reference image'}
+                  onError={() => setReferenceImageUnavailable(true)}
+                  className="max-h-[520px] w-auto max-w-full object-contain rounded-xl shadow-2xl transition hover:scale-[1.01]"
+                />
+              )}
             </div>
           </div>
         )}
@@ -431,11 +437,16 @@ export default function DiagramViewer({
 
           <div className="flex-1 w-full neo-card rounded-3xl border border-indigo-500/30 overflow-auto p-4 sm:p-8 lg:p-10 flex items-center justify-center bg-[#070b14]">
             {activeTab === 'realDiagram' && realDiagramUrl ? (
-              <img
-                src={realDiagramUrl}
-                alt={realDiagramTitle || 'Real Architecture Diagram'}
-                className="max-h-[85vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
-              />
+              referenceImageUnavailable ? (
+                <p className="text-sm text-slate-400">This reference image is unavailable. Close full view to continue with the vector map.</p>
+              ) : (
+                <img
+                  src={realDiagramUrl}
+                  alt={realDiagramTitle || 'Related reference image'}
+                  onError={() => setReferenceImageUnavailable(true)}
+                  className="max-h-[85vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
+                />
+              )
             ) : (
               <div
                 className="w-full"

@@ -42,7 +42,7 @@ const DEFAULT_STATS = {
   pendingCleanups: 0
 };
 
-export default function Dashboard({ stats, recentQuizzes, recentActivities, onNavigate, onSelectTopic }) {
+export default function Dashboard({ stats, recentQuizzes, recentActivities, onNavigate, onSelectTopic, moduleCount = 25 }) {
   const activeStats = stats || DEFAULT_STATS;
 
   return (
@@ -72,7 +72,7 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
               Enterprise Cloud &amp; Full-Stack Command Center
             </h1>
             <p className="text-sm text-slate-300 leading-relaxed max-w-3xl">
-              Unified mastery curriculum covering <span className="text-cyan-300 font-semibold">24 visual modules</span>: from AWS Cloud infrastructure and GitOps CI/CD pipelines to Angular standalone architecture, Node.js asynchronous backends, RESTful APIs, and system design.
+              Unified curriculum across <span className="text-cyan-300 font-semibold">{moduleCount} modules</span>: AWS infrastructure, DevOps CI/CD, Python automation, full-stack APIs, and system design.
             </p>
           </div>
 
@@ -89,7 +89,7 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
               className="px-4 py-3 rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 hover:opacity-95 text-white font-extrabold text-xs shadow-glow-indigo transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5"
             >
               <Compass className="w-4 h-4 stroke-[2.5]" />
-              24 Modules
+              {moduleCount} Modules
             </button>
             <button
               onClick={() => onNavigate('free-tier-safety')}
@@ -220,7 +220,7 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
         {/* Left Column (2/3 Width) */}
         <div className="lg:col-span-2 space-y-6">
           {/* 3 Core Curriculum Tracks Showcase */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             {/* Track 1: AWS Cloud */}
             <div
               onClick={() => onNavigate('roadmap')}
@@ -277,6 +277,25 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
                 Angular standalone components &amp; RxJS, Node.js event loop, secure RESTful APIs, and database engineering.
               </p>
             </div>
+
+            {/* Track 4: Python for Cloud & DevOps */}
+            <div
+              onClick={() => onNavigate('roadmap')}
+              className="neo-card p-5 rounded-2xl cursor-pointer hover:border-emerald-500/40 transition group space-y-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition">
+                  <Code className="w-5 h-5" />
+                </span>
+                <span className="text-[10px] font-black uppercase text-emerald-300 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  Module 25
+                </span>
+              </div>
+              <h4 className="text-sm font-extrabold text-white group-hover:text-emerald-300 transition">Python for Cloud &amp; DevOps</h4>
+              <p className="text-[11px] text-slate-400 line-clamp-2">
+                Python fundamentals, automation, pytest, boto3, Lambda, and secure CI/CD deployment to AWS.
+              </p>
+            </div>
           </div>
 
           {/* Recommended Next Practice Topic Card */}
@@ -290,7 +309,7 @@ export default function Dashboard({ stats, recentQuizzes, recentActivities, onNa
                 onClick={() => onNavigate('roadmap')}
                 className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition"
               >
-                View Full 24 Modules <ArrowRight className="w-3.5 h-3.5" />
+                View All {moduleCount} Modules <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 

@@ -212,9 +212,9 @@ export const TOPIC_ARCHITECTURE = {
     moduleNumber: 1,
     title: "AWS Global Infrastructure: Regions, AZs & Edge Locations Architecture",
     category: "Global Infrastructure",
-    realDiagramUrl: '/images/aws-vpc/01-default-vpc-architecture.png',
-    realDiagramTitle: 'AWS Multi-AZ Regional Infrastructure & High Availability Topology',
-    realDiagramCaption: 'Physical architecture of isolated Availability Zones connected via dedicated redundant fiber backbones within each Region.',
+    realDiagramUrl: '/images/aws-account/15-aws-management-console-home.png',
+    realDiagramTitle: 'AWS Management Console',
+    realDiagramCaption: 'Console reference image. Use the adjacent vector map to understand how Regions, Availability Zones, and edge locations relate.',
     description: "Global traffic ingress routes from end users through nearest Edge Locations, entering the 100GbE private AWS Global Network backbone before reaching isolated Availability Zones within the target Region.",
     flowSteps: ["User Browser -> Anycast Edge Location", "CloudFront CDN Edge Cache", "AWS Global 100GbE Fiber Backbone", "Regional Transit -> Multi-AZ Data Centers"],
     stepByStep: [
@@ -2112,135 +2112,110 @@ export const TOPIC_ARCHITECTURE = {
 
 Object.assign(TOPIC_ARCHITECTURE, fullstackArchitecture);
 
-// Fallback & Dynamic Generator ensuring all 24 topics have complete step-by-step, relationships, and flows
+// Unmapped topics get a conceptual study map instead of invented infrastructure.
 export function getArchitectureForTopic(topicSlug, moduleNumber, topicTitle) {
   if (TOPIC_ARCHITECTURE[topicSlug]) {
     return TOPIC_ARCHITECTURE[topicSlug];
   }
 
   const modNum = moduleNumber || 1;
-  const title = topicTitle || `Module ${modNum} Architecture`;
+  const title = topicTitle || `Module ${modNum} Topic`;
 
-  // Standardized dynamic architecture metadata for any module topic
   return {
     moduleNumber: modNum,
-    title: `${title} - Architecture & Data Flow`,
-    category: `Module ${modNum} Engineering`,
-    description: `Complete architectural data path, component interactions, and execution flow for ${title}.`,
+    title: `${title} - Concept Map`,
+    category: `Module ${modNum} Study Map`,
+    description: `A study framework for ${title}: identify the goal, name the key ideas, explain their connection, and state the outcome or trade-off. This is a learning guide, not a service-specific deployment diagram.`,
     flowSteps: [
-      "1. Client Ingress / Trigger",
-      "2. Security & Policy Gateway",
-      "3. High Availability Compute / Processing Tier",
-      "4. Resilient Persistence & Observability"
+      "Name the problem or goal",
+      "Identify the key ideas",
+      "Explain how they connect",
+      "Describe the outcome and trade-off"
     ],
     stepByStep: [
       {
         step: 1,
-        component: "Client Ingress Tier",
-        role: "Receives incoming user traffic or automation events through authenticated endpoints.",
-        why: "Provides an external entry point while shielding internal private resources."
+        component: "Start with the goal",
+        role: `State the problem or need that ${title} addresses.`,
+        why: "A clear goal makes unfamiliar terminology easier to place."
       },
       {
         step: 2,
-        component: "Security Boundary & Authentication",
-        role: "Evaluates least-privilege policies, security groups, and encryption keys.",
-        why: "Enforces zero-trust defense-in-depth before allowing internal processing."
+        component: "Name the key ideas",
+        role: "Pick the important terms, services, or parts described in the lesson.",
+        why: "Definitions give each part a specific job rather than a name to memorize."
       },
       {
         step: 3,
-        component: "Application & Processing Tier",
-        role: `Executes business logic using scalable compute resources for ${title}.`,
-        why: "Decouples processing from storage, enabling automated self-healing and horizontal scaling."
+        component: "Connect the parts",
+        role: "Trace what happens first, what each part changes or passes on, and what happens next.",
+        why: "Explaining relationships is more useful than memorizing isolated components."
       },
       {
         step: 4,
-        component: "Persistence & Telemetry Tier",
-        role: "Maintains durable ACID data storage and streams metric logs for continuous monitoring.",
-        why: "Guarantees zero data loss and alerts operators upon abnormal performance thresholds."
+        component: "Check the outcome",
+        role: "Describe the result and one relevant security, reliability, performance, or cost trade-off.",
+        why: "Trade-offs show when and why the concept is useful."
       }
     ],
-    interRelationships: [
-      {
-        from: "Ingress / Perimeter",
-        to: "Security Gateway",
-        relation: "Validates incoming headers, tokens, and SSL/TLS certificates.",
-        protocol: "HTTPS / TLS 1.3"
-      },
-      {
-        from: "Security Gateway",
-        to: "Processing Tier",
-        relation: "Forwards sanitized payload over private subnet interface.",
-        protocol: "Private TCP / Internal VPC Route"
-      },
-      {
-        from: "Processing Tier",
-        to: "Persistence Layer",
-        relation: "Executes state read/write operations over encrypted storage channels.",
-        protocol: "Encrypted Storage (KMS)"
-      }
-    ],
+    interRelationships: [],
     endToEndFlow: [
       {
-        stage: "1. Trigger",
-        action: "Event / Request Arrival",
-        details: `Initial event or HTTP transaction initiates the execution flow for ${title}.`
+        stage: "1. State the goal",
+        action: "What problem?",
+        details: `In one sentence, describe the problem or need addressed by ${title}.`
       },
       {
-        stage: "2. Verification",
-        action: "Policy Check",
-        details: "Security perimeter validates permissions, rate limits, and network rules."
+        stage: "2. Define the key ideas",
+        action: "What are the parts?",
+        details: "Use the topic definitions to name each important service, component, or term and its role."
       },
       {
-        stage: "3. Core Processing",
-        action: "Workload Execution",
-        details: "Target compute worker executes assigned task with automated error handling."
+        stage: "3. Trace the connection",
+        action: "What happens next?",
+        details: "Follow the diagram from start to finish and explain what each connection represents."
       },
       {
-        stage: "4. State Commit",
-        action: "Durable Persistence",
-        details: "Result is committed to storage and audit log is streamed to monitoring dashboards."
+        stage: "4. Explain the trade-off",
+        action: "Why this design?",
+        details: "Describe the outcome and one relevant security, reliability, performance, or cost consideration."
       }
     ],
-    moduleContext: {
-      prevModule: `Module ${modNum > 1 ? modNum - 1 : 'Foundation'}`,
-      thisModule: `Module ${modNum}: ${title}`,
-      nextModule: `Module ${modNum < 20 ? modNum + 1 : 'Capstone'}`,
-      connectionReason: `This tier builds on preceding network and compute configurations to deliver scalable production capabilities for Module ${modNum}.`
-    },
+    moduleContext: null,
     svg: `<svg viewBox="0 0 850 220" xmlns="http://www.w3.org/2000/svg" class="w-full">
       <rect x="5" y="5" width="840" height="210" rx="14" fill="#0b1120" stroke="#334155" stroke-width="2"/>
       <g transform="translate(30, 40)">
         <rect width="150" height="130" rx="10" fill="#1e293b" stroke="#38bdf8"/>
-        <text x="75" y="30" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">1. CLIENT / INGRESS</text>
-        <text x="75" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">Request Payload</text>
-        <text x="75" y="95" fill="#94a3b8" font-size="8" text-anchor="middle">HTTPS / REST / CLI</text>
+        <text x="75" y="30" fill="#38bdf8" font-size="11" font-weight="bold" text-anchor="middle">1. THE GOAL</text>
+        <text x="75" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">What problem?</text>
+        <text x="75" y="95" fill="#94a3b8" font-size="8" text-anchor="middle">Name the need</text>
       </g>
       <path d="M 190 105 L 230 105" stroke="#38bdf8" stroke-width="2"/>
       <polygon points="235,105 225,100 225,110" fill="#38bdf8"/>
       
       <g transform="translate(245, 40)">
         <rect width="160" height="130" rx="10" fill="#1e293b" stroke="#a855f7"/>
-        <text x="80" y="30" fill="#c084fc" font-size="11" font-weight="bold" text-anchor="middle">2. SECURITY GATEWAY</text>
-        <text x="80" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">IAM / Policy Check</text>
-        <text x="80" y="95" fill="#94a3b8" font-size="8" text-anchor="middle">Least-Privilege Guardrail</text>
+        <text x="80" y="30" fill="#c084fc" font-size="11" font-weight="bold" text-anchor="middle">2. KEY IDEAS</text>
+        <text x="80" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">Terms &amp; parts</text>
+        <text x="80" y="95" fill="#94a3b8" font-size="8" text-anchor="middle">Define their roles</text>
       </g>
       <path d="M 415 105 L 455 105" stroke="#a855f7" stroke-width="2"/>
       <polygon points="460,105 450,100 450,110" fill="#a855f7"/>
       
       <g transform="translate(470, 40)">
         <rect width="160" height="130" rx="10" fill="#1e293b" stroke="#f59e0b"/>
-        <text x="80" y="30" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">3. COMPUTE / SERVICE</text>
-        <text x="80" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">${title.length > 22 ? title.slice(0, 20) + '...' : title}</text>
-        <text x="80" y="95" fill="#94a3b8" font-size="8" text-anchor="middle">Worker / Microservice</text>
+        <text x="80" y="30" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle">3. CONNECTIONS</text>
+        <text x="80" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">What happens next?</text>
+        <text x="80" y="95" fill="#94a3b8" font-size="8" text-anchor="middle">Trace the sequence</text>
       </g>
       <path d="M 640 105 L 680 105" stroke="#10b981" stroke-width="2"/>
       <polygon points="685,105 675,100 675,110" fill="#10b981"/>
       
       <g transform="translate(695, 40)">
         <rect width="130" height="130" rx="10" fill="#1e293b" stroke="#10b981"/>
-        <text x="65" y="30" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">4. PERSISTENCE TIER</text>
-        <text x="65" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">Encrypted at Rest</text>
-        <text x="65" y="95" fill="#6ee7b7" font-size="8" text-anchor="middle">Storage &amp; Monitoring</text>
+        <text x="65" y="30" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle">4. THE OUTCOME</text>
+        <text x="65" y="70" fill="#f8fafc" font-size="10" text-anchor="middle">Result &amp; trade-off</text>
+        <text x="65" y="95" fill="#6ee7b7" font-size="8" text-anchor="middle">Explain why it matters</text>
       </g>
     </svg>`
   };

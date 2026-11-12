@@ -25,7 +25,8 @@ export default function Navbar({
   onToggleSidebar,
   isFullscreen = false,
   onToggleFullscreen,
-  onOpenSearch
+  onOpenSearch,
+  moduleCount = 25
 }) {
   return (
     <header className="sticky top-0 z-40 bg-[#0b101b]/90 backdrop-blur-2xl border-b border-white/[0.08] text-slate-100 transition-colors">
@@ -61,11 +62,11 @@ export default function Navbar({
                   Cloud &amp; DevOps Master
                 </span>
                 <span className="hidden sm:flex text-[10px] font-black uppercase tracking-wider bg-cyan-500/15 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/30 items-center gap-1 shadow-sm">
-                  <Zap className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" /> 24 Modules
+                  <Zap className="w-2.5 h-2.5 fill-cyan-400 text-cyan-400" /> {moduleCount} Modules
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium hidden md:block">
-                AWS Cloud, DevOps CI/CD &amp; Full-Stack (Angular + Node.js)
+                AWS Cloud, DevOps CI/CD, Python &amp; Full-Stack
               </p>
             </div>
           </div>

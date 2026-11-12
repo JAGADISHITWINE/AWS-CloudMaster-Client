@@ -1,6 +1,7 @@
 // Enterprise DevOps & Cloud Hands-On Projects Database
 // Dedicated separate practical hands-on project for EVERY module (1 to 20) + Linux Foundation.
 // Each project contains separate, topic-by-topic practical hands-on exercises so students can practice step-by-step.
+import { PYTHON_PROJECT } from './pythonLearningData.js';
 
 export const HANDS_ON_PROJECTS = [
   // =========================================================================
@@ -1997,3 +1998,5 @@ kubectl get nodes`,
     cleanupCommands: "docker rmi \${ECR_REGISTRY}/\${IMAGE_NAME}:\${IMAGE_TAG} || true"
   }
 ];
+
+HANDS_ON_PROJECTS.push(PYTHON_PROJECT);

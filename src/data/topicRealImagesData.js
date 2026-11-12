@@ -212,17 +212,17 @@ export const TOPIC_REAL_VISUALS = {
   // MODULE 1 - TOPIC 3: AWS Global Infrastructure
   // =========================================================================
   'regions-azs-and-edge-infrastructure': {
-    primaryArchitectureImage: '/images/aws-vpc/01-default-vpc-architecture.png',
-    primaryArchitectureTitle: 'AWS Multi-AZ Regional Infrastructure & High Availability Topology',
-    primaryArchitectureCaption: 'How AWS builds isolated Availability Zones connected via dedicated redundant fiber backbones within each Region.',
+    primaryArchitectureImage: '/images/aws-account/15-aws-management-console-home.png',
+    primaryArchitectureTitle: 'AWS Management Console',
+    primaryArchitectureCaption: 'The console home shows Mumbai in the region selector. The vector map above explains how Regions, Availability Zones, and edge locations relate.',
     gallery: [
       {
         id: 'infra-1',
         stepNumber: 1,
-        title: 'AWS Regional Console & Global Points of Presence',
+        title: 'AWS Console Home with Region Selector',
         badge: 'Regional Switcher',
         imageUrl: '/images/aws-account/15-aws-management-console-home.png',
-        description: 'Geographic region selection in the AWS Console, showing physical separation of data center clusters worldwide.',
+        description: 'The console home shows Mumbai selected in the region menu. It illustrates the selected Region, not the physical layout of Availability Zones.',
         keyPoints: [
           'AWS Regions are geographically distinct areas (e.g. us-east-1 N. Virginia, eu-west-1 Ireland, ap-south-1 Mumbai).',
           'Each Region contains at least 3 isolated Availability Zones (AZs) connected with ultra-low latency fiber.',
