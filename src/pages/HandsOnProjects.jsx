@@ -25,7 +25,7 @@ import {
 import { HANDS_ON_PROJECTS } from '../data/projectsData';
 
 const TRACK_FILTERS = [
-  { id: 'all', label: 'All 21 Projects', count: HANDS_ON_PROJECTS.length },
+  { id: 'all', label: 'All Projects', count: HANDS_ON_PROJECTS.length },
   { id: 'aws', label: '☁️ AWS Cloud (Mod 1-15)', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'aws').length },
   { id: 'git', label: '🐙 Git & GitHub (Mod 16)', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'git').length },
   { id: 'jenkins', label: '⚙️ Jenkins CI/CD (Mod 17)', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'jenkins' || p.id === 'module-17-project').length },
@@ -34,7 +34,10 @@ const TRACK_FILTERS = [
   { id: 'cicd', label: '🚀 DevOps Mastery (Mod 20)', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'cicd').length },
   { id: 'linux', label: '🐧 Linux Foundation', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'linux').length },
   { id: 'iac', label: '📜 Terraform IaC (Mod 14)', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'iac').length },
+  { id: 'python', label: '🐍 Python + AWS + DevOps', count: HANDS_ON_PROJECTS.filter(p => p.trackId === 'python').length },
 ];
+
+const PROJECT_MODULE_NUMBERS = [...new Set(HANDS_ON_PROJECTS.map(project => project.moduleNumber).filter(moduleNumber => moduleNumber > 0))].sort((a, b) => a - b);
 
 export default function HandsOnProjects({ onNavigate, onSelectTopic, onAskAi }) {
   const [selectedTrack, setSelectedTrack] = useState('all');
@@ -90,7 +93,7 @@ export default function HandsOnProjects({ onNavigate, onSelectTopic, onAskAi }) 
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6 w-full pb-16">
       {/* Hero Header */}
       <div className="p-6 sm:p-8 rounded-3xl neo-card border-amber-500/30 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -106,7 +109,7 @@ export default function HandsOnProjects({ onNavigate, onSelectTopic, onAskAi }) 
             Module-by-Module Hands-On Industrial Projects
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
-            Every module (1 to 20 + Linux) includes a dedicated practical project with separated, topic-by-topic hands-on exercises, runnable code manifests, verification steps, and zero-cost Free Tier safety locks.
+            Explore practical projects across AWS, DevOps, Full Stack, Linux, and Python. Each includes hands-on objectives, runnable examples, verification steps, and cost-safety guidance.
           </p>
         </div>
       </div>
@@ -133,9 +136,9 @@ export default function HandsOnProjects({ onNavigate, onSelectTopic, onAskAi }) 
               onChange={(e) => setSelectedModuleFilter(e.target.value)}
               className="px-3 py-2 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs font-bold text-slate-200 outline-none focus:border-amber-400 cursor-pointer"
             >
-              <option value="all" className="bg-slate-900 text-white">All Modules (0 to 20)</option>
+              <option value="all" className="bg-slate-900 text-white">All Available Modules</option>
               <option value="0" className="bg-slate-900 text-white">Linux &amp; Shell Foundation</option>
-              {Array.from({ length: 20 }, (_, i) => i + 1).map(modNum => (
+              {PROJECT_MODULE_NUMBERS.map(modNum => (
                 <option key={modNum} value={modNum} className="bg-slate-900 text-white">
                   Module {modNum}: {HANDS_ON_PROJECTS.find(p => p.moduleNumber === modNum)?.moduleTitle || `Module ${modNum}`}
                 </option>
@@ -179,7 +182,7 @@ export default function HandsOnProjects({ onNavigate, onSelectTopic, onAskAi }) 
           <div className="p-12 text-center neo-card rounded-3xl border-dashed border-white/10 space-y-3">
             <FolderGit2 className="w-10 h-10 text-slate-500 mx-auto" />
             <h3 className="text-base font-bold text-white">No projects found matching your filter</h3>
-            <p className="text-xs text-slate-400">Try clearing the search query or selecting "All 21 Projects".</p>
+            <p className="text-xs text-slate-400">Try clearing the search query or selecting “All Projects”.</p>
             <button
               onClick={() => {
                 setSelectedTrack('all');

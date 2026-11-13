@@ -56,7 +56,7 @@ export default function DefinitionsGlossary({ onNavigate, onAskAi }) {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6 w-full pb-16">
       {/* Hero Header */}
       <div className="p-6 sm:p-8 rounded-3xl neo-card border-amber-500/30 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -132,7 +132,7 @@ export default function DefinitionsGlossary({ onNavigate, onAskAi }) {
       </div>
 
       {/* Definitions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-5">
         {filteredDefinitions.length === 0 ? (
           <div className="col-span-full p-12 text-center neo-card rounded-3xl space-y-3">
             <Info className="w-8 h-8 text-amber-400 mx-auto" />

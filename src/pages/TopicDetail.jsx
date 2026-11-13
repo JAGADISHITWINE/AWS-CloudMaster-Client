@@ -18,36 +18,86 @@ import {
   Play,
   Youtube,
   ExternalLink,
-  Bot
+  Bot,
+  Image as ImageIcon,
+  Maximize2,
+  Minimize2,
+  X,
+  Briefcase,
+  CheckSquare
 } from 'lucide-react';
 import DiagramViewer from '../components/DiagramViewer';
+import FocusStudyTimer from '../components/FocusStudyTimer';
 import { api } from '../services/api';
 import { YOUTUBE_TOPIC_VIDEOS } from '../data/youtubeData';
 import { getArchitectureForTopic } from '../data/architectureData';
+import { getRealVisualsForTopic } from '../data/topicRealImagesData';
+import { getInterviewQuestionsForTopic } from '../data/interviewQuestionsData';
+import { FALLBACK_NOTES } from '../data/fallbackNotesData';
+import { getFallbackTopic } from '../data/fallbackModulesData';
 
-export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate, onFocusModeChange }) {
+  const [data, setData] = useState(() => {
+    if (topicSlug && FALLBACK_NOTES[topicSlug]) {
+      return {
+        notes: FALLBACK_NOTES[topicSlug],
+        topic: getFallbackTopic(topicSlug)
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
   const [isRead, setIsRead] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [selectedModalImage, setSelectedModalImage] = useState(null);
+  const [expandedInterviewQuestion, setExpandedInterviewQuestion] = useState(null);
+  const [isDistractionFree, setIsDistractionFree] = useState(false);
+  const [showSelfCheck, setShowSelfCheck] = useState(false);
+
+  const toggleFocusMode = (enabled) => {
+    setIsDistractionFree(enabled);
+    onFocusModeChange?.(enabled);
+  };
 
   useEffect(() => {
     if (!topicSlug) return;
-    setLoading(true);
+    if (FALLBACK_NOTES[topicSlug]) {
+      setData({
+        notes: FALLBACK_NOTES[topicSlug],
+        topic: getFallbackTopic(topicSlug)
+      });
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     Promise.all([
       api.getNotes(topicSlug),
       api.getTopic(topicSlug)
     ])
       .then(([notesRes, topicRes]) => {
-        setData({
-          notes: notesRes.notes,
-          topic: topicRes.topic
-        });
-        setIsRead(topicRes.topic?.userProgress?.notesRead || false);
+        if (notesRes && notesRes.notes && topicRes && topicRes.topic) {
+          setData({
+            notes: notesRes.notes,
+            topic: topicRes.topic
+          });
+          setIsRead(topicRes.topic?.userProgress?.notesRead || false);
+        } else if (FALLBACK_NOTES[topicSlug]) {
+          setData({
+            notes: FALLBACK_NOTES[topicSlug],
+            topic: topicRes?.topic || getFallbackTopic(topicSlug)
+          });
+        }
       })
       .catch(err => {
-        console.error('Failed to load topic notes:', err);
+        console.warn('Backend API unavailable, using offline fallback notes:', err.message);
+        if (FALLBACK_NOTES[topicSlug]) {
+          setData({
+            notes: FALLBACK_NOTES[topicSlug],
+            topic: getFallbackTopic(topicSlug)
+          });
+        }
       })
       .finally(() => setLoading(false));
   }, [topicSlug]);
@@ -98,7 +148,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   const videoSearchUrl = video && `https://www.youtube.com/results?search_query=${encodeURIComponent(`${topic.title} AWS tutorial`)}`;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-16">
       {/* Breadcrumb Bar */}
       <div className="flex items-center justify-between gap-4">
         <button
@@ -147,6 +197,11 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           <span className="text-xs text-slate-300 font-semibold">{topic.module?.title}</span>
           <span className="text-slate-600">•</span>
           <span className="text-xs text-amber-400 font-bold uppercase tracking-wider">{topic.difficulty}</span>
+          <span className="text-slate-600">•</span>
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-cyan-500/15 text-cyan-300 border border-cyan-500/35 shadow-sm">
+            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            Concentration Target: {topic.estimatedMinutes || 35} mins
+          </span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-display bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">
           {topic.title}
@@ -165,17 +220,64 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         </div>
       </div>
 
+      {/* ⏱ Interactive Concentration & Focus Study Interval Station */}
+      <FocusStudyTimer
+        topic={topic}
+        isDistractionFree={isDistractionFree}
+        onToggleDistractionFree={() => toggleFocusMode(!isDistractionFree)}
+      />
+
+      {!isDistractionFree && (
+        <nav aria-label="Topic learning steps" className="p-4 sm:px-5 rounded-2xl border border-white/[0.08] bg-slate-950/60">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-3">A clear path through this topic</p>
+          <ol className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {[
+              ['01', 'Understand', '#lesson-explanation'],
+              ['02', 'Learn key terms', '#lesson-concepts'],
+              ['03', 'Trace the diagram', '#lesson-architecture'],
+              ['04', 'Apply it', '#lesson-practice'],
+              ['05', 'Recall and explain', '#lesson-recall']
+            ].map(([number, label, href]) => (
+              <li key={number}>
+                <a href={href} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-semibold text-slate-300 hover:bg-white/[0.05] hover:text-white transition">
+                  <span className="text-[10px] font-black text-amber-400">{number}</span>
+                  <span>{label}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+
+      {/* Distraction-Free Sticky Focus Mode Banner */}
+      {isDistractionFree && (
+        <div className="sticky top-4 z-30 p-3 rounded-2xl bg-indigo-950/90 border border-indigo-500/40 backdrop-blur-xl flex items-center justify-between shadow-xl animate-in fade-in">
+          <div className="flex items-center gap-2 text-xs font-bold text-indigo-200">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
+            <span>Focused lesson path</span>
+            <span className="text-slate-400 hidden sm:inline">Explanation → Concepts → Architecture → Teach-back</span>
+          </div>
+          <button
+            onClick={() => toggleFocusMode(false)}
+            className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span>Exit Focus Mode</span>
+          </button>
+        </div>
+      )}
+
       {/* 📺 Curated YouTube Masterclass & Video Tutorial */}
       {video && (() => {
         return (
           <section className="p-6 rounded-3xl neo-card border-rose-500/30 bg-gradient-to-br from-rose-950/20 via-slate-950 to-slate-900/90 space-y-4 shadow-xl relative overflow-hidden">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-white/[0.06]">
+              <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
+                <div className="p-2.5 rounded-2xl bg-rose-600/20 text-rose-400 border border-rose-500/30 flex-shrink-0">
                   <Youtube className="w-5 h-5 text-rose-500 fill-rose-500/20" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/25">
                       {video.videoId ? 'Video lesson' : 'Find a current video'}
                     </span>
@@ -194,7 +296,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
                 <a
                   href={video.videoId ? video.youtubeUrl : videoSearchUrl}
                   target="_blank"
@@ -208,7 +310,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
                 {onNavigate && (
                   <button
                     onClick={() => onNavigate('ai-trainer')}
-                    className="px-3.5 py-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-indigo-300 border border-indigo-500/30 text-xs font-bold transition flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                   >
                     <Bot className="w-3.5 h-3.5 text-indigo-400" />
                     <span>Ask AI About Video</span>
@@ -272,7 +374,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       })()}
 
       {/* 1. Beginner-Friendly Explanation */}
-      <section className="p-6 rounded-3xl neo-card space-y-3">
+      <section id="lesson-explanation" className="p-6 rounded-3xl neo-card space-y-3 scroll-mt-6">
         <h2 className="text-base font-extrabold text-white flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-amber-400" />
           Start here: the core idea
@@ -285,6 +387,10 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       {/* Architecture diagram first, so learners can map the components before studying details. */}
       {(() => {
         const svgContent = notes.architectureSvg || arch.svg;
+        const realVisuals = getRealVisualsForTopic(topic.slug);
+        const diagramImage = realVisuals?.primaryArchitectureImage || arch.realDiagramUrl;
+        const diagramImageTitle = realVisuals?.primaryArchitectureTitle || arch.realDiagramTitle;
+        const diagramImageCaption = realVisuals?.primaryArchitectureCaption || arch.realDiagramCaption;
         return (
           <section className="p-5 sm:p-6 rounded-xl neo-card space-y-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -379,12 +485,23 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       )}
 
       {/* 6. Best Practices, Security & Cost Considerations */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {!isDistractionFree && <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Security Considerations */}
         <div className="p-5 sm:p-6 rounded-3xl neo-card space-y-2">
-          <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-cyan-400">
-            <ShieldAlert className="w-4 h-4" />
-            <span>Security Best Practices</span>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-cyan-400">
+              <ShieldAlert className="w-4 h-4" />
+              <span>Security Best Practices</span>
+            </div>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('ports-reference')}
+                className="text-[11px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition"
+                title="Open Important Ports & Security Groups Guide"
+              >
+                Ports &amp; SG Rules →
+              </button>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.securityNotes}</p>
         </div>
@@ -397,10 +514,10 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           </div>
           <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.costImplications}</p>
         </div>
-      </div>
+      </div>}
 
       {/* 7. Common Pitfalls & Mistakes */}
-      {notes.commonMistakes && notes.commonMistakes.length > 0 && (
+      {!isDistractionFree && notes.commonMistakes && notes.commonMistakes.length > 0 && (
         <section className="p-6 rounded-3xl neo-card space-y-3 border-rose-500/30">
           <h2 className="text-base font-extrabold text-rose-400 flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-400" />
@@ -433,8 +550,118 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         </div>
       </section>
 
+      <section id="lesson-recall" className="p-6 rounded-3xl neo-card space-y-4 border-emerald-500/25 scroll-mt-6" aria-labelledby="teach-back-title">
+        <div>
+          <h2 id="teach-back-title" className="text-base font-extrabold text-white flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-emerald-400" />
+            Teach it back
+          </h2>
+          <p className="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed">
+            In your own words, explain {topic.title} as if a teammate were new to it. Try to describe what it does, how the main pieces connect, and one important trade-off.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowSelfCheck(!showSelfCheck)}
+          aria-expanded={showSelfCheck}
+          className="text-xs font-bold text-emerald-300 hover:text-emerald-200 transition"
+        >
+          {showSelfCheck ? 'Hide self-check prompts' : 'Show self-check prompts'}
+        </button>
+        {showSelfCheck && (
+          <ul className="space-y-2 border-t border-white/[0.08] pt-3 text-xs sm:text-sm text-slate-300">
+            <li>What problem does this service or concept solve?</li>
+            <li>Can you trace the main request or data flow without looking at the diagram?</li>
+            <li>What security, reliability, or cost decision would you call out?</li>
+          </ul>
+        )}
+      </section>
+
+      {/* 9. Real-Time Technical Interview Questions & Model Solutions */}
+      {(() => {
+        if (isDistractionFree) return null;
+        const topicInterviews = getInterviewQuestionsForTopic(topic.slug);
+        if (!topicInterviews || topicInterviews.length === 0) return null;
+        return (
+          <section className="p-6 sm:p-8 rounded-3xl neo-card space-y-5 border-amber-500/30">
+            <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-white/[0.08]">
+              <div>
+                <h2 className="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-amber-400" />
+                  Real-Time Technical Interview Questions &amp; Architectural Model Answers
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  Authentic interview questions asked in AWS &amp; DevOps hiring rounds for this specific topic, complete with scoring rubrics and model solutions.
+                </p>
+              </div>
+              <button
+                onClick={() => onNavigate && onNavigate('interview-prep')}
+                className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/30"
+              >
+                Open Full Interview Bank →
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {topicInterviews.map((iq, idx) => {
+                const isExpanded = expandedInterviewQuestion === iq.id;
+                return (
+                  <div
+                    key={iq.id || idx}
+                    className="p-5 rounded-2xl bg-slate-950/80 border border-white/[0.08] hover:border-amber-500/40 transition space-y-3 shadow-md"
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-300 font-black text-xs flex items-center justify-center border border-amber-500/30">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs font-black uppercase text-amber-400 tracking-wider">
+                          {iq.difficulty}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-cyan-300 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-0.5 rounded-full font-semibold">
+                        {iq.categoryLabel}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-bold text-white">{iq.title}</h3>
+                    <p className="text-xs text-slate-300 leading-relaxed font-sans bg-white/[0.02] p-3 rounded-xl border border-white/[0.04]">
+                      {iq.prompt}
+                    </p>
+
+                    {/* Expand/Collapse Model Answer */}
+                    <div className="pt-2 flex items-center justify-between">
+                      <button
+                        onClick={() => setExpandedInterviewQuestion(isExpanded ? null : iq.id)}
+                        className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1.5 transition"
+                      >
+                        {isExpanded ? 'Hide Model Answer ↑' : 'View Senior Architect Model Answer ↓'}
+                      </button>
+                      <button
+                        onClick={() => onNavigate && onNavigate('interview-prep')}
+                        className="text-xs text-slate-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Practice in Mock Mode
+                      </button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="pt-3 border-t border-white/[0.06] space-y-3">
+                        <div className="p-4 rounded-xl bg-slate-900 border border-white/[0.06] text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans shadow-inner">
+                          {iq.recommendedSolution}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
+
       {/* Bottom Action Footer */}
-      <div className="p-5 rounded-3xl neo-card flex items-center justify-between">
+      <div id="lesson-practice" className="p-5 rounded-3xl neo-card flex items-center justify-between scroll-mt-6">
         <div className="flex items-center gap-2">
           <button
             onClick={handleMarkAsRead}
@@ -450,7 +677,14 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onSelectTopic(topic.slug, 'quiz-center')}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600 hover:opacity-95 text-white text-xs font-black transition flex items-center gap-2 shadow-glow-indigo"
+          >
+            <CheckSquare className="w-4 h-4" />
+            Take Topic Quiz →
+          </button>
           <button
             onClick={() => onSelectTopic(topic.slug, 'practice-lab')}
             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:opacity-95 text-white text-xs font-black transition flex items-center gap-2 shadow-glow-gold"
@@ -460,6 +694,38 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
           </button>
         </div>
       </div>
+
+      {/* High-Resolution Screenshot / Architecture Lightbox Modal */}
+      {selectedModalImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-4 max-w-7xl mx-auto w-full">
+            <div className="flex items-center gap-2.5">
+              <ImageIcon className="w-5 h-5 text-amber-400" />
+              <h3 className="text-sm sm:text-base font-extrabold text-white">{selectedModalImage.title}</h3>
+            </div>
+            <button
+              onClick={() => setSelectedModalImage(null)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition flex items-center gap-1.5 text-xs font-bold"
+            >
+              <X className="w-4 h-4" />
+              <span>Close</span>
+            </button>
+          </div>
+
+          <div className="flex-1 max-w-7xl mx-auto w-full neo-card rounded-3xl border border-amber-500/30 overflow-auto p-4 sm:p-8 flex flex-col items-center justify-center bg-[#070b14] gap-4">
+            <img
+              src={selectedModalImage.url}
+              alt={selectedModalImage.title}
+              className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
+            />
+            {selectedModalImage.description && (
+              <p className="text-xs sm:text-sm text-slate-300 max-w-3xl text-center leading-relaxed">
+                {selectedModalImage.description}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

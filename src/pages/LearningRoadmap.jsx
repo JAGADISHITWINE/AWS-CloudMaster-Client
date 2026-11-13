@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BookOpen, CheckCircle2, ChevronRight, Layers, Search, Terminal } from 'lucide-react';
 import { getArchitectureForTopic } from '../data/architectureData';
+import { FALLBACK_MODULES } from '../data/fallbackModulesData';
 
 export default function LearningRoadmap({ modules, onSelectTopic }) {
   const [filterLevel, setFilterLevel] = useState('ALL');
@@ -8,9 +9,7 @@ export default function LearningRoadmap({ modules, onSelectTopic }) {
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [expandedModuleId, setExpandedModuleId] = useState(undefined);
 
-  if (!modules || modules.length === 0) {
-    return <div className="p-8 text-center text-slate-400">Loading learning modules...</div>;
-  }
+  const activeModules = (modules && modules.length > 0) ? modules : FALLBACK_MODULES;
 
   const filteredModules = modules.filter(module => {
     const level = (module.level || '').toUpperCase();

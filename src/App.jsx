@@ -16,9 +16,11 @@ import LoginModal from './pages/LoginModal';
 import AiTrainer from './pages/AiTrainer';
 import CommandHub from './pages/CommandHub';
 import DefinitionsGlossary from './pages/DefinitionsGlossary';
+import PortsReferenceHub from './pages/PortsReferenceHub';
 import HandsOnProjects from './pages/HandsOnProjects';
 import AiAssistantDrawer from './components/AiAssistantDrawer';
 import { api } from './services/api';
+import { FALLBACK_MODULES } from './data/fallbackModulesData';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -26,20 +28,11 @@ export default function App() {
   const [selectedTopicSlug, setSelectedTopicSlug] = useState('regions-azs-and-edge-infrastructure');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [dashboardStats, setDashboardStats] = useState(null);
-  const [modules, setModules] = useState([]);
+  const [modules, setModules] = useState(FALLBACK_MODULES);
   const [loading, setLoading] = useState(true);
-
-  // Theme state: 'coral' (AWS Signature Amber/Gold), 'indigo', 'emerald', 'light'
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('aws_platform_theme');
-    if (!saved || saved === 'indigo') return 'coral';
-    return saved;
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('aws_platform_theme', theme);
-  }, [theme]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Load user from storage or fetch /auth/me
   useEffect(() => {
@@ -59,10 +52,39 @@ export default function App() {
     }
   }, []);
 
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  // Keyboard shortcut for Cmd/Ctrl+K search and Cmd/Ctrl+B sidebar toggle
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setActiveTab('roadmap');
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSidebarCollapsed(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Fetch Dashboard Stats & Modules whenever activeTab changes or user changes
   useEffect(() => {
     refreshDashboard();
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab !== 'topic-detail') setIsFocusMode(false);
+  }, [activeTab]);
 
   const refreshDashboard = () => {
     api.getDashboardSummary()
@@ -75,9 +97,19 @@ export default function App() {
 
     api.getModules()
       .then(res => {
-        setModules(res.modules || []);
+        if (res.modules && res.modules.length > 0) {
+          const existingNums = new Set(res.modules.map(m => m.moduleNumber));
+          const missing = FALLBACK_MODULES.filter(m => !existingNums.has(m.moduleNumber));
+          const merged = [...res.modules, ...missing].sort((a, b) => a.moduleNumber - b.moduleNumber);
+          setModules(merged);
+        } else {
+          setModules(FALLBACK_MODULES);
+        }
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.warn('Backend API unavailable, using offline fallback modules:', err.message);
+        setModules(FALLBACK_MODULES);
+      });
   };
 
   const handleSelectTopic = (slug, targetTab = 'topic-detail') => {
@@ -94,23 +126,37 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans transition-colors duration-300">
-      {/* Top Navigation with Theme Switcher */}
-      <Navbar
+    <div className="min-h-screen bg-[var(--bg-primary,#0b101b)] text-[var(--text-primary,#f8fafc)] flex flex-col font-sans transition-colors duration-300 w-full">
+      {/* Full-Screen Edge-to-Edge Navigation Bar */}
+      {!isFocusMode && <Navbar
         user={user}
+        moduleCount={modules.length}
         onLogout={handleLogout}
         onOpenLogin={() => setIsLoginOpen(true)}
         onOpenSafety={() => setActiveTab('free-tier-safety')}
         onOpenAiTrainer={() => setActiveTab('ai-trainer')}
-        currentTheme={theme}
-        onSelectTheme={(t) => setTheme(t)}
-      />
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={() => setIsSidebarCollapsed(prev => !prev)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        onOpenSearch={() => setActiveTab('roadmap')}
+      />}
 
-      {/* Main Body */}
-      <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto">
-        {/* Sidebar */}
-        <Sidebar
+      {/* Main Full-Screen Layout */}
+      <div className="flex-1 flex flex-col md:flex-row w-full min-w-0">
+        {/* Collapsible / Expanding Sidebar */}
+        {!isFocusMode && <Sidebar
           activeTab={activeTab}
           onSelectTab={(tab) => {
             setActiveTab(tab);
@@ -118,15 +164,19 @@ export default function App() {
           }}
           pendingCleanups={dashboardStats?.stats?.pendingCleanups || 0}
           dueRevisions={dashboardStats?.stats?.dueRevisions || 0}
-        />
+          moduleCount={modules.length}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+        />}
 
-        {/* Content Area */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0 overflow-x-hidden">
+        {/* Expansive Full-Screen Main Content Area */}
+        <main className={`min-w-0 overflow-x-hidden transition-all duration-300 ${isFocusMode ? 'mx-auto w-full max-w-5xl px-4 py-8 sm:px-8' : 'flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 w-full'}`}>
           {activeTab === 'dashboard' && (
             <Dashboard
               stats={dashboardStats?.stats}
               recentQuizzes={dashboardStats?.recentQuizzes}
               recentActivities={dashboardStats?.recentActivities}
+              moduleCount={modules.length}
               onNavigate={(tab) => setActiveTab(tab)}
               onSelectTopic={handleSelectTopic}
             />
@@ -166,6 +216,15 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'ports-reference' && (
+            <PortsReferenceHub
+              onNavigate={(tab) => setActiveTab(tab)}
+              onAskAi={(prompt) => {
+                setActiveTab('ai-trainer');
+              }}
+            />
+          )}
+
           {activeTab === 'roadmap' && (
             <LearningRoadmap
               modules={modules}
@@ -179,6 +238,7 @@ export default function App() {
               topicSlug={selectedTopicSlug}
               onSelectTopic={handleSelectTopic}
               onNavigate={(tab) => setActiveTab(tab)}
+              onFocusModeChange={setIsFocusMode}
             />
           )}
 
@@ -247,7 +307,7 @@ export default function App() {
       />
 
       {/* Floating Live AI DevOps Trainer Drawer */}
-      <AiAssistantDrawer activeTab={activeTab} selectedTopicSlug={selectedTopicSlug} />
+      {!isFocusMode && <AiAssistantDrawer activeTab={activeTab} selectedTopicSlug={selectedTopicSlug} />}
     </div>
   );
 }

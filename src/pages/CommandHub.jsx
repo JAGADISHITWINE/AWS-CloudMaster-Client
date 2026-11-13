@@ -18,6 +18,9 @@ import { DEVOPS_COMMANDS } from '../data/commandsData';
 
 export const CATEGORIES = [
   { id: 'all', label: 'All Commands', count: DEVOPS_COMMANDS.length },
+  { id: 'angular', label: '🅰️ Angular CLI', count: DEVOPS_COMMANDS.filter(c => c.category === 'angular').length },
+  { id: 'nodejs', label: '🟢 Node.js & npm', count: DEVOPS_COMMANDS.filter(c => c.category === 'nodejs').length },
+  { id: 'database', label: '🗄️ Database (SQL/Mongo)', count: DEVOPS_COMMANDS.filter(c => c.category === 'database').length },
   { id: 'git', label: '🌿 Git & GitHub', count: DEVOPS_COMMANDS.filter(c => c.category === 'git').length },
   { id: 'jenkins', label: '⚙️ Jenkins CI/CD', count: DEVOPS_COMMANDS.filter(c => c.category === 'jenkins').length },
   { id: 'docker', label: '🐳 Docker Containers', count: DEVOPS_COMMANDS.filter(c => c.category === 'docker').length },
@@ -56,7 +59,7 @@ export default function CommandHub({ onNavigate, onAskAi }) {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-16">
+    <div className="space-y-6 w-full pb-16">
       {/* Hero Header */}
       <div className="p-6 sm:p-8 rounded-3xl neo-card border-amber-500/30 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -132,7 +135,7 @@ export default function CommandHub({ onNavigate, onAskAi }) {
       </div>
 
       {/* Commands Grid */}
-      <div className="grid grid-cols-1 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {filteredCommands.length === 0 ? (
           <div className="p-12 text-center neo-card rounded-3xl space-y-3">
             <Info className="w-8 h-8 text-amber-400 mx-auto" />

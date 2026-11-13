@@ -1,6 +1,7 @@
 // Enterprise DevOps & Cloud Hands-On Projects Database
 // Dedicated separate practical hands-on project for EVERY module (1 to 20) + Linux Foundation.
 // Each project contains separate, topic-by-topic practical hands-on exercises so students can practice step-by-step.
+import { PYTHON_PROJECT } from './pythonLearningData.js';
 
 export const HANDS_ON_PROJECTS = [
   // =========================================================================
@@ -106,24 +107,45 @@ exit 0`
   {
     id: 'module-1-project',
     moduleNumber: 1,
-    moduleTitle: "AWS Global Infrastructure & Architecture",
-    title: "Global Multi-Region Latency Probing & Edge Infrastructure Mapping",
+    moduleTitle: "AWS Cloud Account Setup, Free Tier Governance & Global Infrastructure",
+    title: "AWS Free Tier Account Hardening, FinOps Zero-Spend Guardrails & Global Latency Benchmarking",
     track: "AWS Cloud Infrastructure",
     trackId: "aws",
     level: "Beginner",
-    estimatedHours: 2,
-    summary: "Map out the worldwide AWS global network backbone. Programmatically inspect geographic Regions, query Availability Zone IDs (ZoneId vs ZoneName), probe latency across 4 continents, and architect low-latency multi-region data paths.",
-    skillsLearned: ["AWS CLI Global Inspection", "Regions vs Availability Zones", "ZoneId physical mappings", "Latency benchmarking", "AWS Global Network backbone"],
+    estimatedHours: 3,
+    summary: "Comprehensive cloud baseline project: Provision an AWS account, enforce root MFA and least-privilege IAM Admin delegation, implement automated zero-spend CloudWatch billing alarms with AWS Budgets, diagnose unexpected charges via Cost Explorer, and benchmark regional latencies across the global AWS fiber backbone.",
+    skillsLearned: ["Root Account MFA Hardening", "IAM Least Privilege Provisioning", "CloudWatch Zero-Spend Billing Alarms", "AWS Budgets & SNS Escalation", "Cost Explorer Incident Triage", "AWS Global Infrastructure & ZoneId Inspection"],
     prerequisites: "AWS CLI installed or AWS CloudShell access (Free Tier).",
     topicsCovered: [
       {
         topicNumber: 1,
+        topicTitle: "AWS Free Tier Account Creation, Root Security & IAM Best Practices",
+        slug: "aws-account-creation-root-security-iam",
+        handsOnObjective: "Enforce virtual MFA on the root account, delete root access keys, and create a dedicated administrative IAM user with enforced MFA.",
+        commands: `aws iam get-account-summary
+aws iam create-user --user-name cloud-admin
+aws iam attach-user-policy --user-name cloud-admin --policy-arn arn:aws:iam::aws:policy/AdministratorAccess
+aws iam create-login-profile --user-name cloud-admin --password 'InitialSecurePass123!' --password-reset-required`,
+        practicalExercise: "Log into AWS Console as Root. Navigate to IAM -> Security Credentials and activate Virtual Authenticator MFA. Verify zero root access keys exist. Create IAM user cloud-admin, assign AdministratorAccess, and sign out of root."
+      },
+      {
+        topicNumber: 2,
+        topicTitle: "Accidental Charges Incident Triage, Cost Explorer & AWS Support Refund Resolution",
+        slug: "accidental-charges-cost-explorer-support-refunds",
+        handsOnObjective: "Configure a $0.01 CloudWatch Billing Alarm, setup an AWS Budget with SNS alert, and query Cost Explorer for unattached billable resources.",
+        commands: `aws cloudwatch put-metric-alarm --region us-east-1 --alarm-name "Zero-Spend-Guardrail" --metric-name EstimatedCharges --namespace AWS/Billing --statistic Maximum --period 21600 --threshold 0.01 --comparison-operator GreaterThanThreshold --evaluation-periods 1
+aws ce get-cost-and-usage --time-period Start=2026-11-01,End=2026-11-30 --granularity MONTHLY --metrics "UnblendedCost" --group-by Type=DIMENSION,Key=SERVICE
+aws ec2 describe-volumes --filters Name=status,Values=available`,
+        practicalExercise: "Deploy the billing alarm in us-east-1. Create an AWS Budget alerting at 80% of $5 monthly threshold. Run Cost Explorer CLI commands to detect orphaned EBS volumes or idle Elastic IPs."
+      },
+      {
+        topicNumber: 3,
         topicTitle: "Regions, Availability Zones & Edge Infrastructure",
         slug: "regions-azs-and-edge-infrastructure",
         handsOnObjective: "Query all active AWS regions and query physical Availability Zone IDs to discover data center mappings.",
         commands: `aws ec2 describe-regions --all-regions --query 'Regions[].{Name:RegionName,OptIn:OptInStatus}' --output table
 aws ec2 describe-availability-zones --region us-east-1 --query 'AvailabilityZones[].{Zone:ZoneName,Id:ZoneId,State:State}' --output table`,
-        practicalExercise: "Run the CLI commands in AWS CloudShell. Compare the `ZoneId` (e.g. `use1-az1`) against another account to prove that ZoneNames are randomized per account, but ZoneIds are globally fixed."
+        practicalExercise: "Run the CLI commands in AWS CloudShell. Compare the ZoneId (e.g. use1-az1) against another account to prove that ZoneNames are randomized per account, but ZoneIds are globally fixed."
       }
     ],
     architectureSteps: [
@@ -253,26 +275,46 @@ aws sts assume-role --role-arn arn:aws:iam::$(aws sts get-caller-identity --quer
   {
     id: 'module-3-project',
     moduleNumber: 3,
-    moduleTitle: "Amazon VPC – Advanced Networking",
-    title: "Production High-Availability 3-Tier VPC Network Architecture",
+    moduleTitle: "Amazon VPC – Advanced Cloud Networking & Traffic Engineering",
+    title: "Production High-Availability 3-Tier VPC Architecture, Network Defense & Transit Routing",
     track: "AWS Cloud Infrastructure",
     trackId: "aws",
     level: "Intermediate",
-    estimatedHours: 3,
-    summary: "Architect a production-grade, secure Virtual Private Cloud (VPC) across 2 Availability Zones. Construct isolated Public, Private Application, and Database subnets, attach an Internet Gateway, configure Route Tables, and enforce stateful Security Group boundaries.",
-    skillsLearned: ["Custom VPC Design (/16 CIDR)", "Multi-AZ Subnet Partitioning", "Internet Gateway & Routing", "Stateful Security Groups vs Stateless NACLs", "CIDR Math (/24 and /20)"],
+    estimatedHours: 4,
+    summary: "Architect an enterprise-grade Virtual Private Cloud (VPC) spanning 2 Availability Zones. Construct isolated Public, Private Application, and Database subnets with Internet Gateways and Route Tables; enforce layered security with stateless NACLs and stateful Security Groups; enable VPC Flow Logs for CloudWatch packet inspection; and connect private endpoints via VPC Peering and AWS Transit Gateway.",
+    skillsLearned: ["Custom VPC Architecture (/16 CIDR)", "Multi-AZ Subnet Partitioning & Reserved IPs", "Internet Gateway & Route Tables", "Stateless Network ACLs (NACLs) vs Stateful Security Groups", "VPC Flow Logs & CloudWatch Insights", "VPC Endpoints (PrivateLink) & AWS Transit Gateway"],
     prerequisites: "AWS Free Tier account.",
     topicsCovered: [
       {
         topicNumber: 1,
-        topicTitle: "VPC Subnetting, Gateways & Packet Flow",
+        topicTitle: "VPC Architecture, Subnetting (CIDR), Gateways & Route Tables",
         slug: "vpc-subnetting-gateways-packet-flow",
-        handsOnObjective: "Create a 10.0.0.0/16 VPC with 2 public subnets and 2 private subnets across us-east-1a and us-east-1b.",
+        handsOnObjective: "Provision a 10.0.0.0/16 VPC with 2 public subnets and 2 private subnets across 2 AZs, attach an IGW, and configure route tables.",
         commands: `VPC_ID=$(aws ec2 create-vpc --cidr-block 10.0.0.0/16 --query 'Vpc.VpcId' --output text)
 aws ec2 create-tags --resources $VPC_ID --tags Key=Name,Value=Production-VPC
 IGW_ID=$(aws ec2 create-internet-gateway --query 'InternetGateway.InternetGatewayId' --output text)
 aws ec2 attach-internet-gateway --vpc-id $VPC_ID --internet-gateway-id $IGW_ID`,
-        practicalExercise: "Provision the VPC, attach the Internet Gateway, create Route Tables, and add default route `0.0.0.0/0` pointing to the IGW for public subnets."
+        practicalExercise: "Provision the VPC, attach the Internet Gateway, create Route Tables, and add default route 0.0.0.0/0 pointing to the IGW for public subnets."
+      },
+      {
+        topicNumber: 2,
+        topicTitle: "VPC Security Architecture: Stateful Security Groups, Stateless NACLs, DNS Firewall & Flow Logs",
+        slug: "vpc-security-groups-nacls-firewall-flow-logs",
+        handsOnObjective: "Configure defense-in-depth with stateless Subnet NACLs, stateful Security Groups, and capture network metadata using VPC Flow Logs.",
+        commands: `SG_ID=$(aws ec2 create-security-group --group-name "app-tier-sg" --description "App SG" --vpc-id $VPC_ID --query 'GroupId' --output text)
+aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 443 --cidr 0.0.0.0/0
+aws ec2 create-flow-logs --resource-type VPC --resource-ids $VPC_ID --traffic-type ALL --log-destination-type cloud-watch-logs --log-group-name "/aws/vpc/flowlogs" --deliver-logs-permission-arn arn:aws:iam::123456789012:role/flowlogsRole`,
+        practicalExercise: "Create stateful Security Group allowing inbound HTTPS. Create a custom NACL with Rule 100 allow inbound HTTPS and Rule 100 allow outbound ephemeral ports (1024-65535). Enable VPC Flow Logs to CloudWatch Logs."
+      },
+      {
+        topicNumber: 3,
+        topicTitle: "Hybrid Connectivity & Advanced Routing: NAT Gateways, Endpoints, Peering, VPN & Transit Gateway",
+        slug: "vpc-peering-transit-gateway-endpoints-vpn",
+        handsOnObjective: "Establish private connectivity using S3 Gateway VPC Endpoints and architect inter-VPC routing with AWS Transit Gateway.",
+        commands: `aws ec2 create-vpc-endpoint --vpc-id $VPC_ID --service-name com.amazonaws.us-east-1.s3 --route-table-ids $PRIV_RT
+TGW_ID=$(aws ec2 create-transit-gateway --description "Enterprise Regional Hub" --query 'TransitGateway.TransitGatewayId' --output text)
+aws ec2 create-transit-gateway-vpc-attachment --transit-gateway-id $TGW_ID --vpc-id $VPC_ID --subnet-ids $PRIV_SUB1 $PRIV_SUB2`,
+        practicalExercise: "Create a Gateway VPC Endpoint for Amazon S3 attached to the private route table. Verify that S3 API calls route privately without internet or NAT Gateway traversal."
       }
     ],
     architectureSteps: [
@@ -1222,7 +1264,7 @@ echo "Audit completed."`
     topicsCovered: [
       {
         topicNumber: 1,
-        topicTitle: "Git Fundamentals, Branching & Merge Strategies",
+        topicTitle: "Git Architecture, Version Control Fundamentals & Three-Section Local Repository",
         slug: "git-fundamentals-branching-merge-strategies",
         handsOnObjective: "Create a feature branch, generate an intentional conflict in README.md, and resolve it using git merge.",
         commands: `git checkout -b feature/login
@@ -1236,6 +1278,20 @@ git merge feature/login # Triggers conflict!`,
       },
       {
         topicNumber: 2,
+        topicTitle: "Git Command Suite & Cheat Sheet Mastery (History, Diffs, Undoing & Remote Sync)",
+        slug: "git-command-suite-cheat-sheet-mastery",
+        handsOnObjective: "Practice safe unstaging with git rm --cached, diffing with git diff HEAD and --cached, log formatting with git log --graph --oneline, and safe untracked cleanup with git clean -n.",
+        commands: `git status
+git add config.json
+git rm --cached config.json # Safe unstage: leaves file on disk!
+git diff HEAD
+git diff --cached
+git log --graph --decorate --oneline -5
+git clean -n # Dry run preview untracked deletions`,
+        practicalExercise: "Run 'git rm --cached config.json' to safely unstage without losing your disk work, confirm with 'git status', and run 'git clean -n' to dry-run untracked cleanup."
+      },
+      {
+        topicNumber: 3,
         topicTitle: "GitHub Actions CI/CD, Secrets & Enterprise Workflows",
         slug: "github-actions-cicd-matrix-secrets",
         handsOnObjective: "Build a GitHub Actions workflow testing code across Node 18 and Node 20 on Ubuntu and macOS runners.",
@@ -1245,14 +1301,36 @@ git add .github/workflows/ci.yml
 git commit -m "ci: add GitHub Actions matrix test"
 git push origin main`,
         practicalExercise: "Push your repository to GitHub. Go to the 'Actions' tab in GitHub web UI and watch both matrix jobs execute in parallel."
+      },
+      {
+        topicNumber: 4,
+        topicTitle: "Production Incident Response & Git Disaster Recovery Drills",
+        slug: "git-disaster-recovery-incident-drills",
+        handsOnObjective: "Execute real-time incident drills: recover dropped commits using git reflog, surgically extract hotfixes with git cherry-pick -x, automate regression hunting with git bisect run, and resolve Kubernetes manifest merge conflicts.",
+        commands: `# 1. Disaster recovery via reflog:
+git reflog
+git checkout -b recovery-branch HEAD@{2}
+
+# 2. Surgical cherry-pick with provenance:
+git cherry-pick -x <commit-sha>
+
+# 3. Automated binary search regression hunting:
+git bisect start HEAD v2.0.0
+git bisect run ./test_regression.sh
+git bisect reset
+
+# 4. Overcome 100MB blob push block:
+git rebase -i HEAD~3`,
+        practicalExercise: "Simulate an accidental 'git reset --hard HEAD~3', locate the lost commit in 'git reflog', restore it to a recovery branch, and write an automated test script to run 'git bisect run'."
       }
     ],
     architectureSteps: [
       "1. Initialize Git repository with structured main and develop branches",
-      "2. Simulate feature branch work and perform rebase onto updated main",
-      "3. Trigger merge conflict and resolve using standard diff tools",
-      "4. Author `.github/workflows/ci.yml` with matrix testing strategy",
-      "5. Configure GitHub Branch Protection Rules requiring CI checks to pass before merging"
+      "2. Simulate feature branch work, safe unstaging (git rm --cached), and perform rebase onto updated main",
+      "3. Trigger merge conflict across Kubernetes manifests and resolve conflict markers cleanly",
+      "4. Practice disaster recovery: recover lost commits after accidental hard resets using git reflog",
+      "5. Execute automated regression diagnosis using 'git bisect run ./test_regression.sh'",
+      "6. Author `.github/workflows/ci.yml` with matrix testing strategy and branch protection rules"
     ],
     codeFiles: [
       {
@@ -1293,6 +1371,59 @@ jobs:
 
     - name: Run Linting
       run: npm run lint --if-present`
+      },
+      {
+        filename: "scripts/test_regression.sh",
+        language: "bash",
+        description: "Automated regression assertion script for 'git bisect run' during high-severity production incidents.",
+        content: `#!/usr/bin/env bash
+# Automated Git Bisect Test Assertion Script
+# Protocol: Exit 0 = GOOD commit; Exit 1 = BAD commit; Exit 125 = UNTESTABLE / SKIP
+
+set -eo pipefail
+
+echo "==> Testing commit: $(git rev-parse --short HEAD)"
+
+# Check if application builds (skip untestable commits):
+if ! npm run build --silent > /dev/null 2>&1; then
+  echo "Commit fails to build; skipping..."
+  exit 125
+fi
+
+# Run the target regression test assertion:
+if npm test -- --testPathPattern="paymentGateway.test.js" --silent > /dev/null 2>&1; then
+  echo "Regression check PASSED (Commit is GOOD)"
+  exit 0
+else
+  echo "Regression check FAILED (Commit is BAD)"
+  exit 1
+fi`
+      },
+      {
+        filename: "scripts/git_incident_runbook.sh",
+        language: "bash",
+        description: "Production incident response script for git reflog resurrection and credential purge auditing.",
+        content: `#!/usr/bin/env bash
+# Git Production Disaster Recovery Runbook
+set -euo pipefail
+
+echo "========================================="
+echo "   SRE GIT INCIDENT TRIAGE RUNBOOK       "
+echo "========================================="
+
+# 1. Check for orphaned commits in reflog:
+echo "[1] Recent HEAD movements in Reflog:"
+git reflog -n 8
+
+# 2. Check for large files (>50MB) in commit history:
+echo "[2] Inspecting packfile objects for large blobs:"
+git rev-list --objects --all |
+  git cat-file --batch-check='%(objecttype) %(objectname) %(objectsize) %(rest)' |
+  awk '/^blob/ {if ($3 > 50000000) print $3/1048576 " MB: " $4}' || true
+
+# 3. Verify working tree status:
+echo "[3] Current working tree status:"
+git status -s`
       }
     ],
     verification: "Run `git log --oneline --graph --all`. Confirm clean commit history and verify that GitHub Actions displays green checkmarks for all matrix builds.",
@@ -1332,6 +1463,15 @@ docker logs jenkins-master # Get initial admin password`,
         handsOnObjective: "Create a Multibranch Pipeline job pointing to a repository containing a production Jenkinsfile.",
         commands: `# Test Jenkins pipeline syntax in Web UI -> New Item -> Pipeline -> Pipeline script`,
         practicalExercise: "Add the Jenkinsfile to the root of your repo, trigger a build, and verify all 5 pipeline stages render green in the Blue Ocean / Stage View."
+      },
+      {
+        topicNumber: 3,
+        topicTitle: "Automated Testing & Continuous Integration: Selenium, Maven & Headless Test Automation",
+        slug: "jenkins-selenium-maven-headless-testing",
+        handsOnObjective: "Configure a Maven project with Selenium WebDriver, execute headless browser tests on Linux, and publish JUnit XML test reports in Jenkins.",
+        commands: `mvn test -Dtest=SimpleWebTest
+ls -la target/surefire-reports/`,
+        practicalExercise: "Run automated headless tests via 'mvn test', verify Surefire XML reports, and confirm interactive pass/fail trend graphs render in Jenkins dashboard."
       }
     ],
     architectureSteps: [
@@ -1396,6 +1536,77 @@ docker logs jenkins-master # Get initial admin password`,
         }
     }
 }`
+      },
+      {
+        filename: "pom.xml",
+        language: "xml",
+        description: "Maven project POM configuring Selenium WebDriver and JUnit 4 dependencies in test scope.",
+        content: `<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>selenium-ci-tests</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <properties>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.21.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>`
+      },
+      {
+        filename: "src/test/java/com/example/SimpleWebTest.java",
+        language: "java",
+        description: "Headless Selenium WebDriver test case with JUnit assertions and driver.quit() teardown.",
+        content: `package com.example;
+
+import org.junit.Test;
+import org.junit.After;
+import org.junit.Before;
+import static org.junit.Assert.assertEquals;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+
+public class SimpleWebTest {
+    private WebDriver driver;
+
+    @Before
+    public void setUp() {
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--headless=new");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--window-size=1920,1080");
+        driver = new ChromeDriver(options);
+    }
+
+    @Test
+    public void testPageTitle() {
+        driver.get("https://example.com");
+        assertEquals("Example Domain", driver.getTitle());
+    }
+
+    @After
+    public void tearDown() {
+        if (driver != null) {
+            driver.quit();
+        }
+    }
+}`
       }
     ],
     verification: "In the Jenkins Dashboard, open the pipeline run. Inspect the Stage View to confirm that `Checkout`, `Build`, `Unit Testing`, and `Security Scan` each have green checkmarks with execution timestamps.",
@@ -1423,22 +1634,33 @@ docker logs jenkins-master # Get initial admin password`,
         topicNumber: 1,
         topicTitle: "Container Internals, Namespaces & Docker Architecture",
         slug: "docker-internals-container-architecture",
-        handsOnObjective: "Inspect running container namespaces and cgroup memory limits.",
+        handsOnObjective: "Inspect running container namespaces, cgroup memory quotas, and trigger kernel OOMKilled verification.",
         commands: `docker run -d --name test-box --memory="256m" --cpus="0.5" alpine sleep 3600
 docker inspect test-box --format '{{.HostConfig.Memory}} bytes'
 docker stats test-box --no-stream`,
-        practicalExercise: "Run `docker inspect` to verify cgroup limits and namespace process isolation."
+        practicalExercise: "Inspect container state and kernel namespaces via lsns and verify cgroup limits in /sys/fs/cgroup/."
       },
       {
         topicNumber: 2,
-        topicTitle: "Dockerfile Multi-Stage Builds, Compose & Networking",
-        slug: "dockerfile-multistage-compose-networking",
-        handsOnObjective: "Build a production multi-stage Docker image and deploy a multi-container stack via Docker Compose.",
+        topicTitle: "Docker Images, Dockerfile Engineering & Registry Distribution",
+        slug: "docker-images-dockerfile-registries",
+        handsOnObjective: "Engineer a multi-stage Dockerfile, eliminate image bloat, optimize layer caching, and push deduplicated layers.",
         commands: `docker build -t app:v1 .
-docker images app:v1 # Notice tiny size (< 120MB)
-docker compose up -d
-docker compose ps`,
-        practicalExercise: "Launch the stack with `docker compose up -d`. Curl port 8080 to verify connectivity to PostgreSQL through the internal bridge network."
+docker history app:v1
+docker run -d -p 5000:5000 --name registry registry:2
+docker tag app:v1 localhost:5000/app:v1 && docker push localhost:5000/app:v1`,
+        practicalExercise: "Build multi-stage image and verify image size reduction from 1.2GB down to 35MB; test layer deduplication on private registry."
+      },
+      {
+        topicNumber: 3,
+        topicTitle: "Docker Networking, Storage Volumes & Multi-Container Docker Compose Stacks",
+        slug: "dockerfile-multistage-compose-networking",
+        handsOnObjective: "Orchestrate 3-tier microservice stack with custom bridge networking, service discovery, database healthcheck gating, and named volumes.",
+        commands: `docker compose -f compose.yaml up -d --build
+docker compose ps
+docker compose logs -f api
+docker compose down`,
+        practicalExercise: "Launch stack with healthcheck gating (condition: service_healthy) and verify data persistence in named volumes across restarts."
       }
     ],
     architectureSteps: [
@@ -1545,24 +1767,35 @@ networks:
     topicsCovered: [
       {
         topicNumber: 1,
-        topicTitle: "Kubernetes Architecture, Control Plane & Core Primitives",
+        topicTitle: "Kubernetes Architecture, Control Plane & Cluster Bootstrapping",
         slug: "kubernetes-architecture-control-plane-nodes",
-        handsOnObjective: "Inspect cluster control plane components and launch a Pod and Deployment.",
-        commands: `kubectl cluster-info
+        handsOnObjective: "Bootstrap a multi-node cluster with kind, inspect control plane components, and verify worker node registration.",
+        commands: `kind create cluster --name k8s-prod --config kind-config.yaml
+kubectl cluster-info
 kubectl get nodes -o wide
-kubectl create deployment web-app --image=nginx:alpine --replicas=3
-kubectl get pods -l app=web-app`,
-        practicalExercise: "Run `kubectl get nodes` and `kubectl get pods`. Delete one Pod manually and observe the ReplicaSet controller instantly launch a new replacement."
+kubectl get pods -n kube-system`,
+        practicalExercise: "Run `kind create cluster` and inspect the core control plane pods in `kube-system`. Describe the kubelet and containerd runtime on worker nodes."
       },
       {
         topicNumber: 2,
-        topicTitle: "Workloads, Services, Ingress, Helm & Troubleshooting",
-        slug: "k8s-workloads-services-networking-helm",
-        handsOnObjective: "Apply declarative Kubernetes manifests with Ingress, resource limits, and HPA.",
+        topicTitle: "Kubernetes Workloads, Core Objects, Networking & Storage Abstractions",
+        slug: "kubernetes-objects-workloads-networking-storage",
+        handsOnObjective: "Deploy declarative microservices with decoupled ConfigMaps, base64 Secrets, ClusterIP Services, and PersistentVolumes.",
         commands: `kubectl apply -f k8s-deployment.yaml
-kubectl get svc,ingress,hpa
-kubectl rollout status deployment/web-microservice`,
-        practicalExercise: "Execute `kubectl set image deployment/web-microservice web=nginx:1.25.4-alpine --record` to watch zero-downtime rolling updates in real-time."
+kubectl get pods,svc,configmap,secret,pvc -o wide
+kubectl describe pod -l app=web-microservice`,
+        practicalExercise: "Create a PersistentVolumeClaim and verify automatic dynamic volume binding, then inject ConfigMap environment variables into the running pod."
+      },
+      {
+        topicNumber: 3,
+        topicTitle: "Zero-Downtime Rollouts, Autoscaling (HPA), Helm Packaging & Production Operations",
+        slug: "k8s-workloads-services-networking-helm",
+        handsOnObjective: "Execute zero-downtime rolling updates, configure Horizontal Pod Autoscaler (HPA) CPU threshold scaling, and deploy via Helm charts.",
+        commands: `kubectl set image deployment/web-microservice web=nginx:1.25.4-alpine
+kubectl rollout status deployment/web-microservice
+kubectl autoscale deployment web-microservice --cpu-percent=70 --min=2 --max=10
+helm install my-app ./charts/web-app -f values.yaml`,
+        practicalExercise: "Execute a rolling image upgrade, simulate CPU load to trigger HPA autoscaling from 2 to 6 replicas, and test `helm rollback` on a deliberate failure."
       }
     ],
     architectureSteps: [
@@ -1765,3 +1998,5 @@ kubectl get nodes`,
     cleanupCommands: "docker rmi \${ECR_REGISTRY}/\${IMAGE_NAME}:\${IMAGE_TAG} || true"
   }
 ];
+
+HANDS_ON_PROJECTS.push(PYTHON_PROJECT);

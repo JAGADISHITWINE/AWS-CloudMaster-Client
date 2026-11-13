@@ -17,14 +17,13 @@ import { api } from '../services/api';
 export default function RevisionCenter({ onSelectTopic, onNavigate }) {
   const [revisions, setRevisions] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = () => {
-    setLoading(true);
     Promise.all([
       api.getDueRevisions(),
       api.getBookmarks()
@@ -33,8 +32,7 @@ export default function RevisionCenter({ onSelectTopic, onNavigate }) {
         setRevisions(revRes.revisions || []);
         setBookmarks(bookRes.bookmarks || []);
       })
-      .catch(err => console.error(err))
-      .finally(() => setLoading(false));
+      .catch(err => console.log('Offline revision center:', err.message));
   };
 
   const handleCompleteReview = async (id, easeRating) => {
@@ -51,7 +49,7 @@ export default function RevisionCenter({ onSelectTopic, onNavigate }) {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-16">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">

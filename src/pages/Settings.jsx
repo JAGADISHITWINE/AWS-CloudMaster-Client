@@ -53,7 +53,7 @@ export default function Settings({ user, onProfileUpdated }) {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto pb-12">
+    <div className="space-y-6 max-w-4xl mx-auto pb-16">
       <div>
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/15 text-amber-300 border border-amber-500/35 flex items-center gap-1.5 shadow-sm">

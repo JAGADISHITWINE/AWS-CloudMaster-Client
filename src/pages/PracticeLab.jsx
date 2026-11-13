@@ -13,41 +13,64 @@ import {
   Trash2,
   Check,
   AlertOctagon,
-  Sparkles
+  Sparkles,
+  Image as ImageIcon,
+  Maximize2,
+  X
 } from 'lucide-react';
 import CostRiskBadge from '../components/CostRiskBadge';
 import CliSimulator from '../components/CliSimulator';
 import { api } from '../services/api';
+import { getLabStepScreenshot } from '../data/topicRealImagesData';
+import { FALLBACK_LABS } from '../data/fallbackLabsData';
 
 export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
-  const [lab, setLab] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [lab, setLab] = useState(() => (topicSlug && FALLBACK_LABS[topicSlug]) ? FALLBACK_LABS[topicSlug] : null);
+  const [loading, setLoading] = useState(() => !(topicSlug && FALLBACK_LABS[topicSlug]));
   const [completedSteps, setCompletedSteps] = useState([]);
   const [isCleanedUp, setIsCleanedUp] = useState(false);
   const [activeStepTab, setActiveStepTab] = useState(1);
+  const [modalScreenshot, setModalScreenshot] = useState(null);
 
   useEffect(() => {
     if (!topicSlug) return;
-    setLoading(true);
+    if (FALLBACK_LABS[topicSlug]) {
+      setLab(FALLBACK_LABS[topicSlug]);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     api.getLab(topicSlug)
       .then(res => {
-        setLab(res.lab);
-        setCompletedSteps(res.lab?.userProgress?.completedSteps || []);
-        setIsCleanedUp(res.lab?.userProgress?.isCleanedUp || false);
+        if (res && res.lab) {
+          setLab(res.lab);
+          setCompletedSteps(res.lab?.userProgress?.completedSteps || []);
+          setIsCleanedUp(res.lab?.userProgress?.isCleanedUp || false);
+        } else if (FALLBACK_LABS[topicSlug]) {
+          setLab(FALLBACK_LABS[topicSlug]);
+        }
       })
       .catch(err => {
-        console.error('Failed to load lab:', err);
+        console.warn('Backend API unavailable, using offline fallback lab:', err.message);
+        if (FALLBACK_LABS[topicSlug]) {
+          setLab(FALLBACK_LABS[topicSlug]);
+        }
       })
       .finally(() => setLoading(false));
   }, [topicSlug]);
 
   const handleToggleStep = async (stepNum) => {
     if (!lab) return;
+    setCompletedSteps(prev => 
+      prev.includes(stepNum) ? prev.filter(s => s !== stepNum) : [...prev, stepNum]
+    );
     try {
-      const res = await api.toggleLabStep(lab.id, stepNum);
-      setCompletedSteps(res.completedSteps);
+      if (lab.id) {
+        const res = await api.toggleLabStep(lab.id, stepNum);
+        if (res && res.completedSteps) setCompletedSteps(res.completedSteps);
+      }
     } catch (err) {
-      console.error(err);
+      console.warn('Could not persist lab step to server:', err.message);
     }
   };
 
@@ -77,10 +100,13 @@ export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
   }
 
   const currentStep = lab.steps?.find(s => s.stepNumber === activeStepTab) || lab.steps[0];
+  const stepScreenshot = currentStep?.screenshotUrl
+    ? { url: currentStep.screenshotUrl, caption: currentStep.title }
+    : (currentStep ? getLabStepScreenshot(topicSlug, currentStep.stepNumber) : null);
   const progressPercent = lab.steps?.length > 0 ? Math.round((completedSteps.length / lab.steps.length) * 100) : 0;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-16">
       {/* Header Bar */}
       <div className="flex items-center justify-between gap-4">
         <button
@@ -219,6 +245,43 @@ export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
             <p className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">{currentStep.consoleInstruction}</p>
           </div>
 
+          {/* Actual AWS Console Real Screenshot */}
+          {stepScreenshot && (
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-950/80 p-4 sm:p-5 space-y-3 shadow-lg">
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-white/[0.06]">
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-amber-400" />
+                  Actual AWS Management Console Screenshot
+                </span>
+                <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-800/40 px-2.5 py-0.5 rounded-full">
+                  Step {currentStep.stepNumber} Visual Guide
+                </span>
+              </div>
+
+              <div
+                onClick={() => setModalScreenshot(stepScreenshot)}
+                className="group relative cursor-pointer rounded-xl overflow-hidden border border-white/[0.08] bg-[#070b14] flex justify-center items-center max-h-[440px] p-2 hover:border-amber-400/60 transition shadow-inner"
+              >
+                <img
+                  src={stepScreenshot.url}
+                  alt={stepScreenshot.caption || currentStep.title}
+                  className="max-h-[420px] w-auto max-w-full object-contain rounded-lg transition duration-200 group-hover:scale-[1.01]"
+                  loading="lazy"
+                />
+                <div className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-black/85 backdrop-blur-md text-xs font-bold text-amber-300 border border-amber-500/30 opacity-80 group-hover:opacity-100 flex items-center gap-1.5 shadow-lg transition">
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Click to Enlarge</span>
+                </div>
+              </div>
+
+              {stepScreenshot.caption && (
+                <p className="text-xs text-slate-400 italic text-center leading-relaxed">
+                  {stepScreenshot.caption}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Interactive Safe Cloud CLI Simulator */}
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
@@ -291,6 +354,40 @@ export default function PracticeLab({ topicSlug, onNavigate, onSelectTopic }) {
           Take Topic Quiz Assessment →
         </button>
       </div>
+
+      {/* Enlarged Screenshot Lightbox Modal */}
+      {modalScreenshot && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-4 max-w-7xl mx-auto w-full">
+            <div className="flex items-center gap-2.5">
+              <ImageIcon className="w-5 h-5 text-amber-400" />
+              <h3 className="text-sm sm:text-base font-extrabold text-white">
+                {modalScreenshot.caption || 'AWS Console Screenshot'}
+              </h3>
+            </div>
+            <button
+              onClick={() => setModalScreenshot(null)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition flex items-center gap-1.5 text-xs font-bold"
+            >
+              <X className="w-4 h-4" />
+              <span>Close</span>
+            </button>
+          </div>
+
+          <div className="flex-1 max-w-7xl mx-auto w-full neo-card rounded-3xl border border-amber-500/30 overflow-auto p-4 sm:p-8 flex flex-col items-center justify-center bg-[#070b14] gap-4">
+            <img
+              src={modalScreenshot.url}
+              alt={modalScreenshot.caption || 'AWS Console Screenshot'}
+              className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-2xl"
+            />
+            {modalScreenshot.caption && (
+              <p className="text-xs sm:text-sm text-slate-300 max-w-3xl text-center leading-relaxed">
+                {modalScreenshot.caption}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

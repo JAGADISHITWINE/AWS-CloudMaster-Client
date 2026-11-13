@@ -15,20 +15,44 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
+import { FALLBACK_QUIZZES } from '../data/fallbackQuizzesData';
+import { FALLBACK_MODULES } from '../data/fallbackModulesData';
 
 export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
-  const [quizData, setQuizData] = useState(null);
+  const getInitialQuiz = (slug) => {
+    if (!slug) return null;
+    const topicQuizzes = FALLBACK_QUIZZES.filter(q => q.topicSlug === slug);
+    if (topicQuizzes.length > 0) {
+      return {
+        success: true,
+        topic: { id: slug, title: slug.replace(/-/g, ' ') },
+        totalQuestions: topicQuizzes.length,
+        passingScorePercentage: 70,
+        questions: topicQuizzes
+      };
+    }
+    return null;
+  };
+
+  const [quizData, setQuizData] = useState(() => getInitialQuiz(topicSlug));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({}); // { questionId: optionKey }
   const [showHint, setShowHint] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [quizResult, setQuizResult] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
 
   useEffect(() => {
     if (!topicSlug) return;
-    setLoading(true);
+    const initial = getInitialQuiz(topicSlug);
+    if (initial) {
+      setQuizData(initial);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     setQuizResult(null);
     setCurrentIndex(0);
     setSelectedAnswers({});
@@ -37,10 +61,33 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
 
     api.getTopicQuiz(topicSlug)
       .then(res => {
-        setQuizData(res);
+        const topicQuizzes = FALLBACK_QUIZZES.filter(q => q.topicSlug === topicSlug);
+        if (res && res.questions && res.questions.length >= 25) {
+          setQuizData(res);
+        } else if (topicQuizzes.length > 0) {
+          setQuizData({
+            success: true,
+            topic: { id: topicSlug, title: topicSlug.replace(/-/g, ' ') },
+            totalQuestions: topicQuizzes.length,
+            passingScorePercentage: 70,
+            questions: topicQuizzes
+          });
+        } else if (res && res.questions && res.questions.length > 0) {
+          setQuizData(res);
+        }
       })
       .catch(err => {
-        console.error('Quiz load error:', err);
+        console.warn('Backend API unavailable, using offline fallback quiz:', err.message);
+        const topicQuizzes = FALLBACK_QUIZZES.filter(q => q.topicSlug === topicSlug);
+        if (topicQuizzes.length > 0) {
+          setQuizData({
+            success: true,
+            topic: { id: topicSlug, title: topicSlug.replace(/-/g, ' ') },
+            totalQuestions: topicQuizzes.length,
+            passingScorePercentage: 70,
+            questions: topicQuizzes
+          });
+        }
       })
       .finally(() => setLoading(false));
   }, [topicSlug]);
@@ -71,18 +118,75 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
 
     setSubmitting(true);
     try {
-      const res = await api.submitQuiz(quizData.topic.id, answersPayload, timerSeconds);
-      setQuizResult(res.result);
-      if (res.result.passed) {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 }
+      if (quizData.topic?.id && !quizData.topic.id.includes('-')) {
+        const res = await api.submitQuiz(quizData.topic.id, answersPayload, timerSeconds);
+        setQuizResult(res.result || res);
+        if ((res.result?.passed ?? res.passed)) {
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        }
+      } else {
+        // Offline / local fallback scoring
+        let correctCount = 0;
+        const detailedResults = quizData.questions.map(q => {
+          const chosenKey = selectedAnswers[q.id];
+          const correctOpt = q.options?.find(o => o.isCorrect);
+          const isCorrect = correctOpt && chosenKey === correctOpt.optionKey;
+          if (isCorrect) correctCount++;
+          return {
+            questionId: q.id,
+            title: q.title,
+            prompt: q.prompt,
+            explanation: q.explanation,
+            selectedOption: chosenKey,
+            correctOptionKey: correctOpt?.optionKey,
+            isCorrect,
+            options: q.options
+          };
         });
+        const scorePercentage = Math.round((correctCount / quizData.questions.length) * 100);
+        const passed = scorePercentage >= 70;
+        setQuizResult({
+          score: scorePercentage,
+          passed,
+          correctCount,
+          totalQuestions: quizData.questions.length,
+          detailedResults
+        });
+        if (passed) {
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert('Error submitting quiz: ' + err.message);
+      console.warn('API submission failed, evaluating locally:', err.message);
+      let correctCount = 0;
+      const detailedResults = quizData.questions.map(q => {
+        const chosenKey = selectedAnswers[q.id];
+        const correctOpt = q.options?.find(o => o.isCorrect);
+        const isCorrect = correctOpt && chosenKey === correctOpt.optionKey;
+        if (isCorrect) correctCount++;
+        return {
+          questionId: q.id,
+          title: q.title,
+          prompt: q.prompt,
+          explanation: q.explanation,
+          selectedOption: chosenKey,
+          correctOptionKey: correctOpt?.optionKey,
+          isCorrect,
+          options: q.options
+        };
+      });
+      const scorePercentage = Math.round((correctCount / quizData.questions.length) * 100);
+      const passed = scorePercentage >= 70;
+      setQuizResult({
+        score: scorePercentage,
+        passed,
+        correctCount,
+        totalQuestions: quizData.questions.length,
+        detailedResults
+      });
+      if (passed) {
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -102,11 +206,42 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
 
   if (!quizData?.questions || quizData.questions.length === 0) {
     return (
-      <div className="p-8 text-center text-slate-400 space-y-3">
-        <p>No assessment questions found for this topic.</p>
-        <button onClick={() => onNavigate('roadmap')} className="text-amber-400 text-xs font-bold">
-          Return to Learning Roadmap
-        </button>
+      <div className="space-y-6 w-full max-w-6xl mx-auto pb-16">
+        <div className="flex items-center justify-between gap-4">
+          <button
+            onClick={() => onNavigate('roadmap')}
+            className="text-xs font-bold text-amber-400/90 hover:text-amber-300 flex items-center gap-1.5 transition"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+            Back to Roadmap
+          </button>
+        </div>
+        <div className="p-8 text-center text-slate-400 space-y-4 neo-card rounded-3xl border-amber-500/20">
+          <Award className="w-12 h-12 text-amber-400 mx-auto" />
+          <h2 className="text-xl sm:text-2xl font-black text-white">Select a Topic to Start Your Certification Quiz</h2>
+          <p className="text-xs text-slate-300 max-w-lg mx-auto">
+            Choose any topic from our 24 structured modules below to test your technical mastery with multiple-choice questions.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-left pt-4">
+            {FALLBACK_MODULES.map(m => (
+              <div key={m.moduleNumber} className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] space-y-2">
+                <p className="text-xs font-bold text-amber-300">Module {m.moduleNumber}: {m.title}</p>
+                <div className="space-y-1">
+                  {m.topics.map(t => (
+                    <button
+                      key={t.slug}
+                      onClick={() => onSelectTopic(t.slug, 'quiz-center')}
+                      className="w-full text-left p-2 rounded-lg hover:bg-amber-500/10 text-slate-300 hover:text-amber-300 text-xs transition flex items-center justify-between"
+                    >
+                      <span className="truncate pr-2">{t.title}</span>
+                      <ArrowRight className="w-3 h-3 flex-shrink-0 text-amber-400" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -117,9 +252,9 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
   const formatTime = (sec) => `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between gap-4">
+    <div className="space-y-6 w-full max-w-6xl mx-auto pb-16">
+      {/* Top Navigation & Quick Topic Switcher */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <button
           onClick={() => onNavigate('roadmap')}
           className="text-xs font-bold text-amber-400/90 hover:text-amber-300 flex items-center gap-1.5 transition"
@@ -128,7 +263,26 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
           Back to Roadmap
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 font-semibold">Switch Topic:</span>
+            <select
+              value={topicSlug || ''}
+              onChange={(e) => onSelectTopic(e.target.value, 'quiz-center')}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 border border-amber-500/30 text-xs text-slate-200 font-medium focus:outline-none focus:border-amber-400 max-w-xs truncate"
+            >
+              {FALLBACK_MODULES.map(m => (
+                <optgroup key={m.moduleNumber} label={`Module ${m.moduleNumber}: ${m.title}`}>
+                  {m.topics.map(t => (
+                    <option key={t.slug} value={t.slug}>
+                      {t.title}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-900 border border-amber-500/20 text-xs text-amber-300 font-mono shadow-sm">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
             <span>{formatTime(timerSeconds)}</span>
@@ -213,7 +367,7 @@ export default function QuizCenter({ topicSlug, onSelectTopic, onNavigate }) {
               const isSelected = selectedAnswers[currentQ.id] === opt.optionKey;
               return (
                 <button
-                  key={opt.id}
+                  key={opt.optionKey}
                   onClick={() => handleSelectOption(currentQ.id, opt.optionKey)}
                   className={`w-full text-left p-4 rounded-2xl border text-xs sm:text-sm font-medium transition flex items-start gap-3.5 ${
                     isSelected
