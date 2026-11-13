@@ -11,9 +11,9 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Layers,
   Bookmark,
   Share2,
-  Sparkles,
   Zap,
   Play,
   Youtube,
@@ -84,6 +84,18 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
   }
 
   const { notes, topic } = data;
+  const arch = getArchitectureForTopic(topic.slug, topic.moduleId, topic.title);
+  const keyTerms = notes.coreConcepts?.length
+    ? notes.coreConcepts.map(concept => ({
+        term: concept.term || concept.name,
+        definition: concept.definition || concept.description
+      }))
+    : (arch.stepByStep || []).map(component => ({
+        term: component.component,
+        definition: component.role
+      }));
+  const video = YOUTUBE_TOPIC_VIDEOS[topic.slug] || YOUTUBE_TOPIC_VIDEOS[topicSlug];
+  const videoSearchUrl = video && `https://www.youtube.com/results?search_query=${encodeURIComponent(`${topic.title} AWS tutorial`)}`;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -154,9 +166,7 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       </div>
 
       {/* 📺 Curated YouTube Masterclass & Video Tutorial */}
-      {(() => {
-        const video = YOUTUBE_TOPIC_VIDEOS[topic.slug] || YOUTUBE_TOPIC_VIDEOS[topicSlug];
-        if (!video) return null;
+      {video && (() => {
         return (
           <section className="p-6 rounded-3xl neo-card border-rose-500/30 bg-gradient-to-br from-rose-950/20 via-slate-950 to-slate-900/90 space-y-4 shadow-xl relative overflow-hidden">
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -167,28 +177,32 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/25">
-                      Curated Masterclass
+                      {video.videoId ? 'Video lesson' : 'Find a current video'}
                     </span>
                     <span className="text-slate-600 text-xs">•</span>
                     <span className="text-xs font-semibold text-slate-300">{video.channel}</span>
-                    <span className="text-slate-600 text-xs">•</span>
-                    <span className="text-xs text-amber-400 font-bold">{video.duration}</span>
+                    {video.duration && (
+                      <>
+                        <span className="text-slate-600 text-xs">•</span>
+                        <span className="text-xs text-amber-400 font-bold">{video.duration}</span>
+                      </>
+                    )}
                   </div>
                   <h2 className="text-base sm:text-lg font-black text-white mt-0.5">
-                    {video.title}
+                    {video.videoId ? video.title : `Search lessons for ${topic.title}`}
                   </h2>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <a
-                  href={video.youtubeUrl}
+                  href={video.videoId ? video.youtubeUrl : videoSearchUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-lg shadow-rose-900/30"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Watch on YouTube</span>
+                  <span>{video.videoId ? 'Watch on YouTube' : 'Search YouTube'}</span>
                   <ExternalLink className="w-3 h-3 ml-0.5 opacity-80" />
                 </a>
                 {onNavigate && (
@@ -204,18 +218,31 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
             </div>
 
             {/* Video Player Embed / Responsive Preview */}
-            <div className="rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl bg-black aspect-video max-w-3xl mx-auto">
-              <iframe
-                className="w-full h-full"
-                src={`https://www.youtube-nocookie.com/embed/${video.videoId}?rel=0`}
-                title={video.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
+            {video.videoId ? (
+              <div className="rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl bg-black aspect-video max-w-3xl mx-auto">
+                <iframe
+                  className="w-full h-full"
+                  src={`https://www.youtube-nocookie.com/embed/${video.videoId}?rel=0`}
+                  title={video.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <a
+                href={videoSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block max-w-3xl mx-auto rounded-lg border border-white/10 bg-slate-900/80 p-6 text-center hover:border-rose-400/40 transition"
+              >
+                <Youtube className="w-7 h-7 mx-auto text-rose-400" />
+                <span className="block mt-2 text-sm font-semibold text-slate-200">Browse current lessons on YouTube</span>
+                <span className="block mt-1 text-xs text-slate-400">The previously listed video is no longer available.</span>
+              </a>
+            )}
 
             {/* Chapters / Key Topics Covered */}
-            {video.chapters && video.chapters.length > 0 && (
+            {video.videoId && video.chapters && video.chapters.length > 0 && (
               <div className="pt-2">
                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 block mb-2">
                   Key Video Chapters:
@@ -248,45 +275,26 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
       <section className="p-6 rounded-3xl neo-card space-y-3">
         <h2 className="text-base font-extrabold text-white flex items-center gap-2">
           <BookOpen className="w-4 h-4 text-amber-400" />
-          1. Intuitive Explanation (Beginner Friendly)
+          Start here: the core idea
         </h2>
         <div className="text-xs sm:text-sm text-slate-300 leading-relaxed space-y-2">
           <p>{notes.simpleExplanation}</p>
         </div>
       </section>
 
-      {/* 2. Core Concepts & Definitions */}
-      <section className="p-6 rounded-3xl neo-card space-y-4">
-        <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          2. Core Concepts, Terminology &amp; Definitions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-          {notes.coreConcepts?.map((c, i) => (
-            <div key={i} className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-amber-500/30 transition space-y-1">
-              <span className="font-extrabold text-amber-300 text-xs sm:text-sm">{c.term}</span>
-              <p className="text-xs text-slate-300 leading-snug">{c.definition}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 3. Architecture Diagram & Visual Explanation */}
+      {/* Architecture diagram first, so learners can map the components before studying details. */}
       {(() => {
-        const arch = getArchitectureForTopic(topic.slug, topic.moduleId, topic.title);
         const svgContent = notes.architectureSvg || arch.svg;
         return (
-          <section className="p-6 rounded-3xl neo-card space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-400" />
-                3. Visual Architecture &amp; System Flow Map
+          <section className="p-5 sm:p-6 rounded-xl neo-card space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Layers className="w-4 h-4 text-cyan-400" />
+                Architecture at a glance
               </h2>
-              <span className="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-2.5 py-0.5 rounded-full">
-                {arch.category}
-              </span>
+              <span className="text-[11px] font-semibold text-cyan-300">{arch.category}</span>
             </div>
-            <p className="text-xs text-slate-300 leading-relaxed">{arch.description}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{arch.description}</p>
             <DiagramViewer
               svgString={svgContent}
               title={arch.title}
@@ -301,22 +309,39 @@ export default function TopicDetail({ topicSlug, onSelectTopic, onNavigate }) {
         );
       })()}
 
-      {/* 4. How it Works Internally */}
+      {/* Core Concepts & Definitions */}
+      <section className="p-6 rounded-3xl neo-card space-y-4">
+        <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          Key terms
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {keyTerms.map((c, i) => (
+            <div key={i} className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:border-amber-500/30 transition space-y-1">
+              <span className="font-extrabold text-amber-300 text-xs sm:text-sm">{c.term}</span>
+              <p className="text-xs text-slate-300 leading-snug">{c.definition}</p>
+            </div>
+          ))}
+          {keyTerms.length === 0 && <p className="text-sm text-slate-400">Key terms for this topic are not available yet.</p>}
+        </div>
+      </section>
+
+      {/* How it Works Internally */}
       <section className="p-6 rounded-3xl neo-card space-y-3">
         <h2 className="text-base font-extrabold text-white flex items-center gap-2">
           <Terminal className="w-4 h-4 text-orange-400" />
-          4. How It Works Under The Hood
+          How it works
         </h2>
         <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{notes.internalsExplanation}</p>
       </section>
 
-      {/* 5. Essential CLI Commands */}
+      {/* Essential CLI Commands */}
       {notes.cliExamples && notes.cliExamples.length > 0 && (
         <section className="p-6 rounded-3xl neo-card space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-base font-extrabold text-white flex items-center gap-2">
               <Terminal className="w-4 h-4 text-amber-400" />
-              5. Essential CLI Commands &amp; Production Syntax
+              Try it in the CLI
             </h2>
             {onNavigate && (
               <button

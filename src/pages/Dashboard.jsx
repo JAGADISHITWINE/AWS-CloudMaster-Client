@@ -21,10 +21,61 @@ import {
   BookMarked
 } from 'lucide-react';
 import CostRiskBadge from '../components/CostRiskBadge';
+import { getArchitectureForTopic } from '../data/architectureData';
 
 export default function Dashboard({ stats, recentQuizzes, recentActivities, onNavigate, onSelectTopic }) {
   if (!stats) {
-    return <div className="p-8 text-center text-slate-400">Loading learning analytics...</div>;
+    const architecture = getArchitectureForTopic('regions-azs-and-edge-infrastructure', 1, 'AWS Global Infrastructure');
+
+    return (
+      <div className="max-w-6xl mx-auto space-y-8 pb-10">
+        <header className="border-b border-white/10 pb-6">
+          <p className="text-xs font-semibold text-amber-400">YOUR LEARNING PATH</p>
+          <h1 className="mt-2 text-2xl sm:text-3xl font-bold text-white font-display">Build your cloud foundations</h1>
+          <p className="mt-2 max-w-2xl text-sm text-slate-400 leading-relaxed">
+            Start with how AWS is organized around the world. Learn the architecture, then move through each module in order.
+          </p>
+          <button
+            onClick={() => onNavigate('roadmap')}
+            className="mt-5 px-4 py-2.5 rounded-md bg-amber-500 text-slate-950 text-sm font-bold hover:bg-amber-400 transition"
+          >
+            Open learning roadmap
+          </button>
+        </header>
+
+        <section className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 items-start">
+          <div>
+            <p className="text-xs font-semibold text-cyan-400">MODULE 01 / ARCHITECTURE</p>
+            <h2 className="mt-2 text-lg font-bold text-white">AWS Regions, Availability Zones &amp; edge locations</h2>
+            <p className="mt-2 text-sm text-slate-400 leading-relaxed">A request travels from a nearby edge location through AWS networking to services running across isolated Availability Zones.</p>
+            <div className="mt-4 rounded-lg overflow-hidden border border-white/10 bg-[#070b14] [&>svg]:block [&>svg]:w-full [&>svg]:h-auto" dangerouslySetInnerHTML={{ __html: architecture.svg }} />
+          </div>
+
+          <div className="border-l border-white/10 pl-5 space-y-5">
+            <h2 className="text-sm font-bold text-white">A simple study rhythm</h2>
+            {[
+              ['01', 'See the system', 'Start with the architecture map in each module.'],
+              ['02', 'Learn one concept', 'Read the lesson notes and key terms.'],
+              ['03', 'Practice it', 'Finish with a guided lab or quiz.']
+            ].map(([number, title, description]) => (
+              <div key={number} className="flex gap-3">
+                <span className="text-xs font-semibold text-amber-400">{number}</span>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
+                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">{description}</p>
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => onSelectTopic('regions-azs-and-edge-infrastructure', 'topic-detail')}
+              className="text-sm font-semibold text-cyan-300 hover:text-cyan-200 transition"
+            >
+              Start the first lesson <ArrowRight className="inline w-4 h-4 ml-1" />
+            </button>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (

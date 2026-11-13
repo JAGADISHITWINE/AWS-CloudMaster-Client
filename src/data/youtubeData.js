@@ -5,24 +5,18 @@ export const YOUTUBE_TOPIC_VIDEOS = {
   // Module 1: AWS Global Infrastructure
   'regions-azs-and-edge-infrastructure': {
     videoId: '3hLmDS179YE',
-    title: 'AWS Global Infrastructure Explained: Regions, AZs & Edge Locations',
-    channel: 'TechWorld with Nana',
+    title: 'AWS Certified Cloud Practitioner Training 2020 - Full Course',
+    channel: 'freeCodeCamp.org',
     channelAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=60',
-    duration: '22:15',
     level: 'Beginner',
-    summary: 'A complete visual breakdown of how AWS builds its global physical cloud: fiber cables, Availability Zones, and CloudFront edge caching.',
+    summary: 'A broad AWS Cloud Practitioner course that includes foundational cloud infrastructure concepts.',
     youtubeUrl: 'https://www.youtube.com/watch?v=3hLmDS179YE',
-    chapters: [
-      { time: '00:00', label: 'What is AWS Global Infrastructure?' },
-      { time: '04:15', label: 'AWS Regions vs Availability Zones' },
-      { time: '11:30', label: 'Edge Locations & CloudFront PoPs' },
-      { time: '18:00', label: 'High Availability Multi-AZ Design' }
-    ]
+    chapters: []
   },
 
   // Module 2: IAM
   'iam-fundamentals-and-policy-evaluation': {
-    videoId: 'YQV_hnrnk-M',
+    videoId: null,
     title: 'AWS IAM Tutorial 2024 – Zero to Hero (Users, Roles, Policies & Least Privilege)',
     channel: 'Abhishek Veeramalla',
     channelAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=60',
@@ -57,7 +51,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 4: EC2
   'ec2-fundamentals-and-lifecycle': {
-    videoId: 'iHX-4ePpu7E',
+    videoId: null,
     title: 'Amazon EC2 Full Course – Compute, Security Groups, Key Pairs & User Data',
     channel: 'freeCodeCamp.org',
     duration: '1:15:20',
@@ -74,7 +68,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 5: EBS Storage
   'ebs-volumes-and-storage-architectures': {
-    videoId: '0tQ4M0g1120',
+    videoId: null,
     title: 'AWS EBS Volumes & Snapshots Deep Dive (gp3, io2, Volume Types)',
     channel: 'Edureka',
     duration: '34:40',
@@ -91,7 +85,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 6: S3 Object Storage
   's3-storage-classes-and-lifecycle': {
-    videoId: 'v3xKQ8BlSX8',
+    videoId: null,
     title: 'Amazon S3 Full Course – Buckets, Security, Lifecycle Policies & Static Web Hosting',
     channel: 'freeCodeCamp.org',
     duration: '52:45',
@@ -108,7 +102,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 7: RDS Databases
   'rds-multi-az-and-read-replicas': {
-    videoId: 'zU65XvV5H2o',
+    videoId: null,
     title: 'AWS RDS Tutorial – Multi-AZ vs Read Replicas (High Availability & Scaling)',
     channel: 'TechWorld with Nana',
     duration: '28:15',
@@ -159,7 +153,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 10: Elastic Load Balancing (ELB)
   'elb-application-network-load-balancers': {
-    videoId: 'K3gA7c_N78Q',
+    videoId: null,
     title: 'AWS Load Balancers: ALB vs NLB vs GLB Deep Dive',
     channel: 'TechWorld with Nana',
     duration: '31:50',
@@ -176,7 +170,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 11: Auto Scaling Groups
   'auto-scaling-groups-and-scaling-policies': {
-    videoId: 'yU8uI65rL9k',
+    videoId: null,
     title: 'AWS Auto Scaling Groups – Target Tracking & Scaling Policies',
     channel: 'Knowledge India',
     duration: '29:40',
@@ -193,7 +187,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 12: CloudWatch Monitoring
   'cloudwatch-monitoring-metrics-alarms': {
-    videoId: 'u_pE_gqXN9E',
+    videoId: null,
     title: 'AWS CloudWatch Tutorial – Metrics, Alarms, Logs & Dashboards',
     channel: 'Stephane Maarek / Edureka',
     duration: '38:15',
@@ -210,7 +204,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 13: Route 53
   'route53-dns-routing-and-health-checks': {
-    videoId: 'PkWbTvN3T_4',
+    videoId: null,
     title: 'Amazon Route 53 Tutorial – DNS Routing Policies (Weighted, Latency, Failover)',
     channel: 'TechWorld with Nana',
     duration: '35:20',
@@ -227,7 +221,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 14: CloudFormation
   'cloudformation-iac-and-infrastructure-automation': {
-    videoId: 'h8L1309n46U',
+    videoId: null,
     title: 'AWS CloudFormation Full Course – Infrastructure as Code (IaC) Masterclass',
     channel: 'freeCodeCamp.org',
     duration: '58:40',
@@ -244,7 +238,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 15: KMS & Security
   'kms-secrets-manager-security-compliance': {
-    videoId: 'qC_sY3u7gB4',
+    videoId: null,
     title: 'AWS KMS & Secrets Manager – Complete Encryption & Credential Rotation Guide',
     channel: 'Be A Better Dev',
     duration: '33:10',
@@ -380,7 +374,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 19 Topic 2: K8s Workloads & Services
   'k8s-workloads-services-networking-helm': {
-    videoId: 'KkWvKqT3s2A',
+    videoId: null,
     title: 'Kubernetes Services, Ingress, ConfigMaps, Secrets & Helm Complete Guide',
     channel: 'Kunal Kushwaha',
     duration: '1:24:45',
@@ -397,7 +391,7 @@ export const YOUTUBE_TOPIC_VIDEOS = {
 
   // Module 20: Unified End-to-End CI/CD
   'end-to-end-devops-pipeline-github-jenkins-docker-k8s-aws': {
-    videoId: 'jg929P__p4k',
+    videoId: null,
     title: 'End-to-End DevOps Project: GitHub + Jenkins + Docker + K8s + AWS EKS',
     channel: 'Abhishek Veeramalla',
     duration: '1:42:30',
